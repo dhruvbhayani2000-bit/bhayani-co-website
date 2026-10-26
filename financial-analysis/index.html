@@ -1,0 +1,1538 @@
+<!doctype html><html><head><meta charset=utf8><meta name="robots" content="noindex"><script src="/portal/supabase.js"></script><script src="/portal/config.js"></script><script src="/portal/connect.js" data-tool="financial-analysis"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Financial Analysis Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: equity-research desk — a deep ledger-green band carries the company, the DuPont equation as the headline, and live KPI tiles with brass trend lines; a sticky pill bar switches between analysis sheets set on cool porcelain paper. */
+/* Base tokens = "Light & dark blue". Other colour combinations are generated from PALETTES in the script and override these. */
+:root {
+  --paper: #F3F7FF; --surface: #FFFFFF; --sunk: #E6EEFC; --line: #D3DFF5; --ink: #0B1B44; --muted: #4D5D82;
+  --band: #0B2A6F; --band-2: #1E40AF; --band-ink: #EFF5FF; --band-muted: #A9C3F0; --band-line: rgb(255 255 255 / .10);
+  --band-ctl: rgb(255 255 255 / .08); --band-card: rgb(0 0 0 / .18); --band-tile: rgb(255 255 255 / .05); --glow: #60A5FA; --page-bg: linear-gradient(180deg, #DCE8FF 0%, #B9CFFA 28%, #5B7FD6 62%, #1E40AF 82%, #0B2A6F 100%);
+  --brass: #1D4ED8; --brass-hi: #93C5FD; --mint: #86EFAC; --rose: #FCA5A5; --focus: #2F6FED;
+  --good: #15803D; --good-bg: #DCF5E5; --warn: #A15C07; --warn-bg: #FDF0D5; --bad: #B91C1C; --bad-bg: #FDE3E1;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --peer: #94A3BD; --sel: #0B2A6F; --sel-hi: #1E40AF; --sel-ink: #FFFFFF;
+  --f-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif; --f-body: "Public Sans", "Segoe UI", Arial, sans-serif; --f-num: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #071026; --surface: #0C1834; --sunk: #122244; --line: #1F3461; --ink: #E6EEFF; --muted: #98AACF;
+  --band: #081D4D; --band-2: #12307A; --band-ink: #EFF5FF; --band-muted: #A3B9E3; --band-line: rgb(255 255 255 / .08);
+  --band-ctl: rgb(255 255 255 / .07); --band-card: rgb(0 0 0 / .22); --band-tile: rgb(255 255 255 / .04); --glow: #3B82F6; --page-bg: linear-gradient(180deg, #102A66 0%, #0B1D4A 45%, #050C1F 100%);
+  --brass: #93C5FD; --brass-hi: #93C5FD; --mint: #6EE7B7; --rose: #FDA4AF; --focus: #7AA2FF;
+  --good: #4ADE80; --good-bg: #0F2E1D; --warn: #F2B550; --warn-bg: #352710; --bad: #F87171; --bad-bg: #3A1716;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --peer: #6C7A98; --sel: #93C5FD; --sel-hi: #BFDBFE; --sel-ink: #071026; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #071026; --surface: #0C1834; --sunk: #122244; --line: #1F3461; --ink: #E6EEFF; --muted: #98AACF;
+  --band: #081D4D; --band-2: #12307A; --band-ink: #EFF5FF; --band-muted: #A3B9E3; --band-line: rgb(255 255 255 / .08);
+  --band-ctl: rgb(255 255 255 / .07); --band-card: rgb(0 0 0 / .22); --band-tile: rgb(255 255 255 / .04); --glow: #3B82F6; --page-bg: linear-gradient(180deg, #102A66 0%, #0B1D4A 45%, #050C1F 100%);
+  --brass: #93C5FD; --brass-hi: #93C5FD; --mint: #6EE7B7; --rose: #FDA4AF; --focus: #7AA2FF;
+  --good: #4ADE80; --good-bg: #0F2E1D; --warn: #F2B550; --warn-bg: #352710; --bad: #F87171; --bad-bg: #3A1716;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --peer: #6C7A98; --sel: #93C5FD; --sel-hi: #BFDBFE; --sel-ink: #071026; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background-color: var(--paper); background-image: var(--page-bg); background-attachment: fixed; background-size: 100% 100vh; color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; padding-block: 0 56px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.in { max-width: 1260px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 1.12rem; } h3 { font-size: 1rem; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.muted { color: var(--muted); } .small { font-size: 12px; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 7px 13px; font-weight: 500; }
+button:hover:not(:disabled) { border-color: var(--band-2); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); font-weight: 600; }
+button.primary:hover:not(:disabled) { background: var(--sel-hi); border-color: var(--sel-hi); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.link { border: 0; background: none; padding: 2px 4px; color: var(--brass); text-decoration: underline; text-underline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+input, select { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; min-width: 0; }
+label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+/* ---------- the band */
+.band { background: var(--band); color: var(--band-ink); position: relative; overflow: hidden;
+  background-image: linear-gradient(var(--band-line) 1px, transparent 1px), linear-gradient(90deg, var(--band-line) 1px, transparent 1px),
+    radial-gradient(900px 380px at 88% -20%, color-mix(in srgb, var(--glow) 26%, transparent), transparent 62%), radial-gradient(700px 300px at 10% 120%, color-mix(in srgb, var(--brass-hi) 16%, transparent), transparent 60%);
+  background-size: 28px 28px, 28px 28px, auto, auto; background-position: -1px -1px, -1px -1px, 0 0, 0 0; }
+.band .in { padding-block: 18px 22px; display: grid; gap: 22px; position: relative; }
+.topline { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .01em; }
+.brand svg { flex: none; }
+.company { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.band select, .band button { background: var(--band-ctl); border-color: var(--band-line); color: var(--band-ink); }
+.band select { width: auto; max-width: 260px; }
+.band select option { color: #11201C; background: #fff; }
+.band button:hover:not(:disabled) { border-color: var(--brass-hi); }
+.palette { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; border: 1px solid var(--band-line); border-radius: 999px; background: var(--band-ctl); }
+.palette .pl { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--band-muted); margin-right: 2px; }
+.band .palette button.sw { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid var(--band-line); }
+.band .palette button.sw[aria-pressed="true"] { border-color: var(--band-ink); box-shadow: 0 0 0 2px var(--band); transform: scale(1.12); }
+.palette .pname { font-size: 12px; font-weight: 600; min-width: 0; white-space: nowrap; }
+.save-state { font-size: 12px; color: var(--band-muted); display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--band-muted); }
+.dot.ok { background: var(--mint); } .dot.warn { background: var(--brass-hi); }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 20px 36px; align-items: end; }
+.hero > * { min-width: 0; }
+.eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; color: var(--brass-hi); }
+.hero h1 { font-size: clamp(1.8rem, 1.2rem + 2.2vw, 2.8rem); font-weight: 800; line-height: 1.05; margin-top: 8px; overflow-wrap: anywhere; }
+.hero .sub { color: var(--band-muted); margin: 8px 0 0; font-size: 13.5px; max-width: 52ch; }
+.equation { border: 1px solid var(--band-line); border-radius: 16px; padding: 16px 18px; background: var(--band-card); backdrop-filter: blur(2px); display: grid; gap: 10px; }
+.eq-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--band-muted); font-weight: 700; }
+.eq-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px 10px; }
+.eq-term { display: grid; gap: 2px; align-content: start; min-width: 86px; }
+.eq-term .v { font-family: var(--f-num); font-weight: 600; font-size: 1.35rem; line-height: 1.15; }
+.eq-term.lead .v { font-family: var(--f-display); font-weight: 800; font-size: 2.4rem; color: var(--brass-hi); line-height: 1; letter-spacing: -.02em; }
+.eq-term .k { font-size: 11.5px; color: var(--band-muted); }
+.eq-term .d { font-family: var(--f-num); font-size: 11.5px; }
+.d.up { color: var(--mint); } .d.dn { color: var(--rose); } .d.fl { color: var(--band-muted); }
+.op { font-family: var(--f-display); font-size: 1.6rem; color: var(--band-muted); align-self: center; padding-bottom: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.tot { border: 1px solid var(--band-line); border-radius: 12px; padding: 12px 14px 10px; display: grid; gap: 2px; background: var(--band-tile); }
+.tot .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--band-muted); font-weight: 700; }
+.tot .v { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 1.28rem; font-weight: 600; }
+.tot.lead .v { color: var(--brass-hi); }
+.tot .n { font-size: 11.5px; color: var(--band-muted); }
+.tot .spark { margin-top: 4px; }
+
+/* ---------- sticky sheet bar */
+.tabbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.tabbar .in { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding-block: 10px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--sunk); padding: 4px; border-radius: 999px; }
+.tab { border: 0; background: none; border-radius: 999px; padding: 7px 14px; color: var(--muted); font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.tab:hover:not([aria-selected="true"]) { color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--sel); color: var(--sel-ink); box-shadow: 0 1px 3px rgb(0 0 0 / .18); }
+.tab .badge { font-family: var(--f-num); font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 0 6px; background: var(--bad); color: #fff; }
+.tab:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; padding-top: 20px; }
+.wrap > * { min-width: 0; }
+.banner { border-radius: 12px; padding: 10px 14px; box-shadow: 0 6px 24px rgb(11 42 111 / .10); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; border: 1px dashed var(--brass); background: color-mix(in srgb, var(--brass) 9%, var(--surface)); }
+.banner strong { color: var(--brass); }
+.set-act { display: flex; align-items: end; justify-content: flex-end; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 13.5px; }
+.steps em { font-style: normal; font-weight: 600; color: var(--brass); }
+.settings { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; box-shadow: 0 6px 24px rgb(11 42 111 / .10); display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+
+/* ---------- sheets */
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 12px; }
+.subtabs button { border-radius: 999px; font-size: 12.5px; padding: 5px 12px; }
+.subtabs button[aria-pressed="true"] { background: var(--sel); color: var(--sel-ink); border-color: var(--sel); }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.ok { background: var(--good-bg); color: var(--good); } .pill.bad { background: var(--bad-bg); color: var(--bad); } .pill.warn { background: var(--warn-bg); color: var(--warn); }
+.chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--sunk); color: var(--muted); white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; letter-spacing: .01em; }
+.chip.good { color: var(--good); background: var(--good-bg); } .chip.warn { color: var(--warn); background: var(--warn-bg); } .chip.bad { color: var(--bad); background: var(--bad-bg); }
+.chip.good::before { content: "▲"; font-size: 8px; } .chip.bad::before { content: "▼"; font-size: 8px; } .chip.warn::before { content: "●"; font-size: 7px; }
+.chip.proj { color: var(--brass); background: color-mix(in srgb, var(--brass) 13%, transparent); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; min-width: 0; overflow: hidden; box-shadow: 0 6px 24px rgb(11 42 111 / .10); }
+.panel-head { padding: 16px 18px 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
+.panel-head h2::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--brass); margin-right: 9px; vertical-align: 1px; transform: rotate(45deg); }
+.stack { display: grid; gap: 18px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+thead th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; background: var(--sunk); border-bottom: 1px solid var(--line); }
+th.num { text-align: right; }
+tbody tr:hover td { background: color-mix(in srgb, var(--sunk) 55%, transparent); }
+tr.sec td { background: transparent; font-family: var(--f-display); font-size: 12.5px; font-weight: 700; color: var(--brass); padding-top: 16px; border-bottom: 1px solid color-mix(in srgb, var(--brass) 40%, var(--line)); letter-spacing: .02em; }
+tr.sum td { font-weight: 700; border-top: 1.5px solid var(--ink); }
+tr.calc td { color: var(--muted); }
+td.ind { padding-left: 28px; color: var(--muted); }
+td input { padding: 5px 7px; } td input.num { width: 118px; text-align: right; } td input.name { min-width: 160px; }
+td select { padding: 5px 7px; }
+td.g { box-shadow: inset 3px 0 0 var(--good); background: color-mix(in srgb, var(--good) 8%, transparent); }
+td.w { box-shadow: inset 3px 0 0 var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+td.b { box-shadow: inset 3px 0 0 var(--bad); background: color-mix(in srgb, var(--bad) 9%, transparent); }
+.yh { display: grid; gap: 4px; justify-items: end; }
+.yh input, .yh select { width: 130px; padding: 4px 6px; font-size: 12px; text-align: right; text-transform: none; letter-spacing: 0; }
+.note { padding: 10px 18px 16px; color: var(--muted); font-size: 12px; max-width: 92ch; margin: 0; }
+.extras { padding: 4px 18px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.issues { margin: 0; padding: 0 18px 12px 34px; color: var(--bad); font-size: 13px; }
+.fx { color: var(--muted); font-size: 11.5px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 430px), 1fr)); gap: 18px; align-items: start; }
+.form { padding: 6px 18px 18px; display: grid; gap: 12px; }
+.form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.subhead { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--brass); font-weight: 700; border-top: 1px solid var(--line); padding-top: 12px; margin: 2px 0 0; }
+.verdict { margin: 0 18px 14px; padding: 14px 16px; border-radius: 12px; background: var(--band); color: var(--band-ink); display: grid; gap: 4px; }
+.verdict .small, .verdict .muted { color: var(--band-muted); }
+.verdict .big { font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; color: var(--brass-hi); letter-spacing: -.01em; }
+.dt { display: grid; grid-template-columns: 1fr auto; }
+.dt > div { padding: 8px 18px; border-bottom: 1px solid var(--line); }
+.dt .strong { font-weight: 700; }
+
+/* overview health rings */
+.health { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 6px 18px 18px; }
+.hcell { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; justify-items: center; text-align: center; background: linear-gradient(180deg, var(--sunk), transparent 70%); }
+.hcell .k { font-weight: 700; font-size: 13px; font-family: var(--f-display); }
+.ring { position: relative; width: 86px; height: 86px; }
+.ring svg { display: block; }
+.ring .c { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .c b { font-family: var(--f-num); font-size: 1.15rem; line-height: 1; }
+.ring .c span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.flags { list-style: none; margin: 0; padding: 0 18px 16px; display: grid; gap: 8px; }
+.flags li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; }
+
+/* charts */
+.spark { display: block; }
+.strip { position: relative; height: 26px; margin: 0 6px; }
+.strip .rail { position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--line); border-radius: 2px; }
+.strip .pd { position: absolute; top: 7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--peer); border: 2px solid var(--surface); }
+.strip .md { position: absolute; top: 3px; width: 2px; height: 20px; margin-left: -1px; background: var(--ink); }
+.strip .cl { position: absolute; top: 5px; width: 15px; height: 15px; margin-left: -7.5px; transform: rotate(45deg); background: var(--brass); border: 2px solid var(--surface); border-radius: 3px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); padding: 0 18px 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend i.dia { border-radius: 2px; transform: rotate(45deg); } .legend i.bar { border-radius: 3px; width: 14px; } .legend i.tick { width: 2px; height: 12px; border-radius: 0; }
+.ff { padding: 6px 18px 18px; display: grid; gap: 9px; }
+.ff-row { display: grid; grid-template-columns: minmax(110px, 26%) 1fr minmax(120px, auto); gap: 10px; align-items: center; font-size: 12.5px; }
+.ff-track { position: relative; height: 22px; }
+.ff-bar { position: absolute; top: 3px; height: 16px; border-radius: 5px; background: var(--s1); }
+.ff-mid { position: absolute; top: 0; width: 2px; height: 22px; margin-left: -1px; background: var(--ink); }
+.ff-fv { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--brass); }
+.ff-axis { position: relative; height: 18px; font-size: 11px; color: var(--muted); font-family: var(--f-num); }
+.ff-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ff-val { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; white-space: nowrap; }
+.heat td.cell { text-align: right; font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.heat td.base { outline: 2px solid var(--brass); outline-offset: -2px; font-weight: 700; }
+.tip { position: fixed; z-index: 30; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 12px; padding: 7px 10px; border-radius: 8px; max-width: 300px; box-shadow: 0 6px 18px rgb(0 0 0 / .25); }
+
+dialog { border: 1px solid var(--line); border-radius: 16px; padding: 0; width: min(760px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgb(5 25 21 / .55); }
+#custom-dialog { position: fixed; inset: auto max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) auto; margin: 0; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; z-index: 50; box-shadow: 0 18px 50px rgb(0 0 0 / .3); }
+.cc { padding: 16px; display: grid; gap: 12px; }
+.cc-head { display: grid; gap: 2px; }
+.cc-tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.cc-fields { display: grid; gap: 6px; }
+.cc-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
+.cc-txt { display: grid; } .cc-l { font-weight: 600; font-size: 13px; } .cc-h { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.cc-pick { display: inline-flex; gap: 6px; align-items: center; }
+.cc-pick input[type="color"] { width: 40px; height: 32px; padding: 2px; border-radius: 8px; cursor: pointer; }
+.cc-pick input[type="text"] { width: 86px; font-family: var(--f-num); font-size: 12px; text-transform: uppercase; }
+#cc-codes { width: 100%; font-family: var(--f-num); font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 8px; }
+dialog .form { padding: 20px; }
+.form-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.list { margin: 0; padding-left: 20px; font-size: 13px; max-height: 180px; overflow: auto; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); background: var(--ink); color: var(--surface); padding: 10px 14px; border-radius: 10px; font-size: 13px; z-index: 40; border-left: 3px solid var(--sel); }
+@media (max-width: 860px) { .hero { grid-template-columns: minmax(0, 1fr); } .op { padding-bottom: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .tab, button { transition: background .15s, border-color .15s, color .15s; }
+  .equation, .tot { animation: rise .5s ease both; } .tot:nth-child(2) { animation-delay: .04s; } .tot:nth-child(3) { animation-delay: .08s; } .tot:nth-child(4) { animation-delay: .12s; } .tot:nth-child(5) { animation-delay: .16s; } .tot:nth-child(6) { animation-delay: .2s; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+
+<header class="band gut">
+  <div class="in">
+    <div class="topline">
+      <span class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="7" fill="none" stroke="var(--brass-hi)" stroke-width="1.6"/><path d="M6 18l4.5-5 3.5 3 6-8" fill="none" stroke="var(--brass-hi)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="8" r="2" fill="var(--brass-hi)"/></svg>Financial Analysis Desk</span>
+      <div class="company">
+        <div class="palette" role="group" aria-label="Colour combination"><span class="pl">Colours</span><span id="palette-sw" style="display:inline-flex;gap:5px"></span><span class="pname" id="palette-name" hidden></span></div>
+        <select id="company" aria-label="Company"></select>
+        <button id="new-company" type="button">New company</button>
+        <div class="save-state" id="save-state"><span class="dot"></span><span>Loading…</span></div>
+      </div>
+    </div>
+    <div class="hero">
+      <div><span class="eyebrow" id="h-eyebrow">Analysis</span><h1 id="h-name">Company</h1><p class="sub" id="h-sub"></p></div>
+      <div class="equation" id="equation" aria-label="DuPont equation"></div>
+    </div>
+    <section class="kpis" id="totals" aria-label="Headline numbers"></section>
+  </div>
+</header>
+
+<nav class="tabbar gut" aria-label="Sheets">
+  <div class="in">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="overview">Overview</button>
+      <button class="tab" role="tab" data-tab="fin">Financials</button>
+      <button class="tab" role="tab" data-tab="ratios">Ratios</button>
+      <button class="tab" role="tab" data-tab="dupont">DuPont</button>
+      <button class="tab" role="tab" data-tab="peers">Peers</button>
+      <button class="tab" role="tab" data-tab="credit">Credit &amp; CMA</button>
+      <button class="tab" role="tab" data-tab="value">Valuation</button>
+    </div>
+    <div class="actions">
+      <span id="check-pill"></span>
+      <button id="help-btn" type="button">How to use</button>
+      <button id="upload-btn" type="button">Upload financials</button>
+      <input id="fin-file" type="file" accept=".xlsx,.xls,.csv" hidden>
+      <input id="peer-file" type="file" accept=".xlsx,.xls,.csv" hidden>
+      <button id="export" type="button" class="primary">Download Excel</button>
+    </div>
+  </div>
+</nav>
+
+<div class="gut"><div class="in wrap">
+  <div class="banner" id="sample-banner" hidden>
+    <span><strong>Example data.</strong> ABC Industries and the six peers are made-up figures that show how the desk works. Edit them, upload your own, or start a new company.</span>
+    <button id="start-own" type="button" class="primary">Start my own company</button>
+  </div>
+  <section class="settings" aria-label="Company settings">
+    <label for="s-name">Company name<input id="s-name" type="text"></label>
+    <label for="s-ind">Industry<input id="s-ind" type="text"></label>
+    <label for="s-year">Analysis year<select id="s-year"></select></label>
+    <label for="s-peeryr">Peer data year<input id="s-peeryr" type="text"></label>
+    <div class="set-act"><button type="button" id="del-co" class="danger">Delete company</button></div>
+  </section>
+  <main id="view"></main>
+</div></div>
+
+<dialog id="upload-dialog" aria-labelledby="upload-title">
+  <div class="form">
+    <h2 id="upload-title">Upload financials</h2>
+    <p class="small muted" style="margin:0">Download the template, paste figures from the audited accounts (₹ lakh), and upload it. One column per year. Mark each year Audited, Provisional, Estimated or Projected in the header, for example <em>FY 2025-26 | Audited</em>. Rows are matched by the Key column, so keep it.</p>
+    <div class="form-foot">
+      <div class="actions"><button type="button" id="tpl-fin">Download template with current figures</button></div>
+      <div class="actions"><button type="button" id="upload-close">Close</button><button type="button" class="primary" id="choose-fin">Choose file</button></div>
+    </div>
+  </div>
+</dialog>
+<dialog id="import-dialog" aria-labelledby="import-title">
+  <div class="form">
+    <h2 id="import-title">Check the upload</h2>
+    <div id="import-body"></div>
+    <div class="form-foot"><button type="button" id="imp-cancel">Cancel</button><button type="button" class="primary" id="imp-apply">Use these figures</button></div>
+  </div>
+</dialog>
+<dialog id="custom-dialog" aria-labelledby="cc-title">
+  <div class="cc">
+    <div class="cc-head"><h2 id="cc-title">Custom colours</h2><span class="small muted">The desk changes as you pick. Scroll the page to see every part.</span></div>
+    <div class="cc-tools"><select id="cc-start" aria-label="Start from a ready combination"></select><button type="button" id="cc-random">Surprise me</button></div>
+    <div id="cc-fields" class="cc-fields"></div>
+    <textarea id="cc-codes" rows="6" hidden aria-label="Colour codes"></textarea>
+    <div class="form-foot"><button type="button" id="cc-copy">Copy colour codes</button><div class="actions"><button type="button" id="cc-cancel">Cancel</button><button type="button" class="primary" id="cc-save">Use these colours</button></div></div>
+  </div>
+</dialog>
+<dialog id="help-dialog" aria-labelledby="help-title">
+  <div class="form">
+    <h2 id="help-title">How to use the desk</h2>
+    <ol class="steps">
+      <li><b>Start a company.</b> Click <em>Start my own company</em> (or <em>New company</em> at the top), then type the company name and industry.</li>
+      <li><b>Put in the figures.</b> On <em>Financials</em>, type amounts in ₹ lakh, or click <em>Upload financials</em> → <em>Download template</em> → fill it in Excel → <em>Choose file</em> → <em>Use these figures</em>. The pill at the top must say <em>Balance sheets tally</em>.</li>
+      <li><b>Pick the analysis year</b> (normally the latest audited year) in the company card.</li>
+      <li><b>Read the results.</b> <em>Overview</em> for the health rings and things to look at, <em>Ratios</em> for all 48 ratios, <em>DuPont</em> for what drives ROE.</li>
+      <li><b>Add peers.</b> On <em>Peers</em>, add 5–10 listed companies (or upload the peer template) to see where the company ranks.</li>
+      <li><b>Bank view.</b> On <em>Credit &amp; CMA</em>, enter covenant limits from the sanction letter, drawing-power margins and days past due; CMA Forms II–VI are ready below.</li>
+      <li><b>Value the business.</b> On <em>Valuation</em>, set growth, margins and WACC, choose weights, the marketability discount and the purpose.</li>
+      <li><b>Take it away.</b> <em>Download Excel</em> gives every sheet. Work saves to your account by itself.</li>
+    </ol>
+    <p class="small muted" style="margin:0">All amounts are in ₹ lakh. Green = strong, amber = watch, red = weak. A full user manual (PowerPoint with screenshots and video clips) comes with this desk; keep it with your Finance Model files.</p>
+    <div class="form-foot"><span></span><button type="button" class="primary" id="help-close">Got it</button></div>
+  </div>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+// ================================================================ line items
+const FIELDS = [
+  ['pl', 'rev', 'Revenue from operations'], ['pl', 'oi', 'Other income'], ['pl', 'mat', 'Cost of materials (incl. change in inventory)'],
+  ['pl', 'emp', 'Employee benefits expense'], ['pl', 'oth', 'Other expenses'], ['pl', 'dep', 'Depreciation and amortisation'],
+  ['pl', 'int', 'Finance costs (total interest)'], ['pl', 'intTL', 'of which interest on term loans'], ['pl', 'tax', 'Tax expense (current + deferred)'], ['pl', 'div', 'Dividend paid'],
+  ['el', 'sc', 'Share capital'], ['el', 'res', 'Other equity (reserves and surplus)'], ['el', 'ltb', 'Long-term borrowings (term loans, excl. current maturities)'],
+  ['el', 'oncl', 'Other non-current liabilities and provisions'], ['el', 'stb', 'Short-term bank borrowings (CC / OD / WCDL)'], ['el', 'cmltd', 'Current maturities of long-term debt'],
+  ['el', 'tp', 'Trade payables'], ['el', 'ocl', 'Other current liabilities and provisions'],
+  ['as', 'nfa', 'Property, plant and equipment (net) incl. CWIP'], ['as', 'intang', 'Intangible assets and goodwill'], ['as', 'invnc', 'Non-current investments'],
+  ['as', 'onca', 'Other non-current assets'], ['as', 'invy', 'Inventories'], ['as', 'rec', 'Trade receivables'], ['as', 'cash', 'Cash and bank balances'], ['as', 'oca', 'Other current assets'],
+  ['cf', 'cfo', 'Net cash from operating activities'], ['cf', 'capex', 'Capital expenditure'], ['cf', 'repay', 'Term loan principal repaid in the year'],
+  ['sh', 'shares', 'Shares outstanding (lakh)'], ['sh', 'price', 'Share price at year end (₹, listed companies only)'],
+];
+const SECTIONS = { pl: 'Profit and loss', el: 'Equity and liabilities', as: 'Assets', cf: 'Cash flow and debt service', sh: 'Shares' };
+const TYPES = ['Audited', 'Provisional', 'Estimated', 'Projected'];
+const PEER_FIELDS = [['name', 'Peer name'], ['rev', 'Revenue'], ['revPrev', 'Revenue, previous year'], ['mat', 'Cost of materials'], ['ebitda', 'EBITDA'], ['dep', 'Depreciation'],
+  ['int', 'Finance costs'], ['pbt', 'Profit before tax'], ['pat', 'Profit after tax'], ['ta', 'Total assets'], ['eq', 'Net worth'], ['debt', 'Total borrowings'], ['cash', 'Cash and bank'],
+  ['invy', 'Inventories'], ['rec', 'Trade receivables'], ['tp', 'Trade payables'], ['ca', 'Current assets'], ['cl', 'Current liabilities'], ['nfa', 'Net fixed assets'],
+  ['cfo', 'Cash from operations'], ['capex', 'Capex'], ['div', 'Dividend'], ['mcap', 'Market capitalisation']];
+
+// ================================================================ ratio library (48)
+const pos = x => x > 0 ? x : NaN;
+const RATIOS = [
+  ['Growth', 'revG', 'Revenue growth', '%', 1, [0.10, 0], 'Revenue ÷ previous year − 1', (M, P) => (P ? M.rev / pos(P.rev) : M.rev / pos(M.revPrev)) - 1],
+  ['Growth', 'ebitdaG', 'EBITDA growth', '%', 1, [0.10, 0], 'EBITDA ÷ previous year − 1', (M, P) => P ? M.ebitda / pos(P.ebitda) - 1 : NaN],
+  ['Growth', 'patG', 'PAT growth', '%', 1, [0.10, 0], 'Profit after tax ÷ previous year − 1', (M, P) => P ? M.pat / pos(P.pat) - 1 : NaN],
+  ['Growth', 'taG', 'Total assets growth', '%', 0, null, 'Total assets ÷ previous year − 1', (M, P) => P ? M.ta / pos(P.ta) - 1 : NaN],
+  ['Profitability', 'gm', 'Gross margin', '%', 1, null, '(Revenue − materials) ÷ revenue', M => (M.rev - M.mat) / pos(M.rev)],
+  ['Profitability', 'ebitdaM', 'EBITDA margin', '%', 1, [0.15, 0.10], 'EBITDA ÷ revenue', M => M.ebitda / pos(M.rev)],
+  ['Profitability', 'ebitM', 'EBIT margin', '%', 1, [0.12, 0.07], 'EBIT (PBT + interest) ÷ revenue', M => M.ebit / pos(M.rev)],
+  ['Profitability', 'pbtM', 'PBT margin', '%', 1, [0.10, 0.05], 'Profit before tax ÷ revenue', M => M.pbt / pos(M.rev)],
+  ['Profitability', 'patM', 'PAT margin', '%', 1, [0.08, 0.04], 'Profit after tax ÷ revenue', M => M.pat / pos(M.rev)],
+  ['Profitability', 'roe', 'Return on equity (ROE)', '%', 1, [0.15, 0.10], 'PAT ÷ average net worth', (M, P, A) => M.pat / pos(A('eq'))],
+  ['Profitability', 'roce', 'Return on capital employed (ROCE)', '%', 1, [0.15, 0.10], 'EBIT ÷ average (net worth + borrowings)', (M, P, A) => M.ebit / pos(A('eq') + A('debt'))],
+  ['Profitability', 'roa', 'Return on assets (ROA)', '%', 1, [0.07, 0.04], 'PAT ÷ average total assets', (M, P, A) => M.pat / pos(A('ta'))],
+  ['Profitability', 'roic', 'Return on invested capital (ROIC)', '%', 1, [0.12, 0.08], 'Operating EBIT × (1 − tax rate) ÷ average (net worth + borrowings − cash)',
+    (M, P, A) => { const t = Math.min(0.4, Math.max(0, M.tax / pos(M.pbt) || 0)); return (M.ebitda - M.dep) * (1 - t) / pos(A('eq') + A('debt') - A('cash')); }],
+  ['Liquidity', 'cr', 'Current ratio', 'x', 1, [1.33, 1.0], 'Current assets ÷ current liabilities (incl. bank borrowings)', M => M.ca / pos(M.cl)],
+  ['Liquidity', 'qr', 'Quick ratio', 'x', 1, [1.0, 0.7], '(Current assets − inventories) ÷ current liabilities', M => (M.ca - M.invy) / pos(M.cl)],
+  ['Liquidity', 'cashR', 'Cash ratio', 'x', 1, [0.2, 0.1], 'Cash and bank ÷ current liabilities', M => M.cash / pos(M.cl)],
+  ['Liquidity', 'ocfR', 'Operating cash flow ratio', 'x', 1, [0.4, 0.2], 'Cash from operations ÷ current liabilities', M => M.cfo / pos(M.cl)],
+  ['Liquidity', 'nwcS', 'Net working capital to sales', '%', 0, null, '(Current assets − current liabilities) ÷ revenue', M => (M.ca - M.cl) / pos(M.rev)],
+  ['Leverage', 'de', 'Debt to equity', 'x', -1, [1.0, 2.0], 'Total borrowings ÷ net worth', M => M.debt / pos(M.eq)],
+  ['Leverage', 'nde', 'Net debt to equity', 'x', -1, [0.75, 1.5], '(Borrowings − cash) ÷ net worth', M => (M.debt - M.cash) / pos(M.eq)],
+  ['Leverage', 'ndE', 'Net debt to EBITDA', 'x', -1, [2.0, 3.0], '(Borrowings − cash) ÷ EBITDA', M => (M.debt - M.cash) / pos(M.ebitda)],
+  ['Leverage', 'tolTnw', 'TOL / TNW', 'x', -1, [2.0, 3.0], 'Total outside liabilities ÷ tangible net worth (bank measure)', M => (M.ta - M.eq) / pos(M.eq - M.intang)],
+  ['Leverage', 'eqR', 'Equity ratio', '%', 1, [0.4, 0.25], 'Net worth ÷ total assets', M => M.eq / pos(M.ta)],
+  ['Leverage', 'debtCE', 'Debt to capital employed', '%', -1, [0.4, 0.6], 'Borrowings ÷ (net worth + borrowings)', M => M.debt / pos(M.eq + M.debt)],
+  ['Leverage', 'icr', 'Interest coverage', 'x', 1, [4, 2.5], 'EBIT ÷ finance costs', M => M.ebit / pos(M.int)],
+  ['Leverage', 'dscr', 'Debt service coverage (DSCR)', 'x', 1, [1.5, 1.25], '(PAT + depreciation + term-loan interest) ÷ (term-loan interest + principal repaid)',
+    M => (M.pat + M.dep + M.intTL) / pos(M.intTL + M.repay)],
+  ['Leverage', 'facr', 'Fixed asset coverage (FACR)', 'x', 1, [1.5, 1.25], 'Net fixed assets ÷ term loans (incl. current maturities)', M => M.nfa / pos(M.ltb + M.cmltd)],
+  ['Efficiency', 'at', 'Asset turnover', 'x', 1, null, 'Revenue ÷ average total assets', (M, P, A) => M.rev / pos(A('ta'))],
+  ['Efficiency', 'fat', 'Fixed asset turnover', 'x', 1, null, 'Revenue ÷ average net fixed assets', (M, P, A) => M.rev / pos(A('nfa'))],
+  ['Efficiency', 'wct', 'Working capital turnover', 'x', 1, null, 'Revenue ÷ average net working capital', (M, P, A) => M.rev / pos(A('ca') - A('cl'))],
+  ['Efficiency', 'invT', 'Inventory turnover', 'x', 1, null, 'Materials cost ÷ average inventory', (M, P, A) => M.mat / pos(A('invy'))],
+  ['Efficiency', 'recT', 'Receivables turnover', 'x', 1, null, 'Revenue ÷ average trade receivables', (M, P, A) => M.rev / pos(A('rec'))],
+  ['Efficiency', 'dso', 'Receivable days (DSO)', 'd', -1, [60, 90], 'Average receivables ÷ revenue × 365', (M, P, A) => A('rec') / pos(M.rev) * 365],
+  ['Efficiency', 'dio', 'Inventory days (DIO)', 'd', -1, [60, 90], 'Average inventory ÷ materials cost × 365', (M, P, A) => A('invy') / pos(M.mat) * 365],
+  ['Efficiency', 'dpo', 'Payable days (DPO)', 'd', 0, null, 'Average trade payables ÷ materials cost × 365', (M, P, A) => A('tp') / pos(M.mat) * 365],
+  ['Efficiency', 'ccc', 'Cash conversion cycle', 'd', -1, [60, 100], 'DSO + DIO − DPO', (M, P, A) => (A('rec') / pos(M.rev) + (A('invy') - A('tp')) / pos(M.mat)) * 365],
+  ['Cash flow', 'cfoE', 'Cash conversion (CFO ÷ EBITDA)', '%', 1, [0.7, 0.5], 'Cash from operations ÷ EBITDA', M => M.cfo / pos(M.ebitda)],
+  ['Cash flow', 'fcfM', 'Free cash flow margin', '%', 1, [0.05, 0], '(Cash from operations − capex) ÷ revenue', M => (M.cfo - M.capex) / pos(M.rev)],
+  ['Cash flow', 'capexDep', 'Capex to depreciation', 'x', 0, null, 'Capex ÷ depreciation; above 1 means the asset base is growing', M => M.capex / pos(M.dep)],
+  ['Cash flow', 'cfoDebt', 'CFO to debt', '%', 1, [0.3, 0.15], 'Cash from operations ÷ total borrowings', M => M.cfo / pos(M.debt)],
+  ['Cash flow', 'payout', 'Dividend payout', '%', 0, null, 'Dividend ÷ PAT', M => M.div / pos(M.pat)],
+  ['Per share and market', 'eps', 'Earnings per share (EPS)', '₹', 1, null, 'PAT ÷ shares outstanding', M => M.pat / pos(M.shares)],
+  ['Per share and market', 'bvps', 'Book value per share', '₹', 1, null, 'Net worth ÷ shares outstanding', M => M.eq / pos(M.shares)],
+  ['Per share and market', 'dps', 'Dividend per share', '₹', 1, null, 'Dividend ÷ shares outstanding', M => M.div / pos(M.shares)],
+  ['Per share and market', 'pe', 'Price to earnings (P/E)', 'x', 0, null, 'Market capitalisation ÷ PAT', M => M.mcap / pos(M.pat)],
+  ['Per share and market', 'pb', 'Price to book (P/B)', 'x', 0, null, 'Market capitalisation ÷ net worth', M => M.mcap / pos(M.eq)],
+  ['Per share and market', 'evE', 'EV / EBITDA', 'x', 0, null, '(Market cap + borrowings − cash) ÷ EBITDA', M => (M.mcap + M.debt - M.cash) / pos(M.ebitda)],
+  ['Per share and market', 'dy', 'Dividend yield', '%', 1, null, 'Dividend ÷ market capitalisation', M => M.div / pos(M.mcap)],
+].map(([g, id, n, u, dir, rag, fx, f]) => ({ g, id, n, u, dir, rag, fx, f }));
+const RBY = Object.fromEntries(RATIOS.map(r => [r.id, r]));
+const GROUPS = [...new Set(RATIOS.map(r => r.g))];
+
+// ================================================================ example company
+const SAMPLE_YEARS = [['FY 2023-24', 'Audited'], ['FY 2024-25', 'Audited'], ['FY 2025-26', 'Audited'], ['FY 2026-27', 'Estimated'], ['FY 2027-28', 'Projected']];
+const SAMPLE_V = {
+  rev: [18500, 21200, 24100, 27000, 30200], oi: [120, 140, 160, 150, 160], mat: [11470, 13250, 15180, 16740, 18570], emp: [1480, 1700, 1990, 2200, 2440],
+  oth: [2590, 2970, 3370, 3650, 4000], dep: [620, 700, 820, 950, 1050], int: [540, 610, 720, 760, 720], intTL: [300, 330, 400, 420, 380], tax: [483, 531, 549, 717, 901], div: [120, 144, 144, 180, 216],
+  sc: [1200, 1200, 1200, 1200, 1200], res: [7317, 8752, 10239, 12192, 14655], ltb: [3200, 3600, 4400, 3900, 3200], oncl: [350, 380, 420, 450, 480],
+  stb: [2400, 2900, 3600, 3200, 2800], cmltd: [600, 700, 800, 900, 900], tp: [2200, 2450, 2700, 3000, 3300], ocl: [900, 1000, 1150, 1250, 1350],
+  nfa: [8500, 9000, 10800, 11200, 12000], intang: [300, 280, 260, 240, 220], invnc: [500, 500, 600, 600, 600], onca: [400, 420, 450, 470, 500],
+  invy: [2700, 3250, 4000, 4300, 4650], rec: [3300, 4050, 5150, 5550, 5950], cash: [1767, 2682, 2349, 2782, 2965], oca: [700, 800, 900, 950, 1000],
+  cfo: [1900, 1650, 1450, 2950, 3500], capex: [1100, 1200, 2620, 1350, 1850], repay: [550, 600, 700, 800, 900], shares: [120, 120, 120, 120, 120], price: ['', '', '', '', ''],
+};
+// peers built from a few drivers so the example is internally consistent: name, rev, growth, mat%, EBITDA%, dep%, int%, TA/rev, eq/TA, debt/TA, cash/TA, DIO, DSO, DPO, NFA/TA, CFO/EBITDA, capex%, EV/EBITDA
+const PEER_DRIVERS = [
+  ['Peer A Polymers (example)', 41500, 0.14, 0.60, 0.172, 0.034, 0.018, 0.82, 0.55, 0.20, 0.07, 62, 58, 48, 0.42, 0.78, 0.055, 11.0],
+  ['Peer B Engineering (example)', 28800, 0.09, 0.64, 0.138, 0.030, 0.026, 0.90, 0.44, 0.30, 0.05, 78, 82, 52, 0.40, 0.62, 0.040, 8.4],
+  ['Peer C Plastics (example)', 16200, 0.18, 0.58, 0.191, 0.038, 0.012, 0.78, 0.62, 0.12, 0.10, 55, 52, 45, 0.45, 0.85, 0.070, 13.5],
+  ['Peer D Components (example)', 52300, 0.07, 0.66, 0.121, 0.028, 0.030, 0.95, 0.38, 0.36, 0.04, 85, 90, 58, 0.38, 0.55, 0.035, 6.8],
+  ['Peer E Moulders (example)', 12400, 0.11, 0.61, 0.158, 0.036, 0.022, 0.88, 0.48, 0.25, 0.06, 70, 74, 50, 0.44, 0.70, 0.050, 9.2],
+  ['Peer F Industries (example)', 35600, 0.12, 0.63, 0.149, 0.032, 0.020, 0.85, 0.50, 0.22, 0.08, 66, 68, 55, 0.41, 0.74, 0.048, 9.9],
+];
+function makePeer(d) {
+  const [name, rev, gr, matP, em, depP, intP, taR, eqR, dR, cR, dio, dso, dpo, nfaR, conv, capP, mult] = d;
+  const r2 = x => Math.round(x), ebitda = rev * em, dep = rev * depP, int = rev * intP, pbt = ebitda - dep - int + rev * 0.006, pat = pbt * 0.75;
+  const ta = rev * taR, eq = ta * eqR, debt = ta * dR, cash = ta * cR, mat = rev * matP, invy = mat * dio / 365, rec = rev * dso / 365, tp = mat * dpo / 365;
+  const ca = invy + rec + cash + ta * 0.04, cl = tp + debt * 0.45 + ta * 0.05;
+  return { name, rev, revPrev: r2(rev / (1 + gr)), mat: r2(mat), ebitda: r2(ebitda), dep: r2(dep), int: r2(int), pbt: r2(pbt), pat: r2(pat), ta: r2(ta), eq: r2(eq), debt: r2(debt), cash: r2(cash),
+    invy: r2(invy), rec: r2(rec), tp: r2(tp), ca: r2(ca), cl: r2(cl), nfa: r2(ta * nfaR), cfo: r2(ebitda * conv), capex: r2(rev * capP), div: r2(pat * 0.2), mcap: r2(mult * ebitda - debt + cash) };
+}
+const VAL_DEFAULTS = { growth: [0.12, 0.119, 0.09, 0.08, 0.07], margin: [0.163, 0.172, 0.17, 0.17, 0.17], capexPct: 0.045, depPct: 0.035, nwcPct: '',
+  tax: 0.25168, rf: 0.065, erp: 0.065, beta: 1.0, sp: 0.01, kd: 0.095, wd: 0.30, g: 0.05, mid: true,
+  w: { dcf: 0.5, evE: 0.3, evS: 0, pe: 0.2, pb: 0 }, dlom: 0.15, purpose: 'Internal planning', vdate: '2026-03-31' };
+const CREDIT_DEFAULTS = { invMargin: 0.25, recMargin: 0.40, recEligible: 0.85, deductTp: 'Yes', limit: 4000, dpd: 0 };
+const COV_DEFAULTS = [['ndE', '<=', 3], ['dscr', '>=', 1.25], ['icr', '>=', 2.5], ['tolTnw', '<=', 3], ['cr', '>=', 1.33], ['de', '<=', 2], ['facr', '>=', 1.25]];
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function sampleCompany() {
+  return { id: 'sample', sample: true, name: 'ABC Industries Ltd (example)', industry: 'Plastic and engineering components', peerYear: 'FY 2025-26', ay: 2,
+    years: SAMPLE_YEARS.map(([label, type], i) => ({ label, type, v: Object.fromEntries(Object.entries(SAMPLE_V).map(([k, arr]) => [k, arr[i]])) })),
+    peers: PEER_DRIVERS.map(makePeer), covenants: COV_DEFAULTS.map(([rid, op, lim]) => ({ rid, op, lim })),
+    credit: clone(CREDIT_DEFAULTS), val: clone(VAL_DEFAULTS) };
+}
+function blankCompany(name) {
+  const id = 'co_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const v = () => Object.fromEntries(FIELDS.map(f => [f[1], f[1] === 'price' ? '' : 0]));
+  return { id, sample: false, name: name || 'New company', industry: '', peerYear: 'FY 2025-26', ay: 2,
+    years: [['FY 2023-24', 'Audited'], ['FY 2024-25', 'Audited'], ['FY 2025-26', 'Audited']].map(([label, type]) => ({ label, type, v: v() })),
+    peers: [], covenants: COV_DEFAULTS.map(([rid, op, lim]) => ({ rid, op, lim })), credit: clone(CREDIT_DEFAULTS), val: clone(VAL_DEFAULTS) };
+}
+function migrate(co) {
+  co.credit = Object.assign(clone(CREDIT_DEFAULTS), co.credit); co.val = Object.assign(clone(VAL_DEFAULTS), co.val);
+  co.val.w = Object.assign(clone(VAL_DEFAULTS.w), co.val.w); if (/11UA/.test(co.val.purpose || '')) co.val.purpose = 'Transfer of unquoted shares — income-tax FMV'; co.peers = co.peers || []; co.covenants = co.covenants || [];
+  if (!(co.ay >= 0 && co.ay < co.years.length)) co.ay = defaultAy(co);
+  return co;
+}
+function defaultAy(co) { let k = 0; co.years.forEach((y, i) => { if (y.type === 'Audited' || y.type === 'Provisional') k = i; }); return k; }
+
+// ================================================================ calculation
+const fin = v => Number.isFinite(v) ? v : null;
+const nz = v => { const x = +v; return Number.isFinite(x) ? x : 0; };
+function metrics(y) {
+  const g = k => nz(y.v[k]);
+  const rev = g('rev'), mat = g('mat'), ebitda = rev - mat - g('emp') - g('oth'), oi = g('oi'), dep = g('dep'), int = g('int');
+  const ebit = ebitda + oi - dep, pbt = ebit - int, tax = g('tax'), pat = pbt - tax;
+  const eq = g('sc') + g('res'), debt = g('ltb') + g('stb') + g('cmltd');
+  const ca = g('invy') + g('rec') + g('cash') + g('oca'), cl = g('stb') + g('cmltd') + g('tp') + g('ocl');
+  const nca = g('nfa') + g('intang') + g('invnc') + g('onca'), ta = nca + ca, tel = eq + g('ltb') + g('oncl') + cl;
+  const shares = +y.v.shares > 0 ? +y.v.shares : NaN, price = y.v.price === '' || y.v.price == null ? NaN : +y.v.price;
+  return { rev, mat, emp: g('emp'), oth: g('oth'), ebitda, oi, dep, ebit, int, intTL: g('intTL'), pbt, tax, pat, div: g('div'), eq, sc: g('sc'), res: g('res'), debt,
+    ltb: g('ltb'), stb: g('stb'), cmltd: g('cmltd'), oncl: g('oncl'), tp: g('tp'), ocl: g('ocl'), nfa: g('nfa'), intang: g('intang'), invnc: g('invnc'), onca: g('onca'),
+    invy: g('invy'), rec: g('rec'), cash: g('cash'), oca: g('oca'), ca, cl, nca, ta, tel, cfo: g('cfo'), capex: g('capex'), repay: g('repay'), shares, price, mcap: price * shares, revPrev: NaN };
+}
+function peerMetrics(p) {
+  const g = k => (p[k] === '' || p[k] == null) ? NaN : +p[k];
+  const M = Object.fromEntries(PEER_FIELDS.slice(1).map(([k]) => [k, g(k)]));
+  M.ebit = M.pbt + M.int; M.oi = M.ebit - M.ebitda + M.dep; M.tax = M.pbt - M.pat; M.intang = 0; M.invnc = 0;
+  M.ltb = NaN; M.cmltd = NaN; M.intTL = NaN; M.repay = NaN; M.shares = NaN; return M;
+}
+const avgFn = (M, P) => k => P ? (M[k] + P[k]) / 2 : M[k];
+const ratioVal = (r, M, P, closing) => fin(r.f(M, P, closing ? (k => M[k]) : avgFn(M, P)));
+
+function compute(co) {
+  const Ms = co.years.map(metrics), issues = [];
+  co.years.forEach((y, i) => {
+    const M = Ms[i];
+    if (!(M.rev > 0)) issues.push(`${y.label}: enter revenue.`);
+    if (Math.abs(M.ta - M.tel) > 0.5) issues.push(`${y.label}: balance sheet does not tally — assets ${fa(M.ta)} vs equity and liabilities ${fa(M.tel)} (difference ${fa(M.ta - M.tel)}).`);
+    if (M.intTL > M.int + 0.5) issues.push(`${y.label}: term-loan interest is more than total finance costs.`);
+  });
+  const vals = {};
+  RATIOS.forEach(r => { vals[r.id] = Ms.map((M, i) => ratioVal(r, M, i ? Ms[i - 1] : null)); });
+  const dup = Ms.map((M, i) => {
+    const A = avgFn(M, i ? Ms[i - 1] : null), ta = A('ta'), eq = A('eq');
+    return { margin: fin(M.pat / pos(M.rev)), turn: fin(M.rev / pos(ta)), lev: fin(ta / pos(eq)), roe: fin(M.pat / pos(eq)),
+      taxB: fin(M.pat / (M.pbt || NaN)), intB: fin(M.pbt / (M.ebit || NaN)), ebitM: fin(M.ebit / pos(M.rev)) };
+  });
+  const PM = co.peers.map(peerMetrics);
+  return { Ms, vals, dup, PM, issues };
+}
+function grade(r, v) {
+  if (v == null || !r.rag || !r.dir) return '';
+  const [g, a] = r.rag;
+  return r.dir > 0 ? (v >= g ? 'good' : v >= a ? 'warn' : 'bad') : (v <= g ? 'good' : v <= a ? 'warn' : 'bad');
+}
+const GL = { good: 'Strong', warn: 'Watch', bad: 'Weak' };
+
+// ---------------------------------------------------------------- DuPont attribution (one factor at a time)
+function attribute(a, b, keys) {
+  let cur = keys.map(k => a[k]); const base = cur.reduce((t, x) => t * x, 1), out = [];
+  let prev = base;
+  keys.forEach((k, j) => { cur[j] = b[k]; const now = cur.reduce((t, x) => t * x, 1); out.push({ k, d: now - prev }); prev = now; });
+  return out;
+}
+
+// ---------------------------------------------------------------- peers
+function quantile(arr, q) { const s = [...arr].sort((x, y) => x - y); if (!s.length) return null; const p = (s.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return s[lo] + (s[hi] - s[lo]) * (p - lo); }
+function bench(co, C) {
+  const ay = co.ay, M = C.Ms[ay], P = ay ? C.Ms[ay - 1] : null;
+  return RATIOS.map(r => {
+    const client = ratioVal(r, M, P, true);
+    const peers = C.PM.map((pm, j) => ({ name: co.peers[j].name, v: ratioVal(r, pm, null, true) })).filter(x => x.v != null);
+    if (peers.length < 3) return { r, client, peers, n: peers.length };
+    const vs = peers.map(x => x.v), med = quantile(vs, 0.5);
+    let pct = null;
+    if (client != null) {
+      const better = peers.filter(x => r.dir >= 0 ? client > x.v : client < x.v).length, eq = peers.filter(x => x.v === client).length;
+      pct = (better + 0.5 * eq) / peers.length;
+    }
+    return { r, client, peers, n: peers.length, med, q1: quantile(vs, 0.25), q3: quantile(vs, 0.75), min: Math.min(...vs), max: Math.max(...vs), pct };
+  });
+}
+const quart = (b) => b.pct == null ? '' : !b.r.dir ? 'Position' : b.pct >= 0.75 ? 'Top quartile' : b.pct >= 0.5 ? 'Above median' : b.pct >= 0.25 ? 'Below median' : 'Bottom quartile';
+const quartCls = b => !b.r.dir || b.pct == null ? '' : b.pct >= 0.5 ? 'good' : b.pct >= 0.25 ? 'warn' : 'bad';
+
+// ---------------------------------------------------------------- credit
+function covStatus(c, v) {
+  if (v == null) return { s: 'na' };
+  const ok = c.op === '<=' ? v <= c.lim : v >= c.lim;
+  const head = c.op === '<=' ? (c.lim ? 1 - v / c.lim : 0) : (c.lim ? v / c.lim - 1 : 0);
+  return { s: ok ? (head < 0.1 ? 'tight' : 'ok') : 'breach', head };
+}
+function drawingPower(co, M) {
+  const c = co.credit, stockNet = Math.max(0, M.invy - (c.deductTp === 'Yes' ? M.tp : 0));
+  const dpStock = stockNet * (1 - c.invMargin), elig = M.rec * c.recEligible, dpRec = elig * (1 - c.recMargin), dp = dpStock + dpRec;
+  const lim = +c.limit || 0, avail = Math.min(dp, lim || dp);
+  return { stockNet, dpStock, elig, dpRec, dp, lim, avail, used: M.stb, head: avail - M.stb };
+}
+function smaOf(d) { d = +d || 0; return d <= 0 ? ['Regular', 'good'] : d <= 30 ? ['SMA-0', 'warn'] : d <= 60 ? ['SMA-1', 'warn'] : d <= 90 ? ['SMA-2', 'bad'] : ['NPA (over 90 days)', 'bad']; }
+function ews(co, C, i) {
+  const V = id => C.vals[id][i], Vp = id => i ? C.vals[id][i - 1] : null, M = C.Ms[i], P = i ? C.Ms[i - 1] : null, out = [];
+  const add = (sev, t) => out.push({ sev, t });
+  if (V('dscr') != null && V('dscr') < 1.2) add('serious', `DSCR is ${fr(V('dscr'), 'x')}, below 1.20 — cash may not cover term-loan dues.`);
+  if (V('icr') != null && V('icr') < 2) add('serious', `Interest coverage is ${fr(V('icr'), 'x')}, below 2.0.`);
+  if (V('cr') != null && V('cr') < 1) add('serious', `Current ratio is ${fr(V('cr'), 'x')}: current liabilities exceed current assets.`);
+  if (V('ndE') != null && V('ndE') > 3.5) add('serious', `Net debt is ${fr(V('ndE'), 'x')} EBITDA, above 3.5.`);
+  if (M.cfo < 0) add('serious', 'Cash from operations is negative.');
+  if (V('tolTnw') != null && V('tolTnw') > 4) add('serious', `TOL / TNW is ${fr(V('tolTnw'), 'x')}, above 4.`);
+  if (P && M.eq < P.eq) add('serious', `Net worth fell by ${fa(P.eq - M.eq)} lakh.`);
+  if (P && M.rev < P.rev) add('watch', `Revenue fell ${fr(1 - M.rev / P.rev, '%')}.`);
+  if (Vp('ebitdaM') != null && V('ebitdaM') != null && Vp('ebitdaM') - V('ebitdaM') > 0.02) add('watch', `EBITDA margin down ${((Vp('ebitdaM') - V('ebitdaM')) * 100).toFixed(1)} points to ${fr(V('ebitdaM'), '%')}.`);
+  if (Vp('dso') != null && V('dso') - Vp('dso') > 15) add('watch', `Receivable days up ${Math.round(V('dso') - Vp('dso'))} days to ${Math.round(V('dso'))}.`);
+  if (Vp('dio') != null && V('dio') - Vp('dio') > 15) add('watch', `Inventory days up ${Math.round(V('dio') - Vp('dio'))} days to ${Math.round(V('dio'))}.`);
+  if (P && P.stb > 0 && P.rev > 0 && (M.stb / P.stb - 1) - (M.rev / P.rev - 1) > 0.10) add('watch', `Bank borrowings grew ${fr(M.stb / P.stb - 1, '%')} against revenue growth of ${fr(M.rev / P.rev - 1, '%')}.`);
+  if (M.cfo >= 0 && M.ebitda > 0 && M.cfo / M.ebitda < 0.5) add('watch', `Only ${fr(M.cfo / M.ebitda, '%')} of EBITDA turned into operating cash.`);
+  if (i === co.ay) {
+    const dp = drawingPower(co, M);
+    if (M.stb > dp.dp + 0.5) add('serious', `Bank borrowings of ${fa(M.stb)} exceed drawing power of ${fa(dp.dp)} lakh.`);
+    const [s] = smaOf(co.credit.dpd); if (s !== 'Regular') add(+co.credit.dpd > 60 ? 'serious' : 'watch', `Account is ${s} (${co.credit.dpd} days past due).`);
+  }
+  return out;
+}
+
+// CMA Form V: MPBF (Tandon second method) and turnover method
+function mpbf(M) {
+  const tca = M.ca, ocl = M.cl - M.stb, wcg = tca - ocl, minNwc = 0.25 * tca, nwc = M.ca - M.cl;
+  const a = wcg - minNwc, b = wcg - nwc, m = Math.min(a, b);
+  return { tca, ocl, wcg, minNwc, nwc, a, b, m, short: Math.max(0, minNwc - nwc), excess: M.stb - m, turnover: 0.20 * M.rev, wcReq: 0.25 * M.rev, margin: 0.05 * M.rev };
+}
+
+// ---------------------------------------------------------------- valuation
+function waccOf(v) { const ke = v.rf + v.beta * v.erp + v.sp, kdT = v.kd * (1 - v.tax); return { ke, kdT, w: (1 - v.wd) * ke + v.wd * kdT }; }
+function opNwc(M) { return M.invy + M.rec + M.oca - M.tp - M.ocl; }
+function dcf(co, C, wOver, gOver) {
+  const v = co.val, B = C.Ms[co.ay], W = waccOf(v), w = wOver ?? W.w, g = gOver ?? v.g;
+  const nwcPct = v.nwcPct === '' || v.nwcPct == null ? opNwc(B) / (B.rev || 1) : +v.nwcPct;
+  let rev = B.rev, prevNwc = opNwc(B); const rows = [];
+  for (let t = 1; t <= 5; t++) {
+    rev = rev * (1 + (+v.growth[t - 1] || 0)); const ebitda = rev * (+v.margin[t - 1] || 0), dep = rev * v.depPct, ebit = ebitda - dep, nopat = ebit * (1 - v.tax);
+    const capex = rev * v.capexPct, nwc = rev * nwcPct, dN = nwc - prevNwc; prevNwc = nwc;
+    const fcf = nopat + dep - capex - dN, df = 1 / Math.pow(1 + w, t - (v.mid ? 0.5 : 0));
+    rows.push({ t, rev, ebitda, dep, ebit, nopat, capex, dN, fcf, df, pv: fcf * df });
+  }
+  const last = rows[4], tv = w > g ? last.fcf * (1 + g) / (w - g) : NaN, pvTv = tv / Math.pow(1 + w, 5);
+  const sumPv = rows.reduce((s, r) => s + r.pv, 0), ev = sumPv + pvTv, netDebt = B.debt - B.cash - B.invnc, eqv = ev - netDebt;
+  return { rows, w, g, W, nwcPct, tv, pvTv, sumPv, ev, netDebt, eqv, ps: eqv / pos(B.shares), impl: ev / pos(B.ebitda), tvShare: pvTv / ev };
+}
+const MULTS = [['evE', 'EV / EBITDA', 'EV'], ['evS', 'EV / Revenue', 'EV'], ['pe', 'P / E', 'Eq'], ['pb', 'P / B', 'Eq']];
+function multiples(co, C) {
+  const B = C.Ms[co.ay], netDebt = B.debt - B.cash - B.invnc, sh = pos(B.shares);
+  return MULTS.map(([k, n, kind]) => {
+    const vs = C.PM.map(p => { const ev = p.mcap + p.debt - p.cash; return k === 'evE' ? ev / pos(p.ebitda) : k === 'evS' ? ev / pos(p.rev) : k === 'pe' ? p.mcap / pos(p.pat) : p.mcap / pos(p.eq); })
+      .filter(x => Number.isFinite(x) && x > 0);
+    const base = k === 'evE' ? B.ebitda : k === 'evS' ? B.rev : k === 'pe' ? B.pat : B.eq;
+    const toEq = m => kind === 'EV' ? m * base - netDebt : m * base;
+    if (vs.length < 3 || !(base > 0)) return { k, n, kind, n2: vs.length, ok: false, base };
+    const q1 = quantile(vs, 0.25), md = quantile(vs, 0.5), q3 = quantile(vs, 0.75);
+    return { k, n, kind, n2: vs.length, ok: true, base, q1, md, q3, lo: toEq(q1) / sh, mid: toEq(md) / sh, hi: toEq(q3) / sh, eqMid: toEq(md) };
+  });
+}
+function fairValue(co, C) {
+  const D = dcf(co, C), Ms = multiples(co, C), v = co.val, sens = [-0.005, 0, 0.005].flatMap(dw => [-0.005, 0, 0.005].map(dg => dcf(co, C, D.w + dw, D.g + dg).ps)).filter(Number.isFinite);
+  const methods = [{ k: 'dcf', n: 'DCF', ok: Number.isFinite(D.ps), lo: Math.min(...sens), mid: D.ps, hi: Math.max(...sens), note: `WACC ${fr(D.w, '%')} ± 0.5, growth ${fr(D.g, '%')} ± 0.5` }]
+    .concat(Ms.map(m => ({ k: m.k, n: m.n, ok: m.ok, lo: m.lo, mid: m.mid, hi: m.hi, note: m.ok ? `Peer ${m.n} ${m.q1.toFixed(1)}–${m.q3.toFixed(1)}x, median ${m.md.toFixed(1)}x` : 'Needs 3+ peers with positive values' })));
+  let wsum = 0, val = 0; methods.forEach(m => { const w = +v.w[m.k] || 0; if (m.ok && w > 0) { wsum += w; val += w * m.mid; } });
+  const pre = wsum ? val / wsum : NaN, post = pre * (1 - (+v.dlom || 0));
+  return { D, Ms, methods, wsum, pre, post, shares: C.Ms[co.ay].shares };
+}
+
+// ================================================================ formatting
+const nf2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const fa = n => { if (n == null || !Number.isFinite(n)) return '–'; if (Math.abs(n) < 0.005) return '–'; const s = nf2.format(Math.abs(n)); return n < 0 ? `(${s})` : s; };
+const fcr = n => { if (!Number.isFinite(n)) return '–'; const a = Math.abs(n); return (n < 0 ? '−' : '') + (a >= 100 ? '₹' + (a / 100).toFixed(2) + ' Cr' : '₹' + nf2.format(a) + ' L'); };
+const fr = (v, u) => v == null || !Number.isFinite(v) ? '–' : u === '%' ? (v * 100).toFixed(1) + '%' : u === 'x' ? v.toFixed(2) + 'x' : u === 'd' ? nf0.format(Math.round(v)) + ' d' : '₹' + nf2.format(v);
+const pctIn = v => +(v * 100).toFixed(3);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const $ = id => document.getElementById(id);
+function fyAdd(label, t) { const m = String(label).match(/(\d{4})/); if (!m) return 'Year ' + t; const y = +m[1] + t; return `FY ${y}-${String(y + 1).slice(2)}`; }
+function spark(arr, w = 84, h = 22, col = 'var(--s1)') {
+  const pts = arr.map((v, i) => [i, v]).filter(p => p[1] != null); if (pts.length < 2) return '';
+  const vs = pts.map(p => p[1]), lo = Math.min(...vs), hi = Math.max(...vs), n = arr.length - 1 || 1, sx = i => 3 + i / n * (w - 6), sy = v => hi === lo ? h / 2 : h - 3 - (v - lo) / (hi - lo) * (h - 6);
+  const d = pts.map(p => `${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join(' '), e = pts[pts.length - 1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${sx(e[0])}" cy="${sy(e[1])}" r="3" fill="${col}"/></svg>`;
+}
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0);
+  const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, out = []; for (let x = a; x <= b + step / 2; x += step) out.push(+x.toFixed(6)); return out;
+}
+
+// ================================================================ state and storage
+let companies = [], cur = null, tab = 'overview', cmaForm = 'II', pendingImport = null, rmYear = null, rmPeer = null, rmCo = false;
+let col = null, mode = 'example', writeChain = Promise.resolve(), saveTimer = null;
+const STORE = 'fadesk-v1';
+function setSaveState(kind, text) { $('save-state').innerHTML = `<span class="dot ${kind}"></span><span>${esc(text)}</span>`; }
+function persist() {
+  if (!cur || cur.sample) return;
+  clearTimeout(saveTimer); setSaveState('warn', 'Saving…');
+  saveTimer = setTimeout(() => {
+    const snap = clone(cur);
+    if (mode === 'account' && col) {
+      writeChain = writeChain.then(() => col.doc(snap.id).set(snap)).then(() => setSaveState('ok', 'Saved to your account'))
+        .catch(e => setSaveState('warn', e && e.code === 'quota_exceeded' ? 'Storage full — delete an old company' : 'Not saved — check your connection'));
+    } else {
+      try { const all = JSON.parse(localStorage.getItem(STORE) || '{}'); all[snap.id] = snap; localStorage.setItem(STORE, JSON.stringify(all)); setSaveState('ok', 'Saved in this browser'); }
+      catch { setSaveState('warn', 'Not saved — storage unavailable here'); }
+    }
+  }, 700);
+}
+function removeStored(id) {
+  if (mode === 'account' && col) { writeChain = writeChain.then(() => col.doc(id).delete()).catch(() => {}); }
+  else { try { const all = JSON.parse(localStorage.getItem(STORE) || '{}'); delete all[id]; localStorage.setItem(STORE, JSON.stringify(all)); } catch {} }
+}
+function materialise() {
+  if (cur && cur.sample) { cur.sample = false; cur.id = blankCompany().id; cur.name = cur.name.replace(' (example)', ''); companies = companies.filter(c => c !== cur && c.id !== 'sample'); companies.push(cur); }
+}
+// re-draw after the browser has moved focus (Tab / click), then put the cursor back where the user went
+let renderQueued = false;
+function changed() { materialise(); persist(); if (renderQueued) return; renderQueued = true;
+  setTimeout(() => { renderQueued = false; const a = document.activeElement, id = a && a !== document.body && a.id ? a.id : null; render();
+    if (id) { const el = document.getElementById(id); if (el && el !== document.activeElement && !el.closest('dialog:not([open])')) { el.focus({ preventScroll: true }); try { if (el.tagName === 'INPUT' && /^(text|number)$/.test(el.type)) el.select(); } catch {} } } }, 0); }
+async function boot() {
+  render();
+  const has = !!(window.claude && window.claude.use);
+  let db = null, user = null, uid = null;
+  if (has) { try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch {} }
+  if (user) { try { uid = await user.id(); } catch {} }
+  if (db && uid) { try { col = db.collection('data/users/' + uid); const snap = await col.get(); companies = snap.docs.map(d => clone(d.data())).filter(Boolean); mode = 'account'; } catch { col = null; } }
+  if (!col) { try { companies = Object.values(JSON.parse(localStorage.getItem(STORE) || '{}')); mode = 'browser'; } catch { companies = []; mode = 'example'; } }
+  companies = companies.map(migrate);
+  if (!companies.length) companies = [sampleCompany()];
+  cur = companies[0];
+  setSaveState(cur.sample ? '' : 'ok', cur.sample ? 'Example — saves once you edit' : mode === 'account' ? 'Saved to your account' : mode === 'browser' ? 'Saved in this browser' : 'Not saved in this view');
+  try { window.__downloads = has ? await window.claude.use('downloads') : null; } catch { window.__downloads = null; }
+  render();
+}
+
+// ================================================================ render
+function render() {
+  if (!cur) { cur = sampleCompany(); companies = [cur]; }
+  const C = compute(cur), ay = cur.ay, M = C.Ms[ay], y = cur.years[ay];
+  $('company').innerHTML = companies.map(c => `<option value="${esc(c.id)}"${c === cur ? ' selected' : ''}>${esc(c.name)}</option>`).join('');
+  $('sample-banner').hidden = !cur.sample;
+  $('del-co').hidden = !!cur.sample; $('del-co').textContent = rmCo ? 'Confirm delete' : 'Delete company';
+  if (document.activeElement !== $('s-name')) $('s-name').value = cur.name;
+  if (document.activeElement !== $('s-ind')) $('s-ind').value = cur.industry || '';
+  if (document.activeElement !== $('s-peeryr')) $('s-peeryr').value = cur.peerYear || '';
+  $('s-year').innerHTML = cur.years.map((yy, i) => `<option value="${i}"${i === ay ? ' selected' : ''}>${esc(yy.label)} (${yy.type})</option>`).join('');
+  const V = id => C.vals[id][ay], FV = fairValue(cur, C), upto = arr => arr.slice(0, ay + 1);
+  // hero
+  $('h-eyebrow').textContent = `${y.label} · ${y.type}${cur.industry ? ' · ' + cur.industry : ''}`;
+  $('h-name').textContent = cur.name;
+  const nFlags = ews(cur, C, ay).length, nBreach = cur.covenants.filter(c => covStatus(c, C.vals[c.rid]?.[ay]).s === 'breach').length;
+  $('h-sub').textContent = `${RATIOS.length} ratios across ${cur.years.length} years, ${cur.peers.length} peers, ${cur.covenants.length} bank covenants. ${nBreach ? nBreach + ' covenant breach' + (nBreach > 1 ? 'es' : '') + ', ' : 'No covenant breaches, '}${nFlags ? nFlags + ' early-warning signal' + (nFlags > 1 ? 's' : '') : 'no early-warning signals'} this year.`;
+  const d1 = C.dup[ay], d0 = ay ? C.dup[ay - 1] : null;
+  const delta = (k, u) => { if (!d0 || d0[k] == null || d1[k] == null) return '<span class="d fl">first year</span>'; const x = d1[k] - d0[k], cls = Math.abs(x) < 1e-6 ? 'fl' : x > 0 ? 'up' : 'dn';
+    return `<span class="d ${cls}">${x > 0 ? '▲' : x < 0 ? '▼' : '■'} ${u === '%' ? Math.abs(x * 100).toFixed(1) + ' pts' : Math.abs(x).toFixed(2) + 'x'}</span>`; };
+  const term = (k, u, label, lead) => `<div class="eq-term${lead ? ' lead' : ''}"><span class="v">${fr(d1[k], u)}</span><span class="k">${label}</span>${delta(k, u)}</div>`;
+  $('equation').innerHTML = `<div class="eq-head"><span>Return on equity, DuPont</span><span>${d0 ? 'vs ' + esc(cur.years[ay - 1].label) : ''}</span></div>
+    <div class="eq-row">${term('roe', '%', 'ROE', 1)}<span class="op">=</span>${term('margin', '%', 'PAT margin')}<span class="op">×</span>${term('turn', 'x', 'Asset turnover')}<span class="op">×</span>${term('lev', 'x', 'Equity multiplier')}</div>`;
+  const t = (k, v, n, series, lead) => `<div class="tot${lead ? ' lead' : ''}"><span class="k">${k}</span><span class="v">${v}</span><span class="n">${n}</span>${series ? spark(series, 120, 24, 'var(--brass-hi)') : ''}</div>`;
+  $('totals').innerHTML = [
+    t('Revenue', fcr(M.rev), V('revG') != null ? `${V('revG') >= 0 ? 'Up' : 'Down'} ${fr(Math.abs(V('revG')), '%')} on last year` : 'First year shown', upto(C.Ms.map(m => m.rev)), true),
+    t('EBITDA margin', fr(V('ebitdaM'), '%'), 'EBITDA ' + fcr(M.ebitda), upto(C.vals.ebitdaM)),
+    t('Net debt / EBITDA', fr(V('ndE'), 'x'), 'Net debt ' + fcr(M.debt - M.cash), upto(C.vals.ndE)),
+    t('DSCR', fr(V('dscr'), 'x'), 'Term-loan service cover', upto(C.vals.dscr)),
+    t('Cash conversion', fr(V('cfoE'), '%'), 'Operating cash ÷ EBITDA', upto(C.vals.cfoE)),
+    t('Fair value per share', Number.isFinite(FV.post) ? '₹' + nf2.format(FV.post) : '–', Number.isFinite(FV.post) ? `After ${fr(cur.val.dlom, '%')} marketability discount` : 'Enter shares outstanding', null, true),
+  ].join('');
+  $('check-pill').innerHTML = C.issues.length ? `<span class="pill bad" title="${esc(C.issues.join('\n'))}">${C.issues.length} issue${C.issues.length > 1 ? 's' : ''} in the figures</span>` : `<span class="pill ok">Balance sheets tally</span>`;
+  const badges = { fin: C.issues.length, credit: nBreach + ews(cur, C, ay).filter(f => f.sev === 'serious').length };
+  document.querySelectorAll('.tab').forEach(b => { b.dataset.label = b.dataset.label || b.textContent; const n = badges[b.dataset.tab];
+    b.innerHTML = esc(b.dataset.label) + (n ? `<span class="badge" aria-label="${n} to check">${n}</span>` : ''); b.setAttribute('aria-selected', b.dataset.tab === tab); });
+  $('view').innerHTML = ({ overview: viewOverview, fin: viewFin, ratios: viewRatios, dupont: viewDupont, peers: viewPeers, credit: viewCredit, value: viewValue })[tab](C);
+  bindView();
+}
+const yrHead = (cls = 'num') => cur.years.map((y, i) => `<th class="${cls}">${esc(y.label)}<br><span class="chip${y.type === 'Projected' || y.type === 'Estimated' ? ' proj' : ''}">${y.type}</span></th>`).join('');
+
+// ---------------------------------------------------------------- overview
+function viewOverview(C) {
+  const ay = cur.ay, prev = ay ? ay - 1 : null;
+  const cells = GROUPS.map(g => {
+    const rs = RATIOS.filter(r => r.g === g), gr = rs.map(r => grade(r, C.vals[r.id][ay])), c = k => gr.filter(x => x === k).length, n = c('good') + c('warn') + c('bad');
+    const total = rs.length, r = 34, C2 = 2 * Math.PI * r; let off = 0;
+    const segs = n ? ['good', 'warn', 'bad'].map(k => { const len = c(k) / n * C2; const seg = c(k) ? `<circle cx="43" cy="43" r="${r}" fill="none" stroke="var(--${k})" stroke-width="9" stroke-dasharray="${Math.max(0, len - 3).toFixed(2)} ${(C2 - Math.max(0, len - 3)).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 43 43)"/>` : ''; off += len; return seg; }).join('') : '';
+    return `<div class="hcell"><span class="k">${esc(g)}</span>
+      <div class="ring" role="img" aria-label="${esc(g)}: ${c('good')} strong, ${c('warn')} watch, ${c('bad')} weak"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="${r}" fill="none" stroke="var(--sunk)" stroke-width="9"/>${segs}</svg>
+        <div class="c">${n ? `<b>${c('good')}/${n}</b><span>strong</span>` : `<b>${total}</b><span>ratios</span>`}</div></div>
+      <span class="small muted">${n ? `${c('warn')} watch · ${c('bad')} weak` : 'Compare with peers'}</span></div>`;
+  }).join('');
+  const flags = ews(cur, C, ay), covs = cur.covenants.map(c => ({ c, st: covStatus(c, C.vals[c.rid]?.[ay]) })).filter(x => x.st.s === 'breach');
+  const weak = RATIOS.filter(r => grade(r, C.vals[r.id][ay]) === 'bad');
+  const d0 = prev != null ? C.dup[prev] : null, d1 = C.dup[ay];
+  let story = '';
+  if (d0 && d0.roe != null && d1.roe != null && [d0, d1].every(d => d.margin > 0 && d.turn > 0 && d.lev > 0)) {
+    const at = attribute(d0, d1, ['margin', 'turn', 'lev']), nm = { margin: 'profit margin', turn: 'asset turnover', lev: 'leverage' };
+    const top = [...at].sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
+    story = `ROE ${d1.roe >= d0.roe ? 'rose' : 'fell'} from ${fr(d0.roe, '%')} to ${fr(d1.roe, '%')}. The biggest driver was ${nm[top.k]} (${top.d >= 0 ? '+' : '−'}${Math.abs(top.d * 100).toFixed(1)} points).`;
+  }
+  const B = bench(cur, C).filter(b => b.pct != null && b.r.dir);
+  const best = [...B].sort((a, b) => b.pct - a.pct).slice(0, 3), worst = [...B].sort((a, b) => a.pct - b.pct).slice(0, 3);
+  return `<div class="stack">
+    <section class="panel"><div class="panel-head"><h2>Ratio health — ${esc(cur.years[ay].label)}</h2><span class="small muted">Against general thresholds; see Ratios for each one</span></div><div class="health">${cells}</div></section>
+    <div class="grid2">
+      <section class="panel"><div class="panel-head"><h2>Things to look at</h2><span class="small muted">Early-warning signals, covenant breaches and weak ratios</span></div>
+        ${flags.length || covs.length || weak.length ? `<ul class="flags">
+          ${covs.map(x => `<li><span class="chip bad">Breach</span><span>Covenant: ${esc(RBY[x.c.rid].n)} ${fr(C.vals[x.c.rid][ay], RBY[x.c.rid].u)} vs limit ${x.c.op === '<=' ? '≤' : '≥'} ${x.c.lim}</span></li>`).join('')}
+          ${flags.map(f => `<li><span class="chip ${f.sev === 'serious' ? 'bad' : 'warn'}">${f.sev === 'serious' ? 'Serious' : 'Watch'}</span><span>${esc(f.t)}</span></li>`).join('')}
+          ${weak.filter(r => !flags.some(f => f.t.includes(r.n))).slice(0, 6).map(r => `<li><span class="chip bad">Weak</span><span>${esc(r.n)} ${fr(C.vals[r.id][ay], r.u)}</span></li>`).join('')}
+        </ul>` : '<p class="note">Nothing flagged for this year.</p>'}</section>
+      <section class="panel"><div class="panel-head"><h2>Where the company stands</h2></div>
+        ${story ? `<p class="note" style="color:var(--ink);font-size:13.5px">${esc(story)}</p>` : ''}
+        ${B.length ? `<div class="dt"><div class="strong">Best against peers</div><div class="num small muted">percentile</div>
+          ${best.map(b => `<div>${esc(b.r.n)} <span class="muted small">${fr(b.client, b.r.u)} vs median ${fr(b.med, b.r.u)}</span></div><div class="num">${Math.round(b.pct * 100)}</div>`).join('')}
+          <div class="strong">Weakest against peers</div><div></div>
+          ${worst.map(b => `<div>${esc(b.r.n)} <span class="muted small">${fr(b.client, b.r.u)} vs median ${fr(b.med, b.r.u)}</span></div><div class="num">${Math.round(b.pct * 100)}</div>`).join('')}</div>`
+          : '<p class="note">Add at least three peers on the Peers tab to see percentiles.</p>'}
+      </section>
+    </div></div>`;
+}
+
+// ---------------------------------------------------------------- financials
+function viewFin(C) {
+  const issues = C.issues.length ? `<ul class="issues">${C.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+  let sec = '', rows = '';
+  const calcRow = (l, f, cls = 'calc') => `<tr class="${cls}"><td>${l}</td>${C.Ms.map(M => `<td class="num">${fa(f(M))}</td>`).join('')}</tr>`;
+  FIELDS.forEach(([s, k, l]) => {
+    if (s !== sec) {
+      if (sec === 'pl') rows += calcRow('EBITDA', M => M.ebitda) + calcRow('Profit before tax', M => M.pbt) + calcRow('Profit after tax', M => M.pat, 'sum');
+      if (sec === 'el') rows += calcRow('Total equity and liabilities', M => M.tel, 'sum');
+      if (sec === 'as') rows += calcRow('Total assets', M => M.ta, 'sum') + calcRow('Difference (should be nil)', M => M.ta - M.tel);
+      sec = s; rows += `<tr class="sec"><td colspan="${cur.years.length + 1}">${SECTIONS[s]}</td></tr>`;
+    }
+    rows += `<tr><td class="${k === 'intTL' ? 'ind' : ''}">${esc(l)}</td>${cur.years.map((y, i) => `<td class="num"><input class="num" type="number" step="0.01" id="v-${i}-${k}" data-y="${i}" data-k="${k}" value="${y.v[k] ?? ''}" aria-label="${esc(l)}, ${esc(y.label)}"></td>`).join('')}</tr>`;
+  });
+  const head = cur.years.map((y, i) => `<th class="num"><div class="yh">
+      <input id="yl-${i}" data-yl="${i}" value="${esc(y.label)}" aria-label="Year label">
+      <select id="yt-${i}" data-yt="${i}" aria-label="Year type">${TYPES.map(t => `<option${t === y.type ? ' selected' : ''}>${t}</option>`).join('')}</select>
+      ${cur.years.length > 2 ? (rmYear === i ? `<button type="button" class="danger" data-rmy="${i}">Confirm remove</button>` : `<button type="button" class="link" data-rmy="${i}">Remove</button>`) : ''}</div></th>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Financial statements</h2><span class="small muted">₹ lakh. Two or three audited years, then estimates and projections for the bank's CMA.</span></div>
+    ${issues}
+    <div class="extras"><button type="button" id="add-year">Add year</button><button type="button" data-act="upload">Upload from Excel</button></div>
+    <div class="scroll"><table><thead><tr><th>Line item</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note">EBITDA excludes other income. EBIT = profit before tax + finance costs, so it includes other income. Current liabilities include short-term bank borrowings and current maturities of term loans, as banks measure them. Leave the share price blank for an unlisted company.</p></section>`;
+}
+
+// ---------------------------------------------------------------- ratios
+function viewRatios(C) {
+  const ay = cur.ay;
+  const body = GROUPS.map(g => `<tr class="sec"><td colspan="${cur.years.length + 3}">${esc(g)}</td></tr>` + RATIOS.filter(r => r.g === g).map(r => {
+    const vs = C.vals[r.id], gr = grade(r, vs[ay]);
+    return `<tr><td><strong style="font-weight:500">${esc(r.n)}</strong><div class="fx">${esc(r.fx)}</div></td>
+      ${vs.map((v, i) => { const gg = grade(r, v); return `<td class="num ${gg ? gg[0] : ''}"${gg ? ` title="${GL[gg]}"` : ''}>${fr(v, r.u)}</td>`; }).join('')}
+      <td>${spark(vs)}</td><td>${gr ? `<span class="chip ${gr}">${GL[gr]}</span>` : `<span class="small muted">${r.rag ? '' : 'No fixed benchmark'}</span>`}</td></tr>`;
+  }).join('')).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Ratio library — ${RATIOS.length} ratios</h2><span class="small muted">Shaded cells: green strong, amber watch, red weak. Grade shown for ${esc(cur.years[ay].label)}.</span></div>
+    <div class="scroll"><table><thead><tr><th>Ratio</th>${yrHead()}<th>Trend</th><th>Grade</th></tr></thead><tbody>${body}</tbody></table></div>
+    <p class="note">Return and turnover ratios use the average of opening and closing balances (closing only for the first year). Thresholds are general rules of thumb for a mid-sized Indian manufacturer and banks' usual comfort levels; peers on the Peers tab are a better yardstick for your industry.</p></section>`;
+}
+
+// ---------------------------------------------------------------- DuPont
+function viewDupont(C) {
+  const D = C.dup, ay = cur.ay, prev = ay ? ay - 1 : null;
+  const r3 = [['PAT margin', 'margin', '%', 'PAT ÷ revenue'], ['Asset turnover', 'turn', 'x', 'Revenue ÷ average total assets'], ['Equity multiplier', 'lev', 'x', 'Average total assets ÷ average net worth'], ['ROE', 'roe', '%', 'Product of the three']];
+  const r5 = [['Tax burden', 'taxB', '%', 'PAT ÷ PBT'], ['Interest burden', 'intB', '%', 'PBT ÷ EBIT'], ['EBIT margin', 'ebitM', '%', 'EBIT ÷ revenue'], ['Asset turnover', 'turn', 'x', 'Revenue ÷ average total assets'], ['Equity multiplier', 'lev', 'x', 'Average total assets ÷ average net worth'], ['ROE', 'roe', '%', 'Product of the five']];
+  const tbl = rs => `<div class="scroll"><table><thead><tr><th>Factor</th>${yrHead()}</tr></thead><tbody>${rs.map(([n, k, u, fx]) => `<tr class="${k === 'roe' ? 'sum' : ''}"><td>${n}<div class="fx">${fx}</div></td>${D.map(d => `<td class="num">${fr(d[k], u)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  let attr = '<p class="note">Pick an analysis year after the first year to see what changed.</p>';
+  if (prev != null) {
+    const a = D[prev], b = D[ay], ok = k => [a, b].every(d => d[k] != null && d[k] > 0);
+    if (['margin', 'turn', 'lev'].every(ok)) {
+      const at = attribute(a, b, ['margin', 'turn', 'lev']), nm = { margin: 'Profit margin', turn: 'Asset turnover', lev: 'Leverage' };
+      const mx = Math.max(0.0001, ...at.map(x => Math.abs(x.d)));
+      attr = `<div class="verdict"><span class="small muted">${esc(cur.years[prev].label)} → ${esc(cur.years[ay].label)}</span><span class="big">${fr(a.roe, '%')} → ${fr(b.roe, '%')}</span>
+        <span class="small">${b.roe >= a.roe ? 'Up' : 'Down'} ${Math.abs((b.roe - a.roe) * 100).toFixed(2)} percentage points</span></div>
+        <div class="ff">${at.map(x => `<div class="ff-row" data-tip="${nm[x.k]}: ${x.d >= 0 ? '+' : '−'}${Math.abs(x.d * 100).toFixed(2)} points of ROE"><span>${nm[x.k]}<span class="small muted" style="display:block">${fr(a[x.k], x.k === 'margin' ? '%' : 'x')} → ${fr(b[x.k], x.k === 'margin' ? '%' : 'x')}</span></span>
+          <span class="ff-track"><span class="ff-mid" style="left:50%;background:var(--line)"></span><span class="ff-bar" style="left:${x.d >= 0 ? 50 : 50 - Math.abs(x.d) / mx * 50}%;width:${Math.max(0.5, Math.abs(x.d) / mx * 50)}%;background:${x.d >= 0 ? 'var(--s3)' : 'var(--s2)'}"></span></span>
+          <span class="ff-val">${x.d >= 0 ? '+' : '−'}${Math.abs(x.d * 100).toFixed(2)} pts</span></div>`).join('')}</div>
+        <p class="note">Each factor is changed one at a time in the order shown, so the three pieces add up exactly to the change in ROE.</p>`;
+    } else attr = '<p class="note">The split needs positive profit, assets and net worth in both years.</p>';
+  }
+  return `<div class="stack"><div class="grid2">
+    <section class="panel"><div class="panel-head"><h2>Three-step DuPont</h2><span class="small muted">ROE = margin × turnover × leverage</span></div>${tbl(r3)}</section>
+    <section class="panel"><div class="panel-head"><h2>What moved ROE</h2></div>
+      <div class="legend"><span><i class="bar" style="background:var(--s3)"></i>Added to ROE</span><span><i class="bar" style="background:var(--s2)"></i>Took away from ROE</span></div>${attr}</section></div>
+    <section class="panel"><div class="panel-head"><h2>Five-step DuPont</h2><span class="small muted">Splits margin into tax, interest and operating effects</span></div>${tbl(r5)}
+      <p class="note">A tax burden of 75% means a quarter of pre-tax profit goes in tax. An interest burden of 80% means interest takes a fifth of EBIT. Higher leverage lifts ROE but also lifts risk; check it against DSCR and net debt on the Credit tab.</p></section></div>`;
+}
+
+// ---------------------------------------------------------------- peers
+function viewPeers(C) {
+  const B = bench(cur, C), shown = B.filter(b => b.n >= 3);
+  const strips = shown.map(b => {
+    const all = b.peers.map(p => p.v).concat(b.client != null ? [b.client] : []), lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * 0.06 || Math.abs(hi) * 0.1 || 1;
+    const sx = v => ((v - (lo - pad)) / ((hi + pad) - (lo - pad)) * 100).toFixed(2);
+    const q = quart(b), qc = quartCls(b);
+    return `<tr><td><strong style="font-weight:500">${esc(b.r.n)}</strong><div class="fx">${b.r.dir > 0 ? 'Higher is better' : b.r.dir < 0 ? 'Lower is better' : 'Neither higher nor lower is better'}</div></td>
+      <td class="num">${fr(b.client, b.r.u)}</td><td class="num">${fr(b.med, b.r.u)}</td><td class="num small">${fr(b.q1, b.r.u)} – ${fr(b.q3, b.r.u)}</td>
+      <td style="min-width:220px"><div class="strip"><span class="rail"></span>
+        ${b.peers.map(p => `<span class="pd" style="left:${sx(p.v)}%" data-tip="${esc(p.name)}: ${fr(p.v, b.r.u)}"></span>`).join('')}
+        <span class="md" style="left:${sx(b.med)}%" data-tip="Peer median: ${fr(b.med, b.r.u)}"></span>
+        ${b.client != null ? `<span class="cl" style="left:${sx(b.client)}%" data-tip="${esc(cur.name)}: ${fr(b.client, b.r.u)}"></span>` : ''}</div></td>
+      <td class="num">${b.pct == null ? '–' : Math.round(b.pct * 100)}</td><td>${q ? `<span class="chip ${qc}">${q}</span>` : ''}</td></tr>`;
+  }).join('');
+  const L = cur.peers.length;
+  const grid = `<div class="scroll"><table><thead><tr>${PEER_FIELDS.map(([k, n]) => `<th class="${k === 'name' ? '' : 'num'}">${n}</th>`).join('')}<th></th></tr></thead>
+    <tbody>${cur.peers.map((p, j) => `<tr>${PEER_FIELDS.map(([k, n]) => k === 'name'
+      ? `<td><input class="name" id="p-${j}-name" data-p="${j}" data-pk="name" value="${esc(p.name)}" aria-label="Peer name"></td>`
+      : `<td class="num"><input class="num" type="number" step="0.01" id="p-${j}-${k}" data-p="${j}" data-pk="${k}" value="${p[k] ?? ''}" aria-label="${n}, ${esc(p.name)}"></td>`).join('')}
+      <td>${rmPeer === j ? `<button type="button" class="danger" data-rmp="${j}">Confirm</button>` : `<button type="button" class="link" data-rmp="${j}">Remove</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="stack">
+    <section class="panel"><div class="panel-head"><h2>Benchmark — ${esc(cur.years[cur.ay].label)} vs ${L} peer${L === 1 ? '' : 's'} (${esc(cur.peerYear || 'peer year')})</h2><span class="small muted">Percentile = share of peers the company beats</span></div>
+      ${shown.length ? `<div class="legend"><span><i style="background:var(--peer)"></i>Peer</span><span><i class="tick" style="background:var(--ink)"></i>Peer median</span><span><i class="dia" style="background:var(--brass)"></i>${esc(cur.name)}</span></div>
+      <div class="scroll"><table><thead><tr><th>Ratio</th><th class="num">Company</th><th class="num">Peer median</th><th class="num">Middle half of peers</th><th>Spread</th><th class="num">Percentile</th><th>Position</th></tr></thead><tbody>${strips}</tbody></table></div>`
+      : '<p class="note">Add at least three peers below to benchmark. Five to ten listed companies of similar size and business work best.</p>'}
+      <p class="note">Both sides use year-end balances here (peers usually publish one year), so a few figures differ slightly from the Ratios tab. DSCR, FACR and per-share ratios need data peers don't publish in this form, so they are left out.</p></section>
+    <section class="panel"><div class="panel-head"><h2>Peer figures (₹ lakh)</h2><span class="small muted">From annual reports or exchange filings of listed peers</span></div>
+      <div class="extras"><button type="button" id="add-peer">Add peer</button><button type="button" id="peer-tpl">Download peer template</button><button type="button" id="peer-up">Upload peers</button></div>
+      ${L ? grid : '<p class="note">No peers yet.</p>'}</section></div>`;
+}
+
+// ---------------------------------------------------------------- credit and CMA
+function viewCredit(C) {
+  const ay = cur.ay, M = C.Ms[ay], cr = cur.credit, dp = drawingPower(cur, M), [sma, smaC] = smaOf(cr.dpd);
+  const ropts = sel => RATIOS.filter(r => r.dir).map(r => `<option value="${r.id}"${r.id === sel ? ' selected' : ''}>${esc(r.n)}</option>`).join('');
+  const covRows = cur.covenants.map((c, j) => {
+    const r = RBY[c.rid];
+    return `<tr><td><select id="cv-r-${j}" data-cv="${j}" data-f="rid" aria-label="Covenant ratio">${ropts(c.rid)}</select></td>
+      <td><select id="cv-o-${j}" data-cv="${j}" data-f="op" aria-label="Condition" style="width:70px"><option value="<="${c.op === '<=' ? ' selected' : ''}>≤</option><option value=">="${c.op === '>=' ? ' selected' : ''}>≥</option></select></td>
+      <td class="num"><input class="num" style="width:80px" type="number" step="0.01" id="cv-l-${j}" data-cv="${j}" data-f="lim" value="${c.lim}" aria-label="Limit"></td>
+      ${cur.years.map((y, i) => { const v = C.vals[c.rid][i], st = covStatus(c, v);
+        return `<td class="num ${st.s === 'breach' ? 'b' : st.s === 'tight' ? 'w' : st.s === 'ok' ? 'g' : ''}" title="${st.s === 'na' ? 'No value' : st.s === 'breach' ? 'Breach' : 'Headroom ' + fr(st.head, '%')}">${fr(v, r.u)}${st.s === 'breach' ? ' ✕' : ''}</td>`; }).join('')}
+      <td>${(() => { const st = covStatus(c, C.vals[c.rid][ay]); return st.s === 'na' ? '' : `<span class="chip ${st.s === 'breach' ? 'bad' : st.s === 'tight' ? 'warn' : 'good'}">${st.s === 'breach' ? 'Breach' : st.s === 'tight' ? 'Tight' : 'OK'}</span>`; })()}</td>
+      <td><button type="button" class="link" data-rmcv="${j}">Remove</button></td></tr>`;
+  }).join('');
+  const dscrRows = [['Profit after tax', M => M.pat], ['Add: depreciation', M => M.dep], ['Add: interest on term loans', M => M.intTL], ['Cash available for debt service', M => M.pat + M.dep + M.intTL, 'sum'],
+    ['Interest on term loans', M => M.intTL], ['Principal repaid', M => M.repay], ['Debt service due', M => M.intTL + M.repay, 'sum']];
+  const dsVals = C.vals.dscr.filter(v => v != null), avgDscr = dsVals.length ? C.Ms.reduce((s, M) => s + M.pat + M.dep + M.intTL, 0) / pos(C.Ms.reduce((s, M) => s + M.intTL + M.repay, 0)) : null;
+  const ewsRows = cur.years.map((y, i) => ({ y, f: ews(cur, C, i) }));
+  const inp = (k, label, pct, extra = '') => `<label for="cr-${k}">${label}<input id="cr-${k}" data-cr="${k}" ${pct ? 'data-pct="1"' : ''} type="number" step="${pct ? '0.1' : '0.01'}" value="${pct ? pctIn(+cr[k]) : cr[k]}" ${extra}></label>`;
+  return `<div class="stack">
+    <section class="panel"><div class="panel-head"><h2>Bank covenants</h2><span class="small muted">Shaded by year: green OK, amber within 10% of the limit, red breach</span></div>
+      <div class="scroll"><table><thead><tr><th>Covenant</th><th>Test</th><th class="num">Limit</th>${yrHead()}<th>${esc(cur.years[ay].label)}</th><th></th></tr></thead><tbody>${covRows}</tbody></table></div>
+      <div class="extras"><button type="button" id="add-cov">Add covenant</button></div>
+      <p class="note">Take limits from the sanction letter. Estimated and projected years show whether the plan stays inside them.</p></section>
+    <div class="grid2">
+      <section class="panel"><div class="panel-head"><h2>Debt service coverage</h2><span class="small muted">Average DSCR over the years shown: <strong>${fr(avgDscr, 'x')}</strong></span></div>
+        <div class="scroll"><table><thead><tr><th>₹ lakh</th>${yrHead()}</tr></thead><tbody>
+          ${dscrRows.map(([l, f, c]) => `<tr class="${c || ''}"><td>${l}</td>${C.Ms.map(M => `<td class="num">${fa(f(M))}</td>`).join('')}</tr>`).join('')}
+          <tr class="sum"><td>DSCR</td>${C.vals.dscr.map(v => { const g = grade(RBY.dscr, v); return `<td class="num ${g ? g[0] : ''}">${fr(v, 'x')}</td>`; }).join('')}</tr></tbody></table></div>
+        <p class="note">Banks usually look for an average DSCR of 1.5 and no year below 1.2 over the loan's life.</p></section>
+      <section class="panel"><div class="panel-head"><h2>Drawing power and account status</h2><span class="small muted">${esc(cur.years[ay].label)} stock and book debts</span></div>
+        <div class="form"><div class="row">${inp('invMargin', 'Margin on stock %', 1)}${inp('recMargin', 'Margin on receivables %', 1)}${inp('recEligible', 'Receivables under 90 days %', 1)}
+          <label for="cr-deductTp">Deduct trade payables from stock<select id="cr-deductTp" data-crs="deductTp"><option${cr.deductTp === 'Yes' ? ' selected' : ''}>Yes</option><option${cr.deductTp === 'No' ? ' selected' : ''}>No</option></select></label>
+          ${inp('limit', 'Sanctioned working capital limit (₹ lakh)')}${inp('dpd', 'Days past due on the account', 0, 'min="0" step="1"')}</div></div>
+        <div class="dt">
+          <div>Inventory${cr.deductTp === 'Yes' ? ' less trade payables' : ''}</div><div class="num">${fa(dp.stockNet)}</div>
+          <div class="ind">Drawing power on stock after ${fr(cr.invMargin, '%')} margin</div><div class="num">${fa(dp.dpStock)}</div>
+          <div>Eligible receivables (${fr(cr.recEligible, '%')} of ${fa(M.rec)})</div><div class="num">${fa(dp.elig)}</div>
+          <div class="ind">Drawing power on receivables after ${fr(cr.recMargin, '%')} margin</div><div class="num">${fa(dp.dpRec)}</div>
+          <div class="strong">Drawing power</div><div class="num strong">${fa(dp.dp)}</div>
+          <div>Available (lower of drawing power and limit)</div><div class="num">${fa(dp.avail)}</div>
+          <div>Short-term bank borrowings outstanding</div><div class="num">${fa(dp.used)}</div>
+          <div class="strong">${dp.head >= 0 ? 'Headroom' : 'Over-drawn'}</div><div class="num strong" style="color:var(--${dp.head >= 0 ? 'good' : 'bad'})">${fa(Math.abs(dp.head))}</div>
+          <div class="strong">Account status (RBI SMA framework)</div><div><span class="chip ${smaC}">${sma}</span></div>
+        </div></section>
+    </div>
+    <section class="panel"><div class="panel-head"><h2>Early-warning signals</h2><span class="small muted">Checked for every year; the analysis year also checks drawing power and overdues</span></div>
+      <div class="scroll"><table><thead><tr><th>Year</th><th class="num">Serious</th><th class="num">Watch</th><th>Signals</th></tr></thead><tbody>
+        ${ewsRows.map(({ y, f }) => `<tr><td>${esc(y.label)} <span class="chip${y.type === 'Projected' || y.type === 'Estimated' ? ' proj' : ''}">${y.type}</span></td><td class="num">${f.filter(x => x.sev === 'serious').length || '–'}</td><td class="num">${f.filter(x => x.sev === 'watch').length || '–'}</td>
+          <td>${f.length ? f.map(x => `<div class="small"><span class="chip ${x.sev === 'serious' ? 'bad' : 'warn'}">${x.sev === 'serious' ? 'Serious' : 'Watch'}</span> ${esc(x.t)}</div>`).join('') : '<span class="small muted">None</span>'}</td></tr>`).join('')}
+      </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h2>CMA data</h2><span class="small muted">Credit Monitoring Arrangement forms for the bank, ₹ lakh</span></div>
+      <div class="subtabs">${[['II', 'Form II · Operating statement'], ['III', 'Form III · Balance sheet analysis'], ['IV', 'Form IV · Current assets and liabilities'], ['V', 'Form V · MPBF'], ['VI', 'Form VI · Fund flow']]
+        .map(([k, l]) => `<button type="button" data-cma="${k}" aria-pressed="${cmaForm === k}">${l}</button>`).join('')}</div>
+      <div class="scroll"><table><thead><tr><th>Particulars</th>${yrHead()}</tr></thead><tbody>${cmaRows(C, cmaForm).map(r => r.sec ? `<tr class="sec"><td colspan="${cur.years.length + 1}">${esc(r.sec)}</td></tr>`
+        : `<tr class="${r.c || ''}"><td class="${r.ind ? 'ind' : ''}">${esc(r.l)}</td>${r.v.map(v => `<td class="num">${r.u ? fr(v, r.u) : fa(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="note">${{ II: 'Form I (party details and existing limits) is filled from the company records and is not generated here.', III: 'Tangible net worth excludes intangible assets. Current liabilities include bank borrowings, as in the bank\'s format.', IV: 'Holding levels in months: inventory on materials cost, receivables on sales, creditors on materials cost. Banks compare these with the levels they accepted at the last review.', V: 'Second method of lending (Tandon Committee): the borrower funds at least 25% of total current assets from long-term sources. The turnover method (Nayak Committee) suits limits up to ₹5 crore: working capital at 25% of turnover, of which the bank funds 20% and the borrower 5%.', VI: 'Long-term sources less long-term uses equals the change in net working capital; the check row should be nil.' }[cmaForm]}</p></section></div>`;
+}
+function cmaRows(C, f) {
+  const Ms = C.Ms, row = (l, fn, c, u) => ({ l, v: Ms.map((M, i) => fin(fn(M, i ? Ms[i - 1] : null, i))), c, u }), sec = s => ({ sec: s }), ind = r => Object.assign(r, { ind: true });
+  if (f === 'II') return [
+    row('Gross sales / revenue from operations', M => M.rev), row('Rise in sales over last year', (M, P) => P ? M.rev / pos(P.rev) - 1 : NaN, 'calc', '%'),
+    sec('Cost of sales'), ind(row('Raw materials consumed', M => M.mat)), ind(row('Employee costs', M => M.emp)), ind(row('Other manufacturing and admin expenses', M => M.oth)), ind(row('Depreciation', M => M.dep)),
+    row('Cost of sales', M => M.mat + M.emp + M.oth + M.dep, 'sum'), row('Operating profit before interest', M => M.rev - M.mat - M.emp - M.oth - M.dep, 'sum'),
+    row('Interest', M => M.int), row('Operating profit after interest', M => M.rev - M.mat - M.emp - M.oth - M.dep - M.int, 'sum'), row('Add: other non-operating income', M => M.oi),
+    row('Profit before tax', M => M.pbt, 'sum'), row('Provision for taxes', M => M.tax), row('Net profit after tax', M => M.pat, 'sum'), row('Dividend paid', M => M.div),
+    row('Retained profit', M => M.pat - M.div, 'sum'), row('Net profit to net sales', M => M.pat / pos(M.rev), 'calc', '%')];
+  if (f === 'III') return [
+    sec('Current liabilities'), ind(row('Short-term borrowings from banks (CC / OD / WCDL)', M => M.stb)), row('Sub-total (A)', M => M.stb, 'sum'),
+    ind(row('Sundry creditors (trade)', M => M.tp)), ind(row('Instalments of term loans due within one year', M => M.cmltd)), ind(row('Other current liabilities and provisions', M => M.ocl)),
+    row('Sub-total (B)', M => M.tp + M.cmltd + M.ocl, 'sum'), row('Total current liabilities (A + B)', M => M.cl, 'sum'),
+    sec('Term liabilities'), ind(row('Term loans (excluding instalments due in one year)', M => M.ltb)), ind(row('Other term liabilities', M => M.oncl)), row('Total term liabilities', M => M.ltb + M.oncl, 'sum'),
+    row('Total outside liabilities (TOL)', M => M.cl + M.ltb + M.oncl, 'sum'),
+    sec('Net worth'), ind(row('Share capital', M => M.sc)), ind(row('Reserves and surplus', M => M.res)), row('Net worth', M => M.eq, 'sum'), row('Total liabilities', M => M.tel, 'sum'),
+    sec('Assets'), ind(row('Inventories', M => M.invy)), ind(row('Receivables', M => M.rec)), ind(row('Cash and bank balances', M => M.cash)), ind(row('Other current assets', M => M.oca)),
+    row('Total current assets', M => M.ca, 'sum'), ind(row('Net block (incl. CWIP)', M => M.nfa)), ind(row('Non-current investments', M => M.invnc)), ind(row('Other non-current assets', M => M.onca)),
+    ind(row('Intangible assets', M => M.intang)), row('Total assets', M => M.ta, 'sum'),
+    row('Tangible net worth', M => M.eq - M.intang, 'sum'), row('Net working capital', M => M.ca - M.cl), row('Current ratio', M => M.ca / pos(M.cl), 'calc', 'x'),
+    row('TOL / TNW', M => (M.ta - M.eq) / pos(M.eq - M.intang), 'calc', 'x')];
+  if (f === 'IV') return [
+    sec('Current assets'), row('Raw materials and stock (inventory)', M => M.invy), ind(row('Months of materials cost', M => M.invy / pos(M.mat) * 12, 'calc', 'x')),
+    row('Receivables (domestic)', M => M.rec), ind(row('Months of sales', M => M.rec / pos(M.rev) * 12, 'calc', 'x')), row('Other current assets incl. cash', M => M.cash + M.oca),
+    row('Total current assets', M => M.ca, 'sum'),
+    sec('Current liabilities other than bank borrowings'), row('Creditors for purchases', M => M.tp), ind(row('Months of materials cost', M => M.tp / pos(M.mat) * 12, 'calc', 'x')),
+    row('Instalments of term loans due in one year', M => M.cmltd), row('Other current liabilities and provisions', M => M.ocl), row('Total (excluding bank borrowings)', M => M.cl - M.stb, 'sum')];
+  if (f === 'V') return [
+    row('1. Total current assets', M => mpbf(M).tca), row('2. Other current liabilities (other than bank borrowings)', M => mpbf(M).ocl), row('3. Working capital gap (1 − 2)', M => mpbf(M).wcg, 'sum'),
+    row('4. Minimum stipulated net working capital (25% of 1)', M => mpbf(M).minNwc), row('5. Actual / projected net working capital', M => mpbf(M).nwc),
+    row('6. Item 3 − item 4', M => mpbf(M).a), row('7. Item 3 − item 5', M => mpbf(M).b), row('8. Maximum permissible bank finance (lower of 6 and 7)', M => mpbf(M).m, 'sum'),
+    row('9. Shortfall in net working capital (4 − 5, if positive)', M => mpbf(M).short), row('Bank borrowings actually used', M => M.stb), row('Excess of borrowings over MPBF', M => mpbf(M).excess),
+    sec('Turnover method (Nayak Committee)'), row('Working capital requirement (25% of turnover)', M => mpbf(M).wcReq), row('Bank finance (20% of turnover)', M => mpbf(M).turnover, 'sum'), row('Borrower\'s margin (5% of turnover)', M => mpbf(M).margin)];
+  // VI fund flow
+  const d = (k) => (M, P) => P ? M[k] - P[k] : NaN;
+  return [
+    sec('Long-term sources'), ind(row('Net profit after tax', (M, P) => P ? M.pat : NaN)), ind(row('Depreciation', (M, P) => P ? M.dep : NaN)),
+    ind(row('Increase in capital / other equity (excl. profit)', (M, P) => P ? Math.max(0, M.eq - P.eq - M.pat + M.div) : NaN)), ind(row('Increase in term loans', (M, P) => P ? Math.max(0, M.ltb - P.ltb) : NaN)),
+    ind(row('Increase in other term liabilities', (M, P) => P ? Math.max(0, M.oncl - P.oncl) : NaN)),
+    row('Total long-term sources', (M, P) => P ? M.pat + M.dep + Math.max(0, M.eq - P.eq - M.pat + M.div) + Math.max(0, M.ltb - P.ltb) + Math.max(0, M.oncl - P.oncl) : NaN, 'sum'),
+    sec('Long-term uses'), ind(row('Gross capital expenditure (change in net block + depreciation)', (M, P) => P ? M.nfa - P.nfa + M.dep : NaN)),
+    ind(row('Increase in intangibles, investments and other non-current assets', (M, P) => P ? (M.intang - P.intang) + (M.invnc - P.invnc) + (M.onca - P.onca) : NaN)),
+    ind(row('Decrease in capital / other equity (excl. profit)', (M, P) => P ? Math.max(0, -(M.eq - P.eq - M.pat + M.div)) : NaN)), ind(row('Decrease in term loans', (M, P) => P ? Math.max(0, P.ltb - M.ltb) : NaN)),
+    ind(row('Decrease in other term liabilities', (M, P) => P ? Math.max(0, P.oncl - M.oncl) : NaN)), ind(row('Dividend paid', (M, P) => P ? M.div : NaN)),
+    row('Total long-term uses', (M, P) => P ? (M.nfa - P.nfa + M.dep) + (M.intang - P.intang) + (M.invnc - P.invnc) + (M.onca - P.onca) + Math.max(0, -(M.eq - P.eq - M.pat + M.div)) + Math.max(0, P.ltb - M.ltb) + Math.max(0, P.oncl - M.oncl) + M.div : NaN, 'sum'),
+    row('Long-term surplus / (deficit)', (M, P) => P ? (M.eq - P.eq) + (M.ltb - P.ltb) + (M.oncl - P.oncl) - (M.nca - P.nca) : NaN, 'sum'),
+    sec('Short-term'), ind(row('Increase in current assets', d('ca'))), ind(row('Increase in current liabilities (excl. bank borrowings)', (M, P) => P ? (M.cl - M.stb) - (P.cl - P.stb) : NaN)),
+    ind(row('Increase in bank borrowings', d('stb'))), row('Increase / (decrease) in net working capital', (M, P) => P ? (M.ca - M.cl) - (P.ca - P.cl) : NaN, 'sum'),
+    row('Check: surplus − change in NWC (should be nil)', (M, P) => P ? ((M.eq - P.eq) + (M.ltb - P.ltb) + (M.oncl - P.oncl) - (M.nca - P.nca)) - ((M.ca - M.cl) - (P.ca - P.cl)) : NaN, 'calc')];
+}
+
+// ---------------------------------------------------------------- valuation
+function viewValue(C) {
+  const v = cur.val, F = fairValue(cur, C), D = F.D, B = C.Ms[cur.ay], base = cur.years[cur.ay];
+  const pin = (k, l, step = '0.1') => `<label for="va-${k}">${l}<input id="va-${k}" data-va="${k}" data-pct="1" type="number" step="${step}" value="${pctIn(+v[k])}"></label>`;
+  const nin = (k, l, step = '0.01') => `<label for="va-${k}">${l}<input id="va-${k}" data-va="${k}" type="number" step="${step}" value="${v[k]}"></label>`;
+  const yrs = D.rows.map(r => fyAdd(base.label, r.t));
+  const dRows = [['Revenue', 'rev'], ['EBITDA', 'ebitda'], ['Less: depreciation', 'dep'], ['EBIT', 'ebit'], ['NOPAT (EBIT × (1 − tax))', 'nopat'], ['Add: depreciation', 'dep'], ['Less: capex', 'capex'], ['Less: increase in working capital', 'dN'], ['Unlevered free cash flow', 'fcf', 'sum'], ['Discount factor', 'df', 'calc'], ['Present value', 'pv', 'sum']];
+  const ws = [-0.01, -0.005, 0, 0.005, 0.01], gs = [-0.01, -0.005, 0, 0.005, 0.01];
+  const grid = ws.map(dw => gs.map(dg => dcf(cur, C, D.w + dw, D.g + dg).ps));
+  const flat = grid.flat().filter(Number.isFinite), gmin = Math.min(...flat), gmax = Math.max(...flat);
+  const shade = x => !Number.isFinite(x) || gmax === gmin ? '' : `background:color-mix(in srgb, var(--s1) ${Math.round(6 + (x - gmin) / (gmax - gmin) * 30)}%, transparent)`;
+  // football field
+  const ok = F.methods.filter(m => m.ok), xs = ok.flatMap(m => [m.lo, m.hi]).concat(Number.isFinite(F.post) ? [F.post] : []);
+  let ff = '<p class="note">Needs shares outstanding and at least DCF or three peers.</p>';
+  if (ok.length && Number.isFinite(B.shares)) {
+    const ticks = niceTicks(Math.min(...xs) * 0.9, Math.max(...xs)), lo = ticks[0], hi = ticks[ticks.length - 1], sx = x => ((x - lo) / (hi - lo) * 100).toFixed(2);
+    ff = `<div class="legend"><span><i class="bar" style="background:var(--s1)"></i>Range</span><span><i class="tick" style="background:var(--ink)"></i>Mid point</span><span><i class="tick" style="background:var(--brass)"></i>Fair value after discount ₹${nf2.format(F.post)}</span></div>
+      <div class="ff">${ok.map(m => `<div class="ff-row" data-tip="${esc(m.n)}: ₹${nf2.format(m.lo)} – ₹${nf2.format(m.hi)}, mid ₹${nf2.format(m.mid)}"><span>${esc(m.n)}<span class="small muted" style="display:block">weight ${fr(+v.w[m.k] || 0, '%')}</span></span>
+        <span class="ff-track"><span class="ff-bar" style="left:${sx(Math.min(m.lo, m.hi))}%;width:${Math.max(0.6, Math.abs(m.hi - m.lo) / (hi - lo) * 100)}%"></span><span class="ff-mid" style="left:${sx(m.mid)}%"></span>${Number.isFinite(F.post) ? `<span class="ff-fv" style="left:${sx(F.post)}%"></span>` : ''}</span>
+        <span class="ff-val">₹${nf0.format(m.lo)} – ${nf0.format(m.hi)}</span></div>`).join('')}
+        <div class="ff-row"><span></span><span class="ff-axis">${ticks.map(t => `<span style="left:${sx(t)}%">₹${nf0.format(t)}</span>`).join('')}</span><span></span></div></div>`;
+  }
+  return `<div class="stack">
+    <div class="grid2">
+      <section class="panel"><div class="panel-head"><h2>DCF assumptions</h2><span class="small muted">Base year ${esc(base.label)} (the analysis year)</span></div>
+        <div class="form">
+          <p class="subhead">Forecast</p>
+          <div class="scroll"><table><thead><tr><th></th>${yrs.map(y => `<th class="num">${y}</th>`).join('')}</tr></thead><tbody>
+            <tr><td>Revenue growth %</td>${v.growth.map((g, i) => `<td class="num"><input class="num" style="width:76px" id="va-g-${i}" data-vg="${i}" type="number" step="0.1" value="${pctIn(+g)}"></td>`).join('')}</tr>
+            <tr><td>EBITDA margin %</td>${v.margin.map((g, i) => `<td class="num"><input class="num" style="width:76px" id="va-m-${i}" data-vm="${i}" type="number" step="0.1" value="${pctIn(+g)}"></td>`).join('')}</tr></tbody></table></div>
+          <div class="row">${pin('capexPct', 'Capex % of revenue')}${pin('depPct', 'Depreciation % of revenue')}
+            <label for="va-nwcPct">Working capital % of revenue<input id="va-nwcPct" data-va="nwcPct" data-pct="1" data-blank="1" type="number" step="0.1" value="${v.nwcPct === '' ? '' : pctIn(+v.nwcPct)}" placeholder="${pctIn(D.nwcPct)} (base year)"></label>${pin('tax', 'Tax rate %', '0.001')}</div>
+          <p class="subhead">Discount rate (WACC)</p>
+          <div class="row">${pin('rf', 'Risk-free rate % (10-yr G-sec)', '0.01')}${pin('erp', 'Equity risk premium %')}${nin('beta', 'Beta')}${pin('sp', 'Size / company risk premium %')}${pin('kd', 'Pre-tax cost of debt %')}${pin('wd', 'Debt weight in capital %')}${pin('g', 'Terminal growth %')}
+            <label for="va-mid">Mid-year discounting<select id="va-mid" data-vas="mid"><option value="1"${v.mid ? ' selected' : ''}>Yes</option><option value="0"${v.mid ? '' : ' selected'}>No</option></select></label></div>
+          <div class="dt"><div>Cost of equity = ${fr(v.rf, '%')} + ${(+v.beta).toFixed(2)} × ${fr(v.erp, '%')} + ${fr(v.sp, '%')}</div><div class="num">${fr(D.W.ke, '%')}</div>
+            <div>Post-tax cost of debt</div><div class="num">${fr(D.W.kdT, '%')}</div><div class="strong">WACC</div><div class="num strong">${fr(D.w, '%')}</div></div>
+        </div></section>
+      <section class="panel"><div class="panel-head"><h2>DCF value</h2></div>
+        <div class="verdict"><span class="small muted">Equity value ${fcr(D.eqv)} ÷ ${nf2.format(B.shares || 0)} lakh shares</span><span class="big">${Number.isFinite(D.ps) ? '₹' + nf2.format(D.ps) + ' per share' : '–'}</span>
+          <span class="small">Implied EV / EBITDA ${fr(D.impl, 'x')} · terminal value is ${fr(D.tvShare, '%')} of EV</span></div>
+        <div class="dt"><div>Present value of 5-year cash flows</div><div class="num">${fa(D.sumPv)}</div><div>Terminal value (Gordon growth)</div><div class="num">${fa(D.tv)}</div>
+          <div>Present value of terminal value</div><div class="num">${fa(D.pvTv)}</div><div class="strong">Enterprise value</div><div class="num strong">${fa(D.ev)}</div>
+          <div>Less: net debt (borrowings − cash − investments)</div><div class="num">${fa(D.netDebt)}</div><div class="strong">Equity value</div><div class="num strong">${fa(D.eqv)}</div></div>
+        ${D.w <= D.g ? '<p class="note" style="color:var(--bad)">WACC must be above terminal growth.</p>' : ''}
+        <p class="subhead" style="margin:10px 16px 0">Value per share: WACC across, terminal growth down</p>
+        <div class="scroll"><table class="heat"><thead><tr><th>g \\ WACC</th>${ws.map(dw => `<th class="num">${fr(D.w + dw, '%')}</th>`).join('')}</tr></thead>
+          <tbody>${gs.map((dg, gi) => `<tr><td class="num">${fr(D.g + dg, '%')}</td>${ws.map((dw, wi) => { const x = grid[wi][gi]; return `<td class="cell${dw === 0 && dg === 0 ? ' base' : ''}" style="${shade(x)}">${Number.isFinite(x) ? nf0.format(x) : '–'}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div></section>
+    </div>
+    <section class="panel"><div class="panel-head"><h2>Free cash flow forecast (₹ lakh)</h2></div>
+      <div class="scroll"><table><thead><tr><th></th><th class="num">${esc(base.label)}</th>${yrs.map(y => `<th class="num">${y}</th>`).join('')}</tr></thead><tbody>
+        ${dRows.map(([l, k, c]) => `<tr class="${c || ''}"><td>${l}</td><td class="num">${k === 'rev' ? fa(B.rev) : k === 'ebitda' ? fa(B.ebitda) : ''}</td>${D.rows.map(r => `<td class="num">${k === 'df' ? r.df.toFixed(4) : fa(r[k])}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h2>Comparable-company multiples</h2><span class="small muted">From ${cur.peers.length} peers on the Peers tab, applied to ${esc(base.label)}</span></div>
+      <div class="scroll"><table><thead><tr><th>Multiple</th><th class="num">Peers used</th><th class="num">Lower quartile</th><th class="num">Median</th><th class="num">Upper quartile</th><th class="num">Company metric</th><th class="num">Value per share (median)</th><th class="num">Range per share</th></tr></thead><tbody>
+        ${F.Ms.map(m => `<tr><td>${m.n}</td><td class="num">${m.n2}</td>${m.ok ? `<td class="num">${m.q1.toFixed(2)}x</td><td class="num">${m.md.toFixed(2)}x</td><td class="num">${m.q3.toFixed(2)}x</td><td class="num">${fa(m.base)}</td><td class="num">₹${nf2.format(m.mid)}</td><td class="num">₹${nf0.format(m.lo)} – ${nf0.format(m.hi)}</td>` : `<td colspan="6" class="small muted">Needs at least 3 peers with positive values and a positive company figure</td>`}</tr>`).join('')}
+      </tbody></table></div>
+      <p class="note">EV multiples give enterprise value; net debt of ${fa(D.netDebt)} lakh is then deducted. Listed-peer multiples suit a minority stake in a liquid share; the discount below adjusts for an unlisted company.</p></section>
+    <section class="panel"><div class="panel-head"><h2>Fair value</h2><span class="small muted">Weighted across methods</span></div>
+      <div class="grid2" style="gap:0">
+        <div class="form">
+          <div class="row">${F.methods.map(m => `<label for="vw-${m.k}">${m.n} weight %<input id="vw-${m.k}" data-vw="${m.k}" type="number" min="0" max="100" step="5" value="${pctIn(+v.w[m.k] || 0)}"${m.ok ? '' : ' disabled'}></label>`).join('')}</div>
+          <div class="row">${pin('dlom', 'Discount for lack of marketability %', '1')}
+            <label for="va-purpose">Purpose<select id="va-purpose" data-vas="purpose">${['Internal planning', 'Transfer of unquoted shares — income-tax FMV', 'Share issue — FEMA pricing', 'Preferential allotment — Companies Act s.62', 'Bank / lender review'].map(p => `<option${p === v.purpose ? ' selected' : ''}>${p}</option>`).join('')}</select></label>
+            <label for="va-vdate">Valuation date<input id="va-vdate" data-vas="vdate" type="date" value="${esc(v.vdate)}"></label></div>
+          <div class="verdict" style="margin:0"><span class="small muted">Weighted value ₹${Number.isFinite(F.pre) ? nf2.format(F.pre) : '–'} less ${fr(+v.dlom, '%')} discount</span><span class="big">${Number.isFinite(F.post) ? '₹' + nf2.format(F.post) + ' per share' : '–'}</span>
+            <span class="small">Equity value ${Number.isFinite(F.post) ? fcr(F.post * B.shares) : '–'} for ${nf2.format(B.shares || 0)} lakh shares${Math.abs(F.wsum - 1) > 0.001 && F.wsum > 0 ? ` · weights add to ${fr(F.wsum, '%')}, rescaled to 100%` : ''}</span></div>
+        </div>
+        <div>${ff}</div>
+      </div>
+      <p class="note">${v.purpose.includes('income-tax FMV') ? 'For income tax on a transfer or receipt of unquoted equity shares, fair market value follows the prescribed rules (Rule 11UA under the 1961 Act uses adjusted net asset value for unquoted equity shares; check the matching provisions of the Income-tax Act, 2025 and Rules, 2026). The DCF option applied only to share issues under the angel-tax provision, s.56(2)(viib), which does not apply from AY 2025-26 and is not in the 2025 Act. Use this sheet as a business-value cross-check, not as the income-tax FMV.'
+        : v.purpose.includes('FEMA') ? 'Under FEMA pricing guidelines, shares issued to a person resident outside India cannot be below fair value computed by an internationally accepted method (DCF is common), certified by a chartered accountant, SEBI-registered merchant banker or practising cost accountant.'
+        : v.purpose.includes('62') ? 'A preferential allotment under s.62(1)(c) needs a valuation report from a registered valuer (Rule 13 of the Share Capital and Debentures Rules).'
+        : 'For internal use. Check assumptions against the business plan and current market conditions before relying on the value.'} Figures here are a working estimate, not a signed valuation report.</p></section></div>`;
+}
+
+// ================================================================ bindings
+function bindView() {
+  document.querySelectorAll('[data-act="upload"]').forEach(b => b.addEventListener('click', () => $('upload-dialog').showModal()));
+  document.querySelectorAll('input[data-y]').forEach(el => el.addEventListener('change', () => {
+    const y = cur.years[+el.dataset.y], k = el.dataset.k; y.v[k] = el.value === '' ? (k === 'price' ? '' : 0) : +el.value; changed(); }));
+  document.querySelectorAll('[data-yl]').forEach(el => el.addEventListener('change', () => { cur.years[+el.dataset.yl].label = el.value.trim() || 'Year'; changed(); }));
+  document.querySelectorAll('[data-yt]').forEach(el => el.addEventListener('change', () => { cur.years[+el.dataset.yt].type = el.value; changed(); }));
+  document.querySelectorAll('[data-rmy]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.rmy; if (rmYear !== i) { rmYear = i; render(); return; }
+    cur.years.splice(i, 1); rmYear = null; if (cur.ay >= cur.years.length) cur.ay = cur.years.length - 1; else if (cur.ay > i) cur.ay--; changed(); toast('Year removed'); }));
+  if ($('add-year')) $('add-year').addEventListener('click', () => {
+    const last = cur.years[cur.years.length - 1]; cur.years.push({ label: fyAdd(last.label, 1), type: 'Projected', v: clone(last.v) }); changed(); toast('Year added with last year\'s figures — edit them'); });
+  // peers
+  document.querySelectorAll('[data-p]').forEach(el => el.addEventListener('change', () => {
+    const p = cur.peers[+el.dataset.p], k = el.dataset.pk; p[k] = k === 'name' ? (el.value.trim() || 'Peer') : (el.value === '' ? '' : +el.value); changed(); }));
+  document.querySelectorAll('[data-rmp]').forEach(b => b.addEventListener('click', () => {
+    const j = +b.dataset.rmp; if (rmPeer !== j) { rmPeer = j; render(); return; } cur.peers.splice(j, 1); rmPeer = null; changed(); toast('Peer removed'); }));
+  if ($('add-peer')) $('add-peer').addEventListener('click', () => { cur.peers.push(Object.fromEntries(PEER_FIELDS.map(([k]) => [k, k === 'name' ? 'New peer' : '']))); changed(); const j = cur.peers.length - 1; setTimeout(() => { $('p-' + j + '-name')?.focus(); $('p-' + j + '-name')?.select(); }, 20); });
+  if ($('peer-tpl')) $('peer-tpl').addEventListener('click', peerTemplate);
+  if ($('peer-up')) $('peer-up').addEventListener('click', () => $('peer-file').click());
+  // covenants & credit
+  document.querySelectorAll('[data-cv]').forEach(el => el.addEventListener('change', () => { const c = cur.covenants[+el.dataset.cv], f = el.dataset.f; c[f] = f === 'lim' ? +el.value || 0 : el.value; changed(); }));
+  document.querySelectorAll('[data-rmcv]').forEach(b => b.addEventListener('click', () => { cur.covenants.splice(+b.dataset.rmcv, 1); changed(); }));
+  if ($('add-cov')) $('add-cov').addEventListener('click', () => { cur.covenants.push({ rid: 'qr', op: '>=', lim: 1 }); changed(); });
+  document.querySelectorAll('[data-cr]').forEach(el => el.addEventListener('change', () => { const v = +el.value || 0; cur.credit[el.dataset.cr] = el.dataset.pct ? Math.min(1, Math.max(0, v / 100)) : Math.max(0, v); changed(); }));
+  document.querySelectorAll('[data-crs]').forEach(el => el.addEventListener('change', () => { cur.credit[el.dataset.crs] = el.value; changed(); }));
+  document.querySelectorAll('[data-cma]').forEach(b => b.addEventListener('click', () => { cmaForm = b.dataset.cma; render(); }));
+  // valuation
+  document.querySelectorAll('[data-va]').forEach(el => el.addEventListener('change', () => {
+    const k = el.dataset.va; if (el.dataset.blank && el.value === '') { cur.val[k] = ''; changed(); return; }
+    const v = +el.value || 0; cur.val[k] = el.dataset.pct ? v / 100 : v; changed(); }));
+  document.querySelectorAll('[data-vas]').forEach(el => el.addEventListener('change', () => { const k = el.dataset.vas; cur.val[k] = k === 'mid' ? el.value === '1' : el.value; changed(); }));
+  document.querySelectorAll('[data-vg]').forEach(el => el.addEventListener('change', () => { cur.val.growth[+el.dataset.vg] = (+el.value || 0) / 100; changed(); }));
+  document.querySelectorAll('[data-vm]').forEach(el => el.addEventListener('change', () => { cur.val.margin[+el.dataset.vm] = (+el.value || 0) / 100; changed(); }));
+  document.querySelectorAll('[data-vw]').forEach(el => el.addEventListener('change', () => { cur.val.w[el.dataset.vw] = Math.max(0, (+el.value || 0) / 100); changed(); }));
+}
+$('s-name').addEventListener('change', e => { cur.name = e.target.value.trim() || 'Untitled company'; changed(); });
+$('s-ind').addEventListener('change', e => { cur.industry = e.target.value.trim(); changed(); });
+$('s-peeryr').addEventListener('change', e => { cur.peerYear = e.target.value.trim(); changed(); });
+$('s-year').addEventListener('change', e => { cur.ay = +e.target.value; changed(); });
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { tab = t.dataset.tab; rmYear = rmPeer = null; rmCo = false; render(); }));
+$('company').addEventListener('change', e => { cur = companies.find(c => c.id === e.target.value) || cur; rmCo = false; render(); });
+$('new-company').addEventListener('click', () => {
+  const c = blankCompany('New company'); companies = companies.filter(x => !x.sample); companies.push(c); cur = c; tab = 'fin'; persist(); render();
+  $('s-name').focus(); $('s-name').select(); toast('New company created — name it, then enter or upload figures'); });
+$('start-own').addEventListener('click', () => $('new-company').click());
+$('del-co').addEventListener('click', () => {
+  if (!rmCo) { rmCo = true; render(); return; }
+  rmCo = false; const gone = cur; removeStored(gone.id); companies = companies.filter(c => c !== gone);
+  if (!companies.length) companies = [sampleCompany()]; cur = companies[0]; render(); toast('Deleted ' + gone.name); });
+$('help-btn').addEventListener('click', () => $('help-dialog').showModal());
+$('help-close').addEventListener('click', () => $('help-dialog').close());
+
+// ================================================================ files
+async function save(filename, data) {
+  const dl = window.__downloads;
+  if (!dl) { toast('Downloading is not available in this view.'); return; }
+  try { await dl.save({ filename, data }); toast('File saved'); } catch (e) { if (e && e.code !== 'declined') toast('The download could not start here.'); }
+}
+const needX = () => { if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return false; } return true; };
+const xbytes = wb => new Uint8Array(XLSX.write(wb, { bookType: 'xlsx', type: 'array' }));
+const norm = h => String(h ?? '').toLowerCase().replace(/\(₹[^)]*\)|₹|\*/g, '').replace(/\s+/g, ' ').trim();
+$('upload-btn').addEventListener('click', () => $('upload-dialog').showModal());
+$('upload-close').addEventListener('click', () => $('upload-dialog').close());
+$('choose-fin').addEventListener('click', () => $('fin-file').click());
+$('tpl-fin').addEventListener('click', () => {
+  if (!needX()) return;
+  const aoa = [['Line item', 'Key'].concat(cur.years.map(y => `${y.label} | ${y.type}`))].concat(FIELDS.map(([s, k, l]) => [l, k].concat(cur.years.map(y => y.v[k] ?? ''))));
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{ wch: 58 }, { wch: 9 }].concat(cur.years.map(() => ({ wch: 22 })));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Financials');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['How to fill'], ['Amounts in ₹ lakh. One column per year; add columns to the right for more years.'], ['Header format: FY 2025-26 | Audited (or Provisional, Estimated, Projected).'], ['Keep the Key column — rows are matched by it.'], ['Total assets must equal total equity and liabilities for each year.']]), 'Instructions');
+  save('Financials upload template.xlsx', xbytes(wb));
+});
+$('fin-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file || !needX()) return;
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { raw: /\.csv$/i.test(file.name) }), ws = wb.Sheets['Financials'] || wb.Sheets[wb.SheetNames[0]];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }), h = aoa.findIndex(r => r.some(c => norm(c) === 'key'));
+    if (h < 0) { toast('No "Key" column found. Use the template.'); return; }
+    const kc = aoa[h].findIndex(c => norm(c) === 'key'), keys = new Set(FIELDS.map(f => f[1])), byLabel = Object.fromEntries(FIELDS.map(f => [norm(f[2]), f[1]]));
+    const ycols = aoa[h].map((c, j) => [String(c).trim(), j]).filter(([c, j]) => j > kc && c);
+    if (!ycols.length) { toast('No year columns found after the Key column.'); return; }
+    const years = ycols.map(([c]) => { const [label, type] = c.split('|').map(s => s.trim()); return { label: label || 'Year', type: TYPES.find(t => t.toLowerCase() === (type || '').toLowerCase()) || 'Audited', v: Object.fromEntries(FIELDS.map(f => [f[1], f[1] === 'price' ? '' : 0])) }; });
+    const unknown = []; let filled = 0;
+    aoa.slice(h + 1).forEach(r => {
+      const key = keys.has(String(r[kc]).trim()) ? String(r[kc]).trim() : byLabel[norm(r[0])]; if (!key) { if (String(r[0]).trim()) unknown.push(String(r[0]).trim()); return; }
+      ycols.forEach(([c, j], yi) => { const raw = r[j]; if (raw === '' || raw == null) return; const n = typeof raw === 'number' ? raw : +String(raw).replace(/[,₹\s]/g, ''); if (Number.isFinite(n)) { years[yi].v[key] = n; filled++; } });
+    });
+    const test = { years }, C = compute(Object.assign(clone(cur), test, { peers: [] }));
+    pendingImport = { years };
+    $('import-body').innerHTML = `<p style="margin:0">${years.length} year${years.length === 1 ? '' : 's'} read from <span class="muted">${esc(file.name)}</span>: ${years.map(y => esc(y.label) + ' (' + y.type + ')').join(', ')}. ${filled} figures filled.</p>
+      ${C.issues.length ? `<p class="subhead" style="color:var(--bad)">Check these</p><ul class="list">${C.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p class="small" style="color:var(--good)">All balance sheets tally.</p>'}
+      ${unknown.length ? `<p class="subhead">Rows not recognised (ignored)</p><p class="small">${unknown.map(esc).join(', ')}</p>` : ''}
+      <p class="small muted">This replaces the figures for ${esc(cur.name)}. Peers, covenants and valuation settings stay.</p>`;
+    $('upload-dialog').close(); $('import-dialog').showModal();
+  } catch { toast('That file could not be read. Save it as .xlsx or .csv and try again.'); }
+});
+$('imp-apply').addEventListener('click', () => {
+  if (!pendingImport) return; materialise(); cur.years = pendingImport.years; cur.ay = defaultAy(cur); pendingImport = null; $('import-dialog').close(); tab = 'fin'; changed(); toast('Financials imported'); });
+$('imp-cancel').addEventListener('click', () => { pendingImport = null; $('import-dialog').close(); });
+function peerTemplate() {
+  if (!needX()) return;
+  const rows = [PEER_FIELDS.map(f => f[1])].concat(cur.peers.length ? cur.peers.map(p => PEER_FIELDS.map(([k]) => p[k] ?? '')) : [PEER_FIELDS.map(([k]) => k === 'name' ? 'Peer name' : '')]);
+  const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = PEER_FIELDS.map(([k, n]) => ({ wch: Math.max(12, n.length + 2) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Peers'); save('Peer template.xlsx', xbytes(wb));
+}
+$('peer-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file || !needX()) return;
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { raw: /\.csv$/i.test(file.name) }), ws = wb.Sheets['Peers'] || wb.Sheets[wb.SheetNames[0]];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' }), h = aoa.findIndex(r => r.some(c => norm(c) === 'peer name'));
+    if (h < 0) { toast('No "Peer name" column found. Use the peer template.'); return; }
+    const map = {}; aoa[h].forEach((c, j) => { const f = PEER_FIELDS.find(([k, n]) => norm(n) === norm(c)); if (f) map[f[0]] = j; });
+    const got = aoa.slice(h + 1).filter(r => String(r[map.name] ?? '').trim()).map(r => Object.fromEntries(PEER_FIELDS.map(([k]) => {
+      const raw = map[k] === undefined ? '' : r[map[k]]; if (k === 'name') return [k, String(raw).trim()];
+      const n = typeof raw === 'number' ? raw : raw === '' ? NaN : +String(raw).replace(/[,₹\s]/g, ''); return [k, Number.isFinite(n) ? n : ''];
+    })));
+    if (!got.length) { toast('No peer rows found.'); return; }
+    materialise(); cur.peers = got; changed(); toast(`Imported ${got.length} peers`);
+  } catch { toast('That file could not be read. Save it as .xlsx or .csv and try again.'); }
+});
+
+// ---------------------------------------------------------------- export
+$('export').addEventListener('click', () => {
+  if (!needX()) return;
+  const C = compute(cur), wb = XLSX.utils.book_new(), yl = cur.years.map(y => `${y.label} (${y.type})`), r2 = v => v == null || !Number.isFinite(v) ? '' : Math.round(v * 100) / 100, r4 = v => v == null || !Number.isFinite(v) ? '' : Math.round(v * 10000) / 10000;
+  // fmt(row, rowIndex, colIndex) → Excel number format for numeric cells; default thousands with 2 decimals
+  const add = (name, aoa, w, fmt) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = w || [{ wch: 52 }].concat(Array(14).fill({ wch: 18 }));
+    aoa.forEach((row, r) => row.forEach((v, c) => { if (typeof v !== 'number') return; const cell = ws[XLSX.utils.encode_cell({ r, c })]; if (cell) cell.z = (fmt && fmt(row, r, c)) || '#,##0.00'; }));
+    XLSX.utils.book_append_sheet(wb, ws, name); };
+  const PCT = '0.0%', unitOf = Object.fromEntries(RATIOS.map(r => [r.n, r.u]));
+  const title = s => [[cur.name + ' — ' + s], ['₹ lakh unless stated. Generated ' + new Date().toISOString().slice(0, 10)], []];
+  add('Financials', title('Financial statements').concat([['Line item', 'Key', ...yl]], FIELDS.map(([s, k, l]) => [l, k, ...cur.years.map(y => y.v[k] ?? '')]),
+    [[], ['EBITDA', '', ...C.Ms.map(M => r2(M.ebitda))], ['Profit before tax', '', ...C.Ms.map(M => r2(M.pbt))], ['Profit after tax', '', ...C.Ms.map(M => r2(M.pat))], ['Total assets', '', ...C.Ms.map(M => r2(M.ta))], ['Total equity and liabilities', '', ...C.Ms.map(M => r2(M.tel))]]));
+  add('Ratios', title('Ratio library').concat([['Group', 'Ratio', 'Unit', 'Formula', ...yl, 'Grade (' + cur.years[cur.ay].label + ')']],
+    RATIOS.map(r => [r.g, r.n, r.u === '%' ? '%' : r.u === 'x' ? 'times' : r.u === 'd' ? 'days' : '₹', r.fx, ...C.vals[r.id].map(v => r.u === '%' ? r4(v) : r2(v)), GL[grade(r, C.vals[r.id][cur.ay])] || ''])),
+    [{ wch: 20 }, { wch: 34 }, { wch: 7 }, { wch: 60 }].concat(cur.years.map(() => ({ wch: 16 })), [{ wch: 12 }]), row => row[2] === '%' ? PCT : null);
+  add('DuPont', title('DuPont analysis').concat([['Factor', ...yl]], [['PAT margin', 'margin'], ['Asset turnover', 'turn'], ['Equity multiplier', 'lev'], ['Tax burden', 'taxB'], ['Interest burden', 'intB'], ['EBIT margin', 'ebitM'], ['ROE', 'roe']]
+    .map(([n, k]) => [n, ...C.dup.map(d => r4(d[k]))])), null, row => ['Asset turnover', 'Equity multiplier'].includes(row[0]) ? '0.00' : PCT);
+  add('Peers', title('Peer figures (' + (cur.peerYear || '') + ')').concat([PEER_FIELDS.map(f => f[1])], cur.peers.map(p => PEER_FIELDS.map(([k]) => p[k] ?? ''))), PEER_FIELDS.map(() => ({ wch: 16 })));
+  add('Benchmark', title('Peer benchmark — ' + cur.years[cur.ay].label).concat([['Ratio', 'Company', 'Peer median', 'Lower quartile', 'Upper quartile', 'Min', 'Max', 'Peers', 'Percentile', 'Position']],
+    bench(cur, C).filter(b => b.n >= 3).map(b => [b.r.n, r4(b.client), r4(b.med), r4(b.q1), r4(b.q3), r4(b.min), r4(b.max), b.n, b.pct == null ? '' : Math.round(b.pct * 100), quart(b)])), null, (row, r, c) => c >= 7 ? '0' : unitOf[row[0]] === '%' ? PCT : null);
+  add('Covenants and EWS', title('Covenants and early-warning signals').concat([['Covenant', 'Test', 'Limit', ...yl]],
+    cur.covenants.map(c => [RBY[c.rid].n, c.op === '<=' ? '≤' : '≥', c.lim, ...C.vals[c.rid].map(v => { const s = covStatus(c, v); return v == null ? '' : r4(v) + (s.s === 'breach' ? ' BREACH' : ''); })]),
+    [[], ['Early-warning signals'], ['Year', 'Severity', 'Signal']], cur.years.flatMap((y, i) => ews(cur, C, i).map(f => [y.label, f.sev === 'serious' ? 'Serious' : 'Watch', f.t])),
+    (() => { const M = C.Ms[cur.ay], dp = drawingPower(cur, M); return [[], ['Drawing power — ' + cur.years[cur.ay].label], ['Drawing power on stock', r2(dp.dpStock)], ['Drawing power on receivables', r2(dp.dpRec)], ['Drawing power', r2(dp.dp)], ['Sanctioned limit', dp.lim], ['Outstanding', r2(dp.used)], ['Headroom / (over-drawn)', r2(dp.head)], ['Account status', smaOf(cur.credit.dpd)[0]]]; })()));
+  [['II', 'CMA Form II'], ['III', 'CMA Form III'], ['IV', 'CMA Form IV'], ['V', 'CMA Form V'], ['VI', 'CMA Form VI']].forEach(([f, n]) =>
+    add(n, title(n).concat([['Particulars', ...yl]], cmaRows(C, f).map(r => r.sec ? [r.sec.toUpperCase()] : [(r.ind ? '   ' : '') + r.l, ...r.v.map(v => r.u === '%' ? r4(v) : r2(v))])), null,
+      (row, ri) => { const rr = cmaRows(C, f)[ri - 4]; return rr && rr.u === '%' ? PCT : null; }));
+  const F = fairValue(cur, C), D = F.D, base = cur.years[cur.ay];
+  add('DCF', title('Discounted cash flow — base ' + base.label).concat([['', ...D.rows.map(r => fyAdd(base.label, r.t))]],
+    [['Revenue growth', ...cur.val.growth.map(r4)], ['EBITDA margin', ...cur.val.margin.map(r4)], ['Revenue', ...D.rows.map(r => r2(r.rev))], ['EBITDA', ...D.rows.map(r => r2(r.ebitda))], ['Depreciation', ...D.rows.map(r => r2(r.dep))],
+      ['EBIT', ...D.rows.map(r => r2(r.ebit))], ['NOPAT', ...D.rows.map(r => r2(r.nopat))], ['Capex', ...D.rows.map(r => r2(r.capex))], ['Increase in working capital', ...D.rows.map(r => r2(r.dN))],
+      ['Unlevered free cash flow', ...D.rows.map(r => r2(r.fcf))], ['Discount factor', ...D.rows.map(r => r4(r.df))], ['Present value', ...D.rows.map(r => r2(r.pv))], [],
+      ['Cost of equity', r4(D.W.ke)], ['Post-tax cost of debt', r4(D.W.kdT)], ['WACC', r4(D.w)], ['Terminal growth', r4(D.g)], ['Mid-year discounting', cur.val.mid ? 'Yes' : 'No'], [],
+      ['PV of forecast cash flows', r2(D.sumPv)], ['Terminal value', r2(D.tv)], ['PV of terminal value', r2(D.pvTv)], ['Enterprise value', r2(D.ev)], ['Less: net debt', r2(D.netDebt)], ['Equity value', r2(D.eqv)], ['Value per share (₹)', r2(D.ps)], ['Implied EV / EBITDA', r2(D.impl)]]), null,
+    row => ['Revenue growth', 'EBITDA margin', 'Cost of equity', 'Post-tax cost of debt', 'WACC', 'Terminal growth'].includes(row[0]) ? '0.00%' : row[0] === 'Discount factor' ? '0.0000' : null);
+  add('Fair value', title('Fair value summary').concat([['Purpose', cur.val.purpose], ['Valuation date', cur.val.vdate], ['Base financial year', base.label], []],
+    [['Method', 'Low (₹/share)', 'Mid (₹/share)', 'High (₹/share)', 'Weight', 'Basis']], F.methods.map(m => [m.n, m.ok ? r2(m.lo) : '', m.ok ? r2(m.mid) : '', m.ok ? r2(m.hi) : '', m.ok ? r4(+cur.val.w[m.k] || 0) : '', m.note]),
+    [[], ['Weighted value per share (₹)', r2(F.pre)], ['Discount for lack of marketability', r4(+cur.val.dlom)], ['Fair value per share (₹)', r2(F.post)], ['Shares outstanding (lakh)', F.shares], ['Equity value (₹ lakh)', r2(F.post * F.shares)], [],
+      ['Working estimate only; a signed report from the appropriate valuer (registered valuer, merchant banker or CA, depending on purpose) is required for statutory use.']]), [{ wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 50 }],
+    (row, r, c) => (c === 4 && row[0] !== 'Method') || row[0] === 'Discount for lack of marketability' ? PCT : null);
+  save((cur.name.replace(/[^\w\- ]+/g, '').trim() || 'Company') + ' - Financial analysis ' + base.label.replace(/[^\w\-]+/g, ' ').trim() + '.xlsx', xbytes(wb));
+});
+
+// ================================================================ tooltip + toast
+const tip = $('tip');
+document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { tip.hidden = true; return; } tip.textContent = t.dataset.tip; tip.hidden = false;
+  const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8), y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8); tip.style.left = x + 'px'; tip.style.top = y + 'px'; });
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800); }
+
+
+// ================================================================ colour combinations (per viewer, remembered in this browser)
+const DARKBAND = { 'page-bg': 'none', 'band-line': 'rgb(255 255 255 / .10)', 'band-ctl': 'rgb(255 255 255 / .08)', 'band-card': 'rgb(0 0 0 / .18)', 'band-tile': 'rgb(255 255 255 / .05)' };
+const DARKBAND_D = { 'page-bg': 'none', 'band-line': 'rgb(255 255 255 / .08)', 'band-ctl': 'rgb(255 255 255 / .07)', 'band-card': 'rgb(0 0 0 / .22)', 'band-tile': 'rgb(255 255 255 / .04)' };
+const LIGHTBAND = c => ({ 'page-bg': 'none', 'band-line': c, 'band-ctl': 'rgb(255 255 255 / .78)', 'band-card': 'rgb(255 255 255 / .72)', 'band-tile': 'rgb(255 255 255 / .6)' });
+const P = (L, D) => ({ L, D });
+const PALETTES = {
+  sky: { name: 'Light & dark blue', ...P(Object.assign({}, DARKBAND, { paper: '#F3F7FF', sunk: '#E6EEFC', line: '#D3DFF5', ink: '#0B1B44', muted: '#4D5D82', band: '#0B2A6F', 'band-2': '#1E40AF', 'band-ink': '#EFF5FF', 'band-muted': '#A9C3F0', glow: '#60A5FA', 'page-bg': 'linear-gradient(180deg, #DCE8FF 0%, #B9CFFA 28%, #5B7FD6 62%, #1E40AF 82%, #0B2A6F 100%)', 'brass-hi': '#93C5FD', mint: '#86EFAC', rose: '#FCA5A5', brass: '#1D4ED8', sel: '#0B2A6F', 'sel-hi': '#1E40AF', 'sel-ink': '#FFFFFF', peer: '#94A3BD' }),
+    Object.assign({}, DARKBAND_D, { paper: '#071026', surface: '#0C1834', sunk: '#122244', line: '#1F3461', ink: '#E6EEFF', muted: '#98AACF', band: '#081D4D', 'band-2': '#12307A', 'band-ink': '#EFF5FF', 'band-muted': '#A3B9E3', glow: '#3B82F6', 'page-bg': 'linear-gradient(180deg, #102A66 0%, #0B1D4A 45%, #050C1F 100%)', 'brass-hi': '#93C5FD', mint: '#6EE7B7', rose: '#FDA4AF', brass: '#93C5FD', sel: '#93C5FD', 'sel-hi': '#BFDBFE', 'sel-ink': '#071026', peer: '#6C7A98' })) },
+  emerald: { name: 'Ivory & emerald', ...P(Object.assign(LIGHTBAND('rgb(5 150 105 / .10)'), { paper: '#F7F9F7', sunk: '#EDF3EF', line: '#D7E3DB', ink: '#0B2A1C', muted: '#4F6B5C', band: '#EEF8F1', 'band-2': '#DCF2E3', 'band-ink': '#0B2A1C', 'band-muted': '#4D6B5B', glow: '#F59E0B', 'brass-hi': '#047857', mint: '#047857', rose: '#DC2626', brass: '#B45309', sel: '#047857', 'sel-hi': '#065F46', 'sel-ink': '#FFFFFF', peer: '#94A39A' }),
+    Object.assign({}, DARKBAND_D, { paper: '#08120D', surface: '#0D1913', sunk: '#13221A', line: '#22362B', ink: '#E4F0E9', muted: '#93AB9D', band: '#0A2418', 'band-2': '#0F3523', 'band-ink': '#E9F7EF', 'band-muted': '#94B8A4', glow: '#F59E0B', 'brass-hi': '#6EE7B7', mint: '#6EE7B7', rose: '#FDA4AF', brass: '#FCD34D', sel: '#6EE7B7', 'sel-hi': '#A7F3D0', 'sel-ink': '#06120C', peer: '#6C8076' })) },
+  indigo: { name: 'Royal indigo & coral', ...P(Object.assign({}, DARKBAND, { paper: '#F5F5FB', sunk: '#ECECF7', line: '#DADBEE', ink: '#1A1838', muted: '#5A5A7A', band: '#1E1B4B', 'band-2': '#3730A3', 'band-ink': '#EEF0FF', 'band-muted': '#B8BCEB', glow: '#FB7185', 'brass-hi': '#FB8FA0', mint: '#86EFAC', rose: '#FDBA74', brass: '#4338CA', sel: '#3730A3', 'sel-hi': '#4338CA', 'sel-ink': '#FFFFFF', peer: '#9A9CB8' }),
+    Object.assign({}, DARKBAND_D, { paper: '#0C0B1D', surface: '#13122B', sunk: '#1B1A3A', line: '#2C2B52', ink: '#E8E8FA', muted: '#A1A1C7', band: '#15133A', 'band-2': '#2A2580', 'band-ink': '#EEF0FF', 'band-muted': '#A9ADE0', glow: '#FB7185', 'brass-hi': '#FB8FA0', mint: '#86EFAC', rose: '#FDBA74', brass: '#A5B4FC', sel: '#A5B4FC', 'sel-hi': '#C7D2FE', 'sel-ink': '#0C0B1D', peer: '#70728F' })) },
+  navy: { name: 'Midnight navy & teal', ...P(Object.assign({}, DARKBAND, { paper: '#F3F6FA', sunk: '#E9EEF5', line: '#D5DEEA', ink: '#0D1B2E', muted: '#53637A', band: '#0B1B33', 'band-2': '#13315C', 'band-ink': '#EAF2FB', 'band-muted': '#9FB5D1', glow: '#38BDF8', 'brass-hi': '#2DD4BF', mint: '#86EFAC', rose: '#FCA5A5', brass: '#0F766E', sel: '#13315C', 'sel-hi': '#1B4278', 'sel-ink': '#FFFFFF', peer: '#94A3B8' }),
+    Object.assign({}, DARKBAND_D, { paper: '#08111E', surface: '#0D1828', sunk: '#132137', line: '#213350', ink: '#E5EDF7', muted: '#93A6BF', band: '#071427', 'band-2': '#0F2747', 'band-ink': '#EAF2FB', 'band-muted': '#93AAC8', glow: '#38BDF8', 'brass-hi': '#5EEAD4', mint: '#86EFAC', rose: '#FCA5A5', brass: '#5EEAD4', sel: '#5EEAD4', 'sel-hi': '#99F6E4', 'sel-ink': '#06121F', peer: '#6B7A90' })) },
+  saffron: { name: 'Charcoal & saffron', ...P(Object.assign({}, DARKBAND, { paper: '#F6F6F4', sunk: '#EDEDEA', line: '#DCDCD7', ink: '#1C1E21', muted: '#5D6168', band: '#1F2328', 'band-2': '#353B44', 'band-ink': '#F5F5F4', 'band-muted': '#B5BAC1', glow: '#F59E0B', 'brass-hi': '#FBBF24', mint: '#86EFAC', rose: '#FCA5A5', brass: '#B45309', sel: '#1F2328', 'sel-hi': '#353B44', 'sel-ink': '#FFFFFF', peer: '#9CA0A6' }),
+    Object.assign({}, DARKBAND_D, { paper: '#0F1012', surface: '#16181B', sunk: '#1E2125', line: '#2E3238', ink: '#ECECEA', muted: '#A3A7AD', band: '#17191D', 'band-2': '#262A30', 'band-ink': '#F5F5F4', 'band-muted': '#B0B5BB', glow: '#F59E0B', 'brass-hi': '#FBBF24', mint: '#86EFAC', rose: '#FCA5A5', brass: '#FBBF24', sel: '#FBBF24', 'sel-hi': '#FCD34D', 'sel-ink': '#141414', peer: '#72767C' })) },
+  maroon: { name: 'Maroon & gold', ...P(Object.assign({}, DARKBAND, { paper: '#FAF6F6', sunk: '#F3ECEC', line: '#E6D9DA', ink: '#2A0F16', muted: '#6E555B', band: '#4A0E1F', 'band-2': '#7A1E35', 'band-ink': '#FFF1F2', 'band-muted': '#E6B3BE', glow: '#F4C35A', 'brass-hi': '#F4C35A', mint: '#A7F3D0', rose: '#FECACA', brass: '#9F1239', sel: '#6B1A2F', 'sel-hi': '#881F3C', 'sel-ink': '#FFFFFF', peer: '#A8979A' }),
+    Object.assign({}, DARKBAND_D, { paper: '#140A0D', surface: '#1C1013', sunk: '#26161A', line: '#3A2329', ink: '#F5E9EB', muted: '#B9A0A5', band: '#2B0712', 'band-2': '#4A1022', 'band-ink': '#FFF1F2', 'band-muted': '#D9A3AF', glow: '#F4C35A', 'brass-hi': '#F4C35A', mint: '#A7F3D0', rose: '#FECACA', brass: '#F9A8B8', sel: '#F4C35A', 'sel-hi': '#F8D383', 'sel-ink': '#1A0A0E', peer: '#7E6C70' })) },
+  aubergine: { name: 'Aubergine & mint', ...P(Object.assign({}, DARKBAND, { paper: '#F8F5FA', sunk: '#F0EAF4', line: '#E1D6E8', ink: '#24112B', muted: '#66536E', band: '#2E1035', 'band-2': '#521F60', 'band-ink': '#F7EEFA', 'band-muted': '#CDB2D8', glow: '#5EEAD4', 'brass-hi': '#5EEAD4', mint: '#86EFAC', rose: '#FDA4AF', brass: '#7E22CE', sel: '#4A1D56', 'sel-hi': '#5E2670', 'sel-ink': '#FFFFFF', peer: '#A396AA' }),
+    Object.assign({}, DARKBAND_D, { paper: '#110A14', surface: '#18101C', sunk: '#221727', line: '#36263D', ink: '#F1E8F5', muted: '#B3A0BC', band: '#1E0A24', 'band-2': '#3A1544', 'band-ink': '#F7EEFA', 'band-muted': '#C1A3CE', glow: '#5EEAD4', 'brass-hi': '#5EEAD4', mint: '#86EFAC', rose: '#FDA4AF', brass: '#D8B4FE', sel: '#5EEAD4', 'sel-hi': '#99F6E4', 'sel-ink': '#0F0A12', peer: '#76687C' })) },
+  ledger: { name: 'Ledger green & brass', ...P(Object.assign({}, DARKBAND, { paper: '#F2F5F2', sunk: '#E9EFEB', line: '#D2DCD6', ink: '#11201C', muted: '#55665F', band: '#0C3A34', 'band-2': '#12504A', 'band-ink': '#ECF5F1', 'band-muted': '#A3C3B8', glow: '#E6B75C', 'brass-hi': '#E6B75C', mint: '#7FE0B5', rose: '#FF9C8F', brass: '#A86A12', sel: '#0C3A34', 'sel-hi': '#12504A', 'sel-ink': '#ECF5F1', peer: '#8D9A94' }),
+    Object.assign({}, DARKBAND_D, { paper: '#0A1311', surface: '#101C19', sunk: '#15241F', line: '#24372F', ink: '#E2EDE8', muted: '#93A9A0', band: '#05211D', 'band-2': '#0A3530', 'band-ink': '#ECF5F1', 'band-muted': '#93B3A8', glow: '#E6B75C', 'brass-hi': '#E9BE68', mint: '#7FE0B5', rose: '#FF9C8F', brass: '#E2B259', sel: '#E2B259', 'sel-hi': '#EDC575', 'sel-ink': '#0A1D19', peer: '#73847D' })) },
+};
+const PAL_KEY = 'fadesk-palette', CUSTOM_KEY = 'fadesk-custom';
+// ---- custom colour builder: six picked colours, everything else derived
+const hx = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16) || 0; return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const toHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+const mix = (a, b, t) => { const A = hx(a), B = hx(b); return toHex(A.map((v, i) => v + (B[i] - v) * t)); };
+const lum = h => { const [r, g, b] = hx(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+const rgba = (h, a) => { const [r, g, b] = hx(h); return `rgb(${r} ${g} ${b} / ${a})`; };
+const CUSTOM_FIELDS = [['band', 'Header colour', 'Main colour of the top band'], ['band2', 'Header second colour', 'The band shades into this'], ['hi', 'Highlight colour', 'Big numbers, trend lines on the header'],
+  ['accent', 'Buttons and tabs', 'Selected tab, main buttons, section markers'], ['bgTop', 'Background, top', 'Page background at the top of the screen'], ['bgBottom', 'Background, bottom', 'Same colour as top for a plain background']];
+const CUSTOM_START = { band: '#0B2A6F', band2: '#1E40AF', hi: '#93C5FD', accent: '#1D4ED8', bgTop: '#DCE8FF', bgBottom: '#0B2A6F' };
+function fromPalette(k) { const q = PALETTES[k].L; const bg = q['page-bg'] && q['page-bg'] !== 'none' ? (q['page-bg'].match(/#[0-9A-Fa-f]{6}/g) || []) : [];
+  return { band: q.band, band2: q['band-2'], hi: q['brass-hi'], accent: q.sel, bgTop: bg[0] || q.paper, bgBottom: bg[bg.length - 1] || q.paper }; }
+function buildCustom(c) {
+  const lightBand = lum(c.band) > 0.18, ink = mix(c.band, '#0A0F1A', .82), grad = c.bgTop.toUpperCase() === c.bgBottom.toUpperCase() ? 'none'
+    : `linear-gradient(180deg, ${c.bgTop} 0%, ${mix(c.bgTop, c.bgBottom, .3)} 28%, ${mix(c.bgTop, c.bgBottom, .72)} 66%, ${c.bgBottom} 100%)`;
+  const bandInk = lightBand ? mix(c.band, '#000000', .86) : mix(c.band, '#FFFFFF', .94);
+  const L = Object.assign(lightBand ? LIGHTBAND(rgba(bandInk, .10)) : Object.assign({}, DARKBAND), {
+    paper: c.bgTop, 'page-bg': grad, sunk: mix('#FFFFFF', c.band, .07), line: mix('#FFFFFF', c.band, .17), ink, muted: mix(c.band, '#5B6475', .78),
+    band: c.band, 'band-2': c.band2, 'band-ink': bandInk, 'band-muted': mix(bandInk, c.band, .4), glow: c.hi, 'brass-hi': c.hi,
+    mint: lightBand ? '#0F8A5F' : '#86EFAC', rose: lightBand ? '#DC2626' : '#FCA5A5', brass: lum(c.accent) > 0.4 ? mix(c.accent, '#000000', .45) : c.accent,
+    sel: c.accent, 'sel-hi': mix(c.accent, '#000000', .15), 'sel-ink': lum(c.accent) > 0.18 ? '#0B1220' : '#FFFFFF', peer: mix('#94A0B4', c.band, .1) });
+  const dk = (h, t) => mix(h, '#000000', t), hiD = lum(c.hi) < 0.25 ? mix(c.hi, '#FFFFFF', .45) : c.hi, accD = lum(c.accent) < 0.35 ? mix(c.accent, '#FFFFFF', .5) : c.accent;
+  const D = Object.assign({}, DARKBAND_D, {
+    paper: mix('#090D16', c.band, .2), 'page-bg': grad === 'none' ? 'none' : `linear-gradient(180deg, ${mix('#0B1020', lum(c.bgTop) > .5 ? c.band : c.bgTop, .5)} 0%, ${mix('#080B14', c.bgBottom, .22)} 60%, ${mix('#05070D', c.bgBottom, .1)} 100%)`,
+    surface: mix('#0E1420', c.band, .12), sunk: mix('#151C2B', c.band, .15), line: mix('#273246', c.band, .18), ink: '#E8EDF6', muted: mix('#9AA6BD', c.band, .12),
+    band: dk(c.band, lightBand ? .72 : .35), 'band-2': dk(c.band2, lightBand ? .7 : .35), 'band-ink': '#EEF2FA', 'band-muted': mix(dk(c.band, .35), '#FFFFFF', .6),
+    glow: hiD, 'brass-hi': hiD, mint: '#6EE7B7', rose: '#FDA4AF', brass: accD, sel: accD, 'sel-hi': mix(accD, '#FFFFFF', .3), 'sel-ink': lum(accD) > 0.18 ? '#0B1220' : '#FFFFFF', peer: '#738099' });
+  return { name: 'Custom colours', L, D };
+}
+let customC = clone(CUSTOM_START); try { const sc = JSON.parse(localStorage.getItem(CUSTOM_KEY) || 'null'); if (sc && sc.band) customC = Object.assign(clone(CUSTOM_START), sc); } catch {}
+let curPal = 'sky', palBeforeCustom = null;
+function applyPalette(k) {
+  const p = k === 'custom' ? buildCustom(customC) : (PALETTES[k] || PALETTES.sky); if (k !== 'custom' && !PALETTES[k]) k = 'sky'; curPal = k;
+  const decl = o => Object.entries(o).map(([n, v]) => `--${n}: ${v};`).join(' ');
+  const css = `:root[data-palette="${k}"] { ${decl(p.L)} }
+@media (prefers-color-scheme: dark) { :root[data-palette="${k}"]:not([data-theme="light"]) { ${decl(p.D)} } }
+:root[data-palette="${k}"][data-theme="dark"] { ${decl(p.D)} }`;
+  let el = document.getElementById('palette-css'); if (!el) { el = document.createElement('style'); el.id = 'palette-css'; document.head.appendChild(el); }
+  el.textContent = css; document.documentElement.dataset.palette = k;
+  $('palette-sw').innerHTML = Object.entries(PALETTES).map(([key, q]) => `<button type="button" class="sw" data-pal="${key}" aria-pressed="${key === k}" aria-label="${esc(q.name)}" data-tip="${esc(q.name)}" style="background:linear-gradient(135deg, ${q.L.band} 0 50%, ${q.L['brass-hi']} 50% 100%)"></button>`).join('')
+    + `<button type="button" class="sw custom" id="open-custom" aria-pressed="${k === 'custom'}" aria-label="Custom colours" data-tip="Custom colours — pick your own" style="background:${k === 'custom' ? `linear-gradient(135deg, ${customC.band} 0 50%, ${customC.hi} 50% 100%)` : 'conic-gradient(#EF4444, #F59E0B, #22C55E, #06B6D4, #3B82F6, #8B5CF6, #EC4899, #EF4444)'}"></button>`;
+  $('palette-name').textContent = p.name;
+  document.querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { $('custom-dialog').open && $('custom-dialog').close(); applyPalette(b.dataset.pal); toast('Colours: ' + PALETTES[b.dataset.pal].name); try { localStorage.setItem(PAL_KEY, b.dataset.pal); } catch {} }));
+  $('open-custom').addEventListener('click', openCustom);
+}
+function customForm() {
+  $('cc-fields').innerHTML = CUSTOM_FIELDS.map(([k, l, h]) => `<label for="cc-${k}" class="cc-row"><span class="cc-txt"><span class="cc-l">${l}</span><span class="cc-h">${h}</span></span>
+    <span class="cc-pick"><input type="color" id="cc-${k}" data-cc="${k}" value="${customC[k].toLowerCase()}"><input type="text" id="cc-${k}-hex" data-cchex="${k}" value="${customC[k].toUpperCase()}" maxlength="7" aria-label="${l} hex code"></span></label>`).join('');
+  document.querySelectorAll('[data-cc]').forEach(el => el.addEventListener('input', () => { customC[el.dataset.cc] = el.value.toUpperCase(); $('cc-' + el.dataset.cc + '-hex').value = el.value.toUpperCase(); applyPalette('custom'); }));
+  document.querySelectorAll('[data-cchex]').forEach(el => el.addEventListener('change', () => { const v = el.value.trim(); if (!/^#?[0-9a-f]{6}$/i.test(v)) { el.value = customC[el.dataset.cchex]; toast('Use a 6-digit colour code like #1D4ED8'); return; }
+    const h = (v[0] === '#' ? v : '#' + v).toUpperCase(); customC[el.dataset.cchex] = h; $('cc-' + el.dataset.cchex).value = h.toLowerCase(); el.value = h; applyPalette('custom'); }));
+}
+function openCustom() {
+  if ($('custom-dialog').open) return;
+  palBeforeCustom = curPal; $('cc-start').innerHTML = '<option value="">Start from a ready combination…</option>' + Object.entries(PALETTES).map(([k, q]) => `<option value="${k}">${esc(q.name)}</option>`).join('');
+  customForm(); applyPalette('custom'); $('custom-dialog').show();
+}
+$('cc-start').addEventListener('change', e => { if (!e.target.value) return; customC = fromPalette(e.target.value); customForm(); applyPalette('custom'); e.target.value = ''; });
+$('cc-cancel').addEventListener('click', () => { try { customC = Object.assign(clone(CUSTOM_START), JSON.parse(localStorage.getItem(CUSTOM_KEY) || '{}')); } catch { customC = clone(CUSTOM_START); }
+  $('custom-dialog').close(); applyPalette(palBeforeCustom || 'sky'); });
+$('cc-save').addEventListener('click', () => { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customC)); localStorage.setItem(PAL_KEY, 'custom'); } catch {} $('custom-dialog').close(); applyPalette('custom'); toast('Custom colours saved'); });
+$('cc-copy').addEventListener('click', async () => { const txt = CUSTOM_FIELDS.map(([k, l]) => `${l}: ${customC[k]}`).join('\n');
+  try { await navigator.clipboard.writeText(txt); toast('Colour codes copied — paste them to Claude to make them the default'); } catch { $('cc-codes').hidden = false; $('cc-codes').value = txt; $('cc-codes').select(); toast('Select and copy the codes shown'); } });
+$('cc-random').addEventListener('click', () => {
+  const h = Math.floor(Math.random() * 360), h2 = (h + 140 + Math.floor(Math.random() * 80)) % 360, hsl = (hh, sat, l) => { const a = sat * Math.min(l, 1 - l), f = n => { const k = (n + hh / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return toHex([f(0), f(8), f(4)].map(v => v * 255)); };
+  customC = { band: hsl(h, .62, .2), band2: hsl(h, .58, .32), hi: hsl(h2, .85, .68), accent: hsl(h, .6, .32), bgTop: hsl(h, .6, .93), bgBottom: Math.random() < .5 ? hsl(h, .6, .93) : hsl(h, .55, .25) };
+  customForm(); applyPalette('custom'); });
+
+let savedPal = 'sky'; try { savedPal = localStorage.getItem(PAL_KEY) || 'sky'; } catch {}
+applyPalette(savedPal);
+cur = sampleCompany(); companies = [cur];
+boot();
+</script>
+<script>
+// ===== Look & feel kit (shared by every Finance Model tool) — colour combinations, custom colours, light / dark, spacing, type
+(function () {
+  const CFG = {"key": "fadesk", "name": "Financial Analysis Desk", "host": ".company", "map": "std", "colours": false, "colourNote": "This desk has its own colour combinations and custom colours \u2014 use the Colours dots at the top. Shapes, light / dark, spacing and type are set here.", "own": {"accent": "#0B2A6F", "accent2": "#1D4ED8", "tint": "#4D5D82"}, "ownDark": true, "ownName": "Desk colours", "ownDesc": ""};
+  const PRESETS = [
+    { k: 'society', n: 'Society Desk', d: 'Slate, sky blue and amber, as in your Society Desk app.', accent: '#0284C7', accent2: '#D97706', tint: '#64748B' },
+    { k: 'navy', n: 'Ledger navy', d: 'Navy with a teal highlight.', accent: '#1F3864', accent2: '#0F766E', tint: '#5B6B8C' },
+    { k: 'teal', n: 'Treasury teal', d: 'Teal with an amber highlight.', accent: '#0F5E63', accent2: '#A16207', tint: '#4F7F80' },
+    { k: 'maroon', n: 'Rupee maroon', d: 'Maroon with a green highlight.', accent: '#7A1F3D', accent2: '#1D6B5F', tint: '#8A6170' },
+    { k: 'forest', n: 'Audit green', d: 'Ledger green with brass.', accent: '#23563A', accent2: '#8A5A14', tint: '#5E7A66' },
+    { k: 'indigo', n: 'Indigo slate', d: 'Indigo with cyan.', accent: '#3730A3', accent2: '#0E7490', tint: '#5D6283' },
+    { k: 'saffron', n: 'Saffron ink', d: 'Saffron-brown with navy.', accent: '#8F3F06', accent2: '#1F3864', tint: '#8A7360' },
+    { k: 'graphite', n: 'Graphite', d: 'Neutral grey with blue.', accent: '#2F3542', accent2: '#2563EB', tint: '#6B7280' },
+  ];
+  const FONTS = {
+    jakarta: { n: 'Plus Jakarta Sans (Society Desk)', d: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', b: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', m: '"JetBrains Mono", ui-monospace, Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap' },
+    own: { n: "This tool's own type" },
+    plex: { n: 'IBM Plex', d: '"IBM Plex Serif", Georgia, serif', b: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', m: '"IBM Plex Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap' },
+    source: { n: 'Source Serif + Sans', d: '"Source Serif 4", Georgia, serif', b: '"Source Sans 3", "Segoe UI", Arial, sans-serif', m: '"Source Code Pro", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap' },
+    public: { n: 'Public Sans + Literata', d: '"Literata", Georgia, serif', b: '"Public Sans", "Segoe UI", Arial, sans-serif', m: '"JetBrains Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Literata:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap' },
+  };
+  const KEY = CFG.key + '-look';
+  const DEF = { preset: CFG.colours === false ? 'own' : 'society', custom: { ...CFG.own }, mode: CFG.defMode || 'system', density: 'comfortable', font: 'jakarta', skin: 'society', saved: [], v: 2 };
+  let L = JSON.parse(JSON.stringify(DEF));
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) { if (!s.v) { if (s.preset === 'own' && CFG.colours !== false) s.preset = 'society'; if (s.font === 'own') s.font = 'jakarta'; s.skin = 'society'; s.v = 2; } L = { ...L, ...s }; } } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch {} };
+
+  // ---- colour maths
+  const hexRgb = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0); };
+  const rgbHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+  function hexHsl(h) { let [r, g, b] = hexRgb(h).map(v => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let hh = 0, ss = 0;
+    if (mx !== mn) { const d = mx - mn; ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh *= 60; }
+    return [hh, ss * 100, l * 100]; }
+  function hsl(h, s, l) { s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return rgbHex([f(0) * 255, f(8) * 255, f(4) * 255]); }
+  const lum = h => { const c = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  function fit(hex, bg, min, dir) { let [h, s, l] = hexHsl(hex), out = hex, n = 0; while (contrast(out, bg) < min && n++ < 50) { l = Math.max(0, Math.min(100, l + dir * 2)); out = hsl(h, s, l); } return out; }
+  const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  // one base palette, mapped onto each tool's own token names
+  function base(c, dark) {
+    const [ah, as] = hexHsl(c.accent), [bh, bs] = hexHsl(c.accent2), [th, ts0] = hexHsl(c.tint || c.accent), ts = Math.min(ts0, 40);
+    const P = { dark };
+    if (!dark) {
+      Object.assign(P, { bg: hsl(th, ts * .5, 97), surface: '#FFFFFF', sunk: hsl(th, ts * .55, 94), line: hsl(th, ts * .45, 86), line2: hsl(th, ts * .45, 78), fg: hsl(th, Math.min(ts, 35), 13), muted: hsl(th, ts * .4, 38), faint: hsl(th, ts * .3, 55) });
+      P.accent = fit(c.accent, '#FFFFFF', 4.6, -1); P.accentInk = contrast(P.accent, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accentHi = fit(hsl(ah, as, Math.min(hexHsl(P.accent)[2] + 10, 48)), '#FFFFFF', 4.5, -1);
+      P.accent2 = fit(c.accent2, '#FFFFFF', 4.5, -1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 70); P.accent2Ink = contrast(P.accent2, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accent2Soft = hsl(bh, Math.min(bs, 60), 95); P.accent2Text = fit(hsl(bh, bs, 30), P.accent2Soft, 5, -1);
+      P.band = hsl(ah, Math.min(as, 70), Math.min(hexHsl(c.accent)[2], 20)); P.band2 = hsl(ah, Math.min(as, 65), Math.min(hexHsl(c.accent)[2] + 7, 28));
+      P.focus = hsl(ah, Math.max(as, 70), 48);
+      Object.assign(P, { good: '#15803D', goodBg: '#DCFCE7', warn: '#B45309', warnBg: '#FEF3C7', bad: '#B91C1C', badBg: '#FEE2E2' });
+    } else {
+      Object.assign(P, { bg: hsl(th, ts * .7, 8), surface: hsl(th, ts * .6, 12), sunk: hsl(th, ts * .55, 16), line: hsl(th, ts * .45, 25), line2: hsl(th, ts * .45, 32), fg: hsl(th, ts * .3, 91), muted: hsl(th, ts * .3, 66), faint: hsl(th, ts * .25, 50) });
+      P.accent = fit(hsl(ah, Math.min(as, 70), Math.max(hexHsl(c.accent)[2], 66)), P.surface, 5, 1); P.accentInk = P.bg; P.accentHi = hsl(ah, Math.min(as, 75), 80);
+      P.accent2 = fit(hsl(bh, Math.min(bs, 70), 60), P.surface, 4.5, 1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 74); P.accent2Ink = P.bg;
+      P.accent2Soft = hsl(bh, Math.min(bs, 40), 17); P.accent2Text = hsl(bh, Math.min(bs, 70), 78);
+      P.band = hsl(ah, Math.min(as, 60), 11); P.band2 = hsl(ah, Math.min(as, 55), 18);
+      P.focus = hsl(ah, 90, 72);
+      Object.assign(P, { good: '#4ADE80', goodBg: '#12301F', warn: '#F5B451', warnBg: '#3A2A10', bad: '#F87171', badBg: '#3B1717' });
+    }
+    return P;
+  }
+  const MAPS = {
+    std: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--fg': P.fg, '--muted': P.muted, '--navy': P.accent, '--navy-ink': P.accentInk, '--teal': P.accent2, '--focus': P.focus }),
+    cfo: P => ({ '--bg': P.bg, '--bg2': P.sunk, '--surface': P.surface, '--raise': mix(P.surface, P.sunk, .5), '--line': P.line, '--line2': P.line2, '--fg': P.fg, '--muted': P.muted, '--faint': P.faint,
+      '--navy': P.accent, '--navy2': P.accentHi, '--gold': P.accent2, '--gold2': P.accent2Hi, '--gold-ink': P.accent2Ink, '--gold-soft': P.accent2Soft, '--side': P.surface, '--side-fg': P.accent, '--side-muted': P.muted, '--side-line': P.line,
+      '--focus': P.focus, '--input': P.accent2Soft, '--input-ink': P.accent2Text, '--s1': P.accent, '--s2': P.accent2, '--s3': P.line2,
+      '--good': P.good, '--good-bg': P.goodBg, '--warn': P.warn, '--warn-bg': P.warnBg, '--bad': P.bad, '--bad-bg': P.badBg, '--shadow': P.dark ? '0 1px 2px rgba(0,0,0,.3), 0 10px 28px -18px rgba(0,0,0,.6)' : '' }),
+    cost: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--rule': mix(P.line, P.surface, .45), '--fg': P.fg, '--muted': P.muted,
+      '--ink': P.band, '--ink-2': P.band2, '--sel': P.dark ? hsl(hexHsl(P.accent)[0], 50, 38) : P.band, '--band-fg': hsl(hexHsl(P.accent)[0], 40, 95), '--band-muted': hsl(hexHsl(P.accent)[0], 25, 75),
+      '--brass': P.accent2, '--brass-hi': P.accent2Hi, '--brass-bg': P.accent2Soft, '--focus': P.focus, '--chart-a': P.dark ? P.accentHi : P.band, '--chart-c': P.accent2 }),
+  };
+  const comboOf = () => L.preset === 'custom' ? L.custom : L.preset === 'own' ? null : (PRESETS.find(p => p.k === L.preset) || null);
+  let ownTheme = false, applied = [];
+  const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+  function apply() {
+    const root = document.documentElement;
+    if (L.mode === 'light' || L.mode === 'dark') { root.setAttribute('data-theme', L.mode); ownTheme = true; }
+    else if (ownTheme) { root.removeAttribute('data-theme'); ownTheme = false; }
+    applied.forEach(k => root.style.removeProperty(k)); applied = [];
+    const dark = isDark() && (L.mode !== 'system' || CFG.followDevice !== false);
+    let combo = comboOf();
+    if (CFG.colours !== false && !combo && dark && !CFG.ownDark) combo = CFG.own;   // a tool without its own dark design gets one built from its colours
+    if (CFG.colours !== false && combo) {
+      const P = base(combo, dark), vars = MAPS[CFG.map](P);
+      Object.entries(vars).forEach(([k, v]) => { if (v) { root.style.setProperty(k, v); applied.push(k); } });
+      root.style.setProperty('color-scheme', dark ? 'dark' : 'light'); applied.push('color-scheme');
+    }
+    const F = FONTS[L.font];
+    if (F && F.url) {
+      if (!document.querySelector(`link[data-lk-font="${L.font}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = F.url; l.dataset.lkFont = L.font; document.head.appendChild(l); }
+      [['--f-display', F.d], ['--f-body', F.b], ['--f-num', F.m]].forEach(([k, v]) => { root.style.setProperty(k, v); applied.push(k); });
+    }
+    root.classList.toggle('lk-compact', L.density === 'compact');
+    root.classList.toggle('lk-soc', L.skin === 'society');
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+  new MutationObserver(() => { if (!ownTheme) apply(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---- panel
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const css = document.createElement('style');
+  css.textContent = `
+.lk-compact table th, .lk-compact table td { padding-top: 3px !important; padding-bottom: 3px !important; }
+dialog.lk { border: 1px solid var(--lk-line); border-radius: 14px; padding: 0; width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); background: var(--lk-bg); color: var(--lk-fg); font: 14px/1.45 "Segoe UI", system-ui, Arial, sans-serif; }
+dialog.lk::backdrop { background: rgb(10 15 25 / .45); }
+.lk-in { padding: 18px; display: grid; gap: 16px; }
+.lk-head { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; }
+.lk h2 { margin: 0; font-size: 1.15rem; font-family: inherit; } .lk h3 { margin: 0 0 8px; font-size: .92rem; font-family: inherit; color: var(--lk-muted); text-transform: uppercase; letter-spacing: .06em; }
+.lk button { font: inherit; cursor: pointer; border-radius: 7px; border: 1px solid var(--lk-line); background: var(--lk-surface); color: var(--lk-fg); padding: 6px 11px; font-size: 13px; }
+.lk button:hover { border-color: var(--lk-accent); }
+.lk button.lk-p { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk button:focus-visible, .lk input:focus-visible, .lk select:focus-visible { outline: 2px solid var(--lk-accent); outline-offset: 2px; }
+.lk-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 8px; }
+.lk-sw button { text-align: left; display: grid; gap: 6px; padding: 10px; }
+.lk-sw button[aria-pressed="true"] { border-color: var(--lk-accent); box-shadow: 0 0 0 2px var(--lk-accent); }
+.lk-bar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; border: 1px solid var(--lk-line); } .lk-bar span { flex: 1; }
+.lk-nm { font-weight: 600; } .lk-ds { font-size: 12px; color: var(--lk-muted); }
+.lk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px; align-items: end; }
+.lk label { display: grid; gap: 4px; font-size: 12px; color: var(--lk-muted); font-weight: 500; }
+.lk input, .lk select { font: inherit; color: var(--lk-fg); background: var(--lk-surface); border: 1px solid var(--lk-line); border-radius: 7px; padding: 6px 8px; width: 100%; min-width: 0; }
+.lk input[type="color"] { height: 36px; padding: 3px; cursor: pointer; }
+.lk-seg { display: flex; flex-wrap: wrap; gap: 6px; } .lk-seg button[aria-pressed="true"] { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk-chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; } .lk-chip { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--lk-line); }
+.lk-chip.ok { color: #15803D; border-color: #15803D; } .lk-chip.no { color: #B91C1C; border-color: #B91C1C; }
+.lk-saved { display: flex; flex-wrap: wrap; gap: 6px; } .lk-saved span { display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--lk-line); border-radius: 999px; padding: 2px 3px 2px 9px; font-size: 12px; }
+.lk-saved i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1px solid var(--lk-line); }
+.lk-note { font-size: 12px; color: var(--lk-muted); margin: 0; max-width: 90ch; }
+.lk-sec { border-top: 1px solid var(--lk-line); padding-top: 14px; display: grid; gap: 10px; }
+@media (max-width: 560px) { .lk-in { padding: 14px; } }
+html.lk-soc body { -webkit-font-smoothing: antialiased; }
+html.lk-soc h1 { font-weight: 800; letter-spacing: -.01em; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi, html.lk-soc .card, html.lk-soc .page, html.lk-soc .col, html.lk-soc .verdict, html.lk-soc .answer, html.lk-soc .node { border-radius: 16px; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi { box-shadow: 0 1px 2px rgb(15 23 42 / .06); }
+html.lk-soc .banner, html.lk-soc .lawbar { border-radius: 16px; }
+html.lk-soc .pill, html.lk-soc .chip { border-radius: 999px; }
+html.lk-soc button:not(.tab):not(.link):not(.sw):not([data-lk]):not([data-pal]) { border-radius: 12px; font-weight: 600; }
+html.lk-soc input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), html.lk-soc select, html.lk-soc textarea { border-radius: 10px; }
+html.lk-soc dialog:not(.lk) { border-radius: 20px; }
+html.lk-soc th { letter-spacing: .06em; }
+${CFG.skin || ''}`;
+  document.head.appendChild(css);
+  const dlg = document.createElement('dialog'); dlg.className = 'lk'; dlg.setAttribute('aria-label', 'Look and feel'); document.body.appendChild(dlg);
+  function dlgVars() {
+    const P = base(comboOf() || CFG.own, isDark());
+    Object.entries({ bg: P.surface, surface: P.dark ? P.sunk : P.bg, fg: P.fg, muted: P.muted, line: P.line, accent: P.accent, ink: P.accentInk }).forEach(([k, v]) => dlg.style.setProperty('--lk-' + k, v));
+  }
+  const code = () => btoa(unescape(encodeURIComponent(JSON.stringify({ p: L.preset === 'own' ? 'own' : L.preset, c: L.custom, m: L.mode, d: L.density, f: L.font, s: L.skin }))));
+  function draw() {
+    dlgVars();
+    const card = (k, n, d, c) => { const cc = c || CFG.own, a = base(cc, false), b = base(cc, true), bar = [a.accent, a.accent2, a.sunk, b.accent, b.surface];
+      return `<button type="button" data-lk="preset" data-v="${k}" aria-pressed="${L.preset === k}"><span class="lk-bar">${bar.map(x => `<span style="background:${x}"></span>`).join('')}</span><span class="lk-nm">${esc(n)}</span><span class="lk-ds">${esc(d)}</span></button>`; };
+    const seg = (key, opts) => `<div class="lk-seg">${opts.map(([v, l]) => `<button type="button" data-lk="set" data-k="${key}" data-v="${v}" aria-pressed="${L[key] === v}">${esc(l)}</button>`).join('')}</div>`;
+    const c = comboOf() || CFG.own, A = base(c, false), B = base(c, true);
+    const ck = (x, y, lbl) => { const r = contrast(x, y); return `<span class="lk-chip ${r >= 4.5 ? 'ok' : 'no'}">${esc(lbl)} ${r.toFixed(1)}:1</span>`; };
+    dlg.innerHTML = `<div class="lk-in">
+      <div class="lk-head"><h2>Look &amp; feel · ${esc(CFG.name)}</h2><div class="lk-seg"><button type="button" data-lk="reset">Back to the tool's own look</button><button type="button" class="lk-p" data-lk="close">Done</button></div></div>
+      ${CFG.colours === false ? `<p class="lk-note">${esc(CFG.colourNote || '')}</p>` : `<div class="lk-sec" style="border:0;padding:0"><h3>Colour combination</h3>
+        <div class="lk-sw">${card('own', CFG.ownName, CFG.ownDesc, null)}${PRESETS.map(p => card(p.k, p.n, p.d, p)).join('')}${card('custom', 'My colours', 'Your own three colours, set below.', L.custom)}</div></div>
+      <div class="lk-sec"><h3>Custom combination</h3>
+        <div class="lk-row"><label>Main colour (buttons, headings, tabs)<input type="color" data-lkc="accent" value="${L.custom.accent.toLowerCase()}"></label>
+          <label>Highlight colour (chips, labels)<input type="color" data-lkc="accent2" value="${L.custom.accent2.toLowerCase()}"></label>
+          <label>Page tint (backgrounds, lines)<input type="color" data-lkc="tint" value="${L.custom.tint.toLowerCase()}"></label></div>
+        <div class="lk-chips">${ck(A.accent, A.surface, 'Main on light')}${ck(A.accentInk, A.accent, 'Button text')}${ck(B.accent, B.surface, 'Main on dark')}${ck(A.accent2, A.surface, 'Highlight on light')}</div>
+        <div class="lk-row"><label>Name this combination<input type="text" id="lk-name" maxlength="30" placeholder="e.g. Firm colours"></label><button type="button" class="lk-p" data-lk="savec">Save combination</button></div>
+        ${L.saved.length ? `<div class="lk-saved">${L.saved.map((x, i) => `<span><i style="background:${x.accent}"></i><i style="background:${x.accent2}"></i><button type="button" data-lk="use" data-v="${i}" style="border:0;padding:2px 4px;text-decoration:underline">${esc(x.name)}</button><button type="button" data-lk="del" data-v="${i}" aria-label="Remove ${esc(x.name)}" style="padding:1px 6px">✕</button></span>`).join('')}</div>` : ''}
+        <p class="lk-note">Any colours work: they are darkened or lightened just enough to stay readable, and a matching dark version is built. Status colours (green, amber, red) never change.</p></div>`}
+      <div class="lk-sec"><h3>Display</h3><div class="lk-row">
+        <label>Light or dark${seg('mode', [['system', 'Follow device'], ['light', 'Light'], ['dark', 'Dark']])}</label>
+        <label>Shapes${seg('skin', [['society', 'Society Desk style'], ['own', "Tool's own style"]])}</label>
+        <label>Table spacing${seg('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</label>
+        <label>Type<select data-lkf="1">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${L.font === k ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label></div></div>
+      <div class="lk-sec"><h3>Use the same look in your other tools</h3>
+        <div class="lk-row"><label>Look code of this tool<input type="text" readonly id="lk-code" value="${esc(code())}"></label><button type="button" data-lk="copy">Copy look code</button></div>
+        <div class="lk-row"><label>Paste a look code from another tool<input type="text" id="lk-paste" placeholder="Paste here"></label><button type="button" data-lk="paste">Apply code</button></div>
+        <p class="lk-note">Each tool remembers its look in this browser. Copy the code here and paste it in the Look &amp; feel panel of any other Finance Model tool to match them.</p></div></div>`;
+  }
+  let tmr;
+  dlg.addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if (!b) { if (e.target === dlg) dlg.close(); return; } const a = b.dataset.lk;
+    if (a === 'close') { dlg.close(); return; }
+    if (a === 'preset') L.preset = b.dataset.v;
+    if (a === 'set') L[b.dataset.k] = b.dataset.v;
+    if (a === 'reset') { const keep = L.saved; L = { ...JSON.parse(JSON.stringify(DEF)), saved: keep }; }
+    if (a === 'savec') { const nm = (dlg.querySelector('#lk-name').value || '').trim(); if (!nm) { dlg.querySelector('#lk-name').focus(); return; } L.saved = [...L.saved.filter(x => x.name !== nm), { name: nm, ...L.custom }].slice(-8); }
+    if (a === 'use') { const x = L.saved[+b.dataset.v]; L.custom = { accent: x.accent, accent2: x.accent2, tint: x.tint }; L.preset = 'custom'; }
+    if (a === 'del') L.saved.splice(+b.dataset.v, 1);
+    if (a === 'copy') { const el = dlg.querySelector('#lk-code'); try { navigator.clipboard.writeText(el.value).then(() => { b.textContent = 'Copied'; }, () => { el.select(); b.textContent = 'Press Ctrl+C'; }); } catch { el.select(); } return; }
+    if (a === 'paste') { try { const v = JSON.parse(decodeURIComponent(escape(atob(dlg.querySelector('#lk-paste').value.trim())))); L = { ...L, preset: v.p === 'own' ? 'own' : v.p, custom: v.c || L.custom, mode: v.m || L.mode, density: v.d || L.density, font: v.f || L.font, skin: v.s || L.skin }; }
+      catch { dlg.querySelector('#lk-paste').value = ''; dlg.querySelector('#lk-paste').placeholder = 'That is not a look code — copy it again'; return; } }
+    save(); apply(); draw(); });
+  dlg.addEventListener('input', e => { const k = e.target.dataset.lkc; if (!k) return; L.custom[k] = e.target.value.toUpperCase(); L.preset = 'custom'; apply(); clearTimeout(tmr); tmr = setTimeout(save, 300); });
+  dlg.addEventListener('change', e => { if (e.target.dataset.lkc) { save(); draw(); } if (e.target.dataset.lkf) { L.font = e.target.value; save(); apply(); draw(); } });
+  function open() { draw(); if (!dlg.open) dlg.showModal(); }
+  function addButton() {
+    if (document.getElementById('lk-open')) return;
+    const host = document.querySelector(CFG.host);
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'lk-open'; b.textContent = 'Look & feel'; if (CFG.btnClass) b.className = CFG.btnClass;
+    b.addEventListener('click', open);
+    if (host) host.appendChild(b); else { b.style.cssText = 'position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:20'; document.body.appendChild(b); }
+  }
+  apply(); addButton();
+  window.lookFeel = { open, apply };
+})();
+</script>
+
+
+
+</body></html>

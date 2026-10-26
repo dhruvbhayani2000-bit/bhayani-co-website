@@ -1,0 +1,1474 @@
+<!doctype html><html><head><meta charset=utf8><meta name="robots" content="noindex"><script src="/portal/supabase.js"></script><script src="/portal/config.js"></script><script src="/portal/connect.js" data-tool="costing"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Costing Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Libre+Franklin:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: the cost office — a petrol-blue header band with copper instrument accents; a left rail that groups methods by job (cost what you make, find the true cost, decide, report); ledger-ruled tables with double-ruled totals. */
+:root {
+  --bg: #F2F4F8; --surface: #FFFFFF; --sunk: #E9EDF3; --line: #D3DAE4; --rule: #E3E8EF; --fg: #131B2B; --muted: #5A6577;
+  --ink: #0D2350; --ink-2: #16336E; --sel: #0D2350; --band-fg: #EEF3FB; --band-muted: #A9B8D3; --band-field: rgb(255 255 255 / .1); --band-line: rgb(255 255 255 / .22);
+  --brass: #2F62B3; --brass-hi: #7FB3F5; --brass-bg: #E6EFFB; --focus: #2F6FED;
+  --good: #1F7547; --good-bg: #DCF0E3; --warn: #9A5A00; --warn-bg: #FBEBCB; --bad: #B42318; --bad-bg: #FBE0DC;
+  --chart-a: #0D2350; --chart-b: #8A97AB; --chart-c: #4C93E6;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif; --f-body: "Libre Franklin", "Segoe UI", Arial, sans-serif; --f-num: "Spline Sans Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B111C; --surface: #121A28; --sunk: #182234; --line: #27344A; --rule: #1E2A3C; --fg: #E4EAF3; --muted: #94A1B5;
+  --ink: #0A1A3A; --ink-2: #12285A; --sel: #2A4C96; --band-fg: #E9F0FA; --band-muted: #9DB0CF; --band-field: rgb(255 255 255 / .07); --band-line: rgb(255 255 255 / .16);
+  --brass: #8DBBF5; --brass-hi: #A9CDFA; --brass-bg: #15233B; --focus: #7AA2FF;
+  --good: #5BD49A; --good-bg: #10301F; --warn: #F2B457; --warn-bg: #33250C; --bad: #FF8A80; --bad-bg: #3A1512;
+  --chart-a: #A9C4EE; --chart-b: #8C99AD; --chart-c: #5FA8F0; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0B111C; --surface: #121A28; --sunk: #182234; --line: #27344A; --rule: #1E2A3C; --fg: #E4EAF3; --muted: #94A1B5;
+  --ink: #0A1A3A; --ink-2: #12285A; --sel: #2A4C96; --band-fg: #E9F0FA; --band-muted: #9DB0CF; --band-field: rgb(255 255 255 / .07); --band-line: rgb(255 255 255 / .16);
+  --brass: #8DBBF5; --brass-hi: #A9CDFA; --brass-bg: #15233B; --focus: #7AA2FF;
+  --good: #5BD49A; --good-bg: #10301F; --warn: #F2B457; --warn-bg: #33250C; --bad: #FF8A80; --bad-bg: #3A1512;
+  --chart-a: #A9C4EE; --chart-b: #8C99AD; --chart-c: #5FA8F0; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.45; margin: 0; padding-block: 0 48px; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h2 { font-size: 1.45rem; line-height: 1.1; }
+h3 { font-size: 1.15rem; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 12.5px; }
+.mono { font-family: var(--f-num); font-size: 12px; white-space: nowrap; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; font-weight: 500; }
+button:hover { border-color: var(--ink-2); }
+button.primary { background: var(--sel); color: var(--band-fg); border-color: var(--sel); font-weight: 600; }
+button.primary:hover { background: var(--ink-2); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.link { border: 0; background: none; padding: 0; color: var(--fg); text-decoration: underline; text-decoration-color: var(--brass); text-decoration-thickness: 2px; text-underline-offset: 3px; text-align: left; font-weight: 500; }
+button.sm { padding: 4px 10px; font-size: 12px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .tab:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+input, select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; width: 100%; min-width: 0; }
+input[type="checkbox"] { width: auto; accent-color: var(--ink-2); }
+label { display: grid; gap: 4px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 13px; font-weight: 500; }
+
+/* ---- header band */
+.band { background: var(--ink); color: var(--band-fg); position: relative; overflow: hidden; }
+.band::after { content: ""; position: absolute; inset: auto 0 0 0; height: 4px; background: repeating-linear-gradient(90deg, var(--brass-hi) 0 1px, transparent 1px 12px); opacity: .55; }
+.band-in { max-width: 1440px; margin: 0 auto; padding-block: 22px 26px; display: grid; gap: 18px; }
+.brand { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: flex-end; justify-content: space-between; }
+.mark { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.mark svg { flex: none; width: 46px; height: 46px; }
+.mark .eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass-hi); font-weight: 600; }
+.mark h1 { font-size: clamp(2rem, 4.6vw, 3rem); line-height: .92; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; color: var(--band-fg); }
+.band .sub { color: var(--band-muted); font-size: 13px; max-width: 64ch; }
+.company { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.company label { min-width: min(240px, 100%); }
+.band label { color: var(--band-muted); }
+.band input, .band select { background: var(--band-field); border-color: var(--band-line); color: var(--band-fg); }
+.band select option, .band select optgroup { color: #142229; background: #FCFDFD; }
+.band button { background: transparent; color: var(--band-fg); border-color: var(--band-line); }
+.band button:hover { border-color: var(--brass-hi); }
+.band button.danger { color: #FFB3AA; border-color: rgb(255 179 170 / .5); }
+.save-state { font-size: 12px; color: var(--band-muted); display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--band-muted); }
+.dot.ok { background: #5BD486; } .dot.warn { background: var(--brass-hi); }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; padding-top: 16px; border-top: 1px solid var(--band-line); }
+
+/* ---- shell: rail + work area */
+.shell { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 24px; padding-top: 22px; align-items: start; }
+.rail { position: sticky; top: calc(14px + env(safe-area-inset-top, 0px)); display: grid; gap: 16px; }
+.rail .grp { display: grid; gap: 2px; }
+.rail .gl { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--brass); font-weight: 700; padding: 0 10px 4px; }
+.tab { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; background: none; border: 0; border-radius: 4px; padding: 8px 10px; color: var(--fg); font-weight: 500; }
+.tab:hover { background: var(--sunk); }
+.tab[aria-selected="true"] { background: var(--sel); color: var(--band-fg); font-weight: 600; }
+.tab .cnt { font-family: var(--f-num); font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 3px; background: var(--bad); color: var(--surface); }
+.rail .xfer { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.work { display: grid; gap: 18px; min-width: 0; }
+.work > *, .grid-2 > *, #view > * { min-width: 0; }
+#view { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .rail { position: static; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+  .rail .grp { display: flex; gap: 4px; }
+  .rail .gl { display: none; }
+  .tab { white-space: nowrap; width: auto; border: 1px solid var(--line); }
+  .rail .xfer { display: flex; padding: 0 0 0 6px; border: 0; border-left: 1px solid var(--line); }
+  .rail .xfer button { white-space: nowrap; }
+}
+
+.banner { background: var(--brass-bg); border: 1px solid var(--brass); border-radius: 4px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.banner strong { color: var(--brass); }
+
+/* ---- headline gauges */
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tot { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--ink); border-radius: 4px; padding: 12px 14px 14px; display: grid; gap: 4px; align-content: start; }
+.tot .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+.tot .v { font-family: var(--f-display); font-size: 2.3rem; line-height: 1; font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+.tot .n { font-size: 12px; color: var(--muted); }
+.tot.bad { border-top-color: var(--bad); } .tot.bad .v { color: var(--bad); }
+.tot.warn { border-top-color: var(--warn); } .tot.warn .v { color: var(--warn); }
+.tot.good { border-top-color: var(--good); } .tot.good .v { color: var(--good); }
+.meter { position: relative; height: 6px; background: var(--sunk); border-radius: 1px; margin-top: 4px; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--sel); border-radius: 1px; }
+.meter b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--brass-hi); }
+.tot.bad .meter i { background: var(--bad); } .tot.warn .meter i { background: var(--warn); } .tot.good .meter i { background: var(--good); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 3px; padding: 2px 8px; font-size: 11.5px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; letter-spacing: .01em; }
+.pill.ok { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.pill.idle { background: var(--sunk); color: var(--muted); border-color: var(--line); }
+.chip { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 3px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.fa { font-family: var(--f-num); font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 500; font-size: 12.5px; }
+.fa b { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; line-height: 1; padding: 2px 3px; border: 1.5px solid currentColor; border-radius: 2px; transform: rotate(-4deg); }
+.fa.F { color: var(--good); } .fa.A { color: var(--bad); }
+.neg { color: var(--bad); }
+
+/* ---- panels and ledger tables */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; min-width: 0; }
+.panel-head { padding: 14px 16px 10px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; justify-content: space-between; }
+.panel-head .sub { color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; padding: 0 16px 12px; align-items: end; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 12px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; background: transparent; border-top: 1px solid var(--line); border-bottom: 2px solid var(--ink); white-space: nowrap; }
+th.num { text-align: right; font-family: var(--f-body); }
+td .ref { display: block; font-size: 11px; color: var(--muted); }
+tbody tr[tabindex] { cursor: pointer; }
+tbody tr[tabindex]:hover td { background: var(--sunk); }
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--sunk) 35%, transparent); }
+tfoot td { font-weight: 700; border-top: 1px solid var(--fg); border-bottom: 3px double var(--fg); }
+tr.grp td { background: var(--sunk) !important; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+tr.sub td { font-weight: 700; border-top: 1px solid var(--fg); }
+tr.memo td { color: var(--muted); font-style: italic; }
+.empty { padding: 36px 16px; text-align: center; color: var(--muted); display: grid; gap: 10px; justify-items: center; }
+.note { padding: 12px 16px 14px; color: var(--muted); font-size: 12px; max-width: 104ch; border-top: 1px dashed var(--line); }
+.note p { margin: 0 0 6px; }
+.note strong { color: var(--fg); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 18px; }
+.todo { list-style: none; margin: 0; padding: 0 16px 14px; display: grid; }
+.todo li { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--rule); align-items: center; }
+.todo li:last-child { border-bottom: 0; }
+.todo .d { font-size: 10.5px; color: var(--brass); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+@media (max-width: 520px) { .todo li { grid-template-columns: 1fr auto; } .todo .d { grid-column: 1 / -1; } }
+.kv { display: grid; grid-template-columns: 1fr auto; }
+.kv div { padding: 7px 16px; border-bottom: 1px solid var(--rule); }
+.kv .strong { font-weight: 700; }
+.kv .num { text-align: right; }
+.kv > div { min-width: 0; }
+.form-inline { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 12px; padding: 0 16px 14px; align-items: end; }
+
+/* ---- process pipeline */
+.flow { display: flex; flex-wrap: wrap; gap: 0; align-items: stretch; padding: 4px 16px 16px; }
+.flow .st { border: 1px solid var(--line); border-top: 3px solid var(--ink-2); border-radius: 4px; padding: 10px 12px; display: grid; gap: 3px; background: var(--surface); min-width: 170px; flex: 1 1 170px; }
+.flow .st .nm { font-family: var(--f-display); font-weight: 700; font-size: 1.1rem; }
+.flow .st .cu { font-family: var(--f-num); font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.flow .st .ls { font-size: 11.5px; color: var(--muted); }
+.flow .st .ls.bad { color: var(--bad); } .flow .st .ls.good { color: var(--good); }
+.flow .arrow { display: grid; place-items: center; color: var(--brass); padding: 0 6px; font-size: 18px; }
+
+/* ---- bars and charts */
+.bar { position: relative; height: 10px; min-width: 120px; background: var(--sunk); border-radius: 1px; }
+.bar i { position: absolute; top: 0; bottom: 0; border-radius: 1px; }
+.bar i.pos { background: var(--chart-b); left: 50%; }
+.bar i.neg { background: var(--bad); right: 50%; }
+.bar::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted); }
+.vchart { padding: 2px 16px 14px; display: grid; gap: 6px; }
+.vrow { display: grid; grid-template-columns: minmax(120px, 210px) 1fr 110px; gap: 10px; align-items: center; font-size: 12.5px; }
+.vrow .track { position: relative; height: 14px; }
+.vrow .track::before { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--muted); }
+.vrow .track i { position: absolute; top: 0; bottom: 0; border-radius: 1px; }
+.vrow .track i.F { left: 50%; background: var(--good); } .vrow .track i.A { right: 50%; background: var(--bad); }
+.vaxis { display: grid; grid-template-columns: minmax(120px, 210px) 1fr 110px; gap: 10px; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+.vaxis span:nth-child(2) { display: flex; justify-content: space-between; }
+@media (max-width: 520px) { .vrow, .vaxis { grid-template-columns: 96px 1fr 88px; } }
+.chart { padding: 0 16px 12px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .ax { stroke: var(--rule); }
+.chart .lbl { fill: var(--muted); font-size: 11px; font-family: var(--f-body); }
+.chart .s1 { stroke: var(--chart-a); } .chart .s2 { stroke: var(--chart-b); } .chart .s3 { stroke: var(--chart-c); }
+.chart .pt { fill: var(--bad); }
+.chart .loss { fill: color-mix(in srgb, var(--bad) 10%, transparent); }
+.chart .prof { fill: color-mix(in srgb, var(--good) 12%, transparent); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 0 16px 12px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .nl::before { display: none; }
+.legend .l1 { color: var(--chart-a); } .legend .l2 { color: var(--chart-b); } .legend .l3 { color: var(--chart-c); }
+
+dialog { border: 1px solid var(--line); border-top: 4px solid var(--ink); border-radius: 4px; padding: 0; width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 40px); background: var(--surface); color: var(--fg); }
+dialog::backdrop { background: rgb(6 18 24 / .55); }
+.form { padding: 18px; display: grid; gap: 14px; }
+.form h2 { font-size: 1.5rem; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.grid2 .full { grid-column: 1 / -1; }
+.form-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.err { color: var(--bad); font-size: 12px; min-height: 1em; }
+.hint { font-size: 11px; color: var(--muted); font-weight: 400; }
+pre.sheet { background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 12px; font-family: var(--f-num); font-size: 12px; white-space: pre; margin: 0; max-height: 52vh; overflow: auto; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); background: var(--ink); color: var(--band-fg); border-left: 4px solid var(--brass-hi); padding: 10px 14px; border-radius: 4px; font-size: 13px; max-width: min(440px, calc(100vw - 32px)); z-index: 10; }
+@media (prefers-reduced-motion: no-preference) {
+  .tab, button { transition: border-color .15s, background .15s; }
+  #view > * { animation: rise .28s ease-out both; }
+  @keyframes rise { from { transform: translateY(4px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<header class="band">
+  <div class="band-in gutter">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="2" y="2" width="44" height="44" rx="3" fill="none" stroke="var(--brass-hi)" stroke-width="2"/><path d="M8 34h32" stroke="var(--band-fg)" stroke-width="2"/><path d="M10 34v-6M16 34v-3M22 34v-9M28 34v-3M34 34v-6M40 34v-3" stroke="var(--band-fg)" stroke-width="1.6"/><path d="M8 20l9-6 8 4 15-8" fill="none" stroke="var(--brass-hi)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="10" r="2.6" fill="var(--brass-hi)"/></svg>
+        <div><div class="eyebrow">Cost office · ₹</div><h1>Costing Workbench</h1></div>
+      </div>
+      <div class="company">
+        <label for="company">Company<select id="company"></select></label>
+        <button id="new-company" type="button">New company</button>
+        <button id="del-co" type="button" class="danger" data-act="del-company" hidden>Delete company</button>
+        <div class="save-state" id="save-state"><span class="dot"></span><span>Loading…</span></div>
+      </div>
+    </div>
+    <div class="sub">What each product, batch, project and shipment really costs, why it differs from standard, and what to do about it. One company and one month at a time.</div>
+    <section class="settings" aria-label="Company and period">
+      <label for="s-name">Company name<input id="s-name" type="text"></label>
+      <label for="s-period">Costing month<input id="s-period" type="month"></label>
+      <label for="s-ind">Industry / product group<input id="s-ind" type="text"></label>
+      <label for="s-sector">Cost audit sector<select id="s-sector"><option value="B">Non-regulated (Table B)</option><option value="A">Regulated (Table A)</option><option value="N">Not covered by the Rules</option></select></label>
+      <label for="s-to">Turnover last year (₹ crore)<input id="s-to" type="number" min="0" step="0.01"></label>
+      <label for="s-pto">Covered products turnover (₹ crore)<input id="s-pto" type="number" min="0" step="0.01"></label>
+    </section>
+  </div>
+</header>
+
+<div class="shell gutter">
+  <nav class="rail" role="tablist" aria-label="Costing methods" aria-orientation="vertical">
+    <div class="grp"><button class="tab" role="tab" data-tab="desk">Overview</button></div>
+    <div class="grp"><span class="gl">Cost what you make</span>
+      <button class="tab" role="tab" data-tab="std">Standard costing</button>
+      <button class="tab" role="tab" data-tab="proc">Process</button>
+      <button class="tab" role="tab" data-tab="jobs">Jobs &amp; batches</button>
+      <button class="tab" role="tab" data-tab="svc">Services &amp; projects</button></div>
+    <div class="grp"><span class="gl">Find the true cost</span>
+      <button class="tab" role="tab" data-tab="abc">Activity-based</button>
+      <button class="tab" role="tab" data-tab="land">Landed cost</button></div>
+    <div class="grp"><span class="gl">Decide</span>
+      <button class="tab" role="tab" data-tab="cvp">Break-even</button>
+      <button class="tab" role="tab" data-tab="prof">Profitability</button>
+      <button class="tab" role="tab" data-tab="dec">Make or buy &amp; pricing</button></div>
+    <div class="grp"><span class="gl">Report</span>
+      <button class="tab" role="tab" data-tab="cas">Cost sheet (CAS)</button></div>
+    <div class="xfer">
+      <button id="import-btn" type="button" class="sm">Import Excel</button>
+      <input id="import-file" type="file" accept=".xlsx,.xls" hidden>
+      <button id="export" type="button" class="sm">Download Excel</button>
+    </div>
+  </nav>
+  <div class="work">
+    <div class="banner" id="sample-banner" hidden></div>
+    <section class="totals" id="totals" aria-label="Month at a glance"></section>
+    <main id="view"></main>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <form class="form" id="dlg-form" novalidate>
+    <h2 id="dlg-title">Edit</h2>
+    <div id="dlg-top"></div>
+    <div class="grid2" id="dlg-body"></div>
+    <div class="err" id="dlg-err" role="alert"></div>
+    <div class="form-foot">
+      <div class="actions"><button type="button" id="dlg-del" class="danger" hidden>Delete</button><button type="button" id="dlg-del2" class="danger" hidden>Confirm delete</button></div>
+      <div class="actions"><button type="button" id="dlg-cancel">Cancel</button><button type="submit" class="primary" id="dlg-save">Save</button></div>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ================================================================ helpers
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const num = v => { const n = +String(v ?? '').replace(/,/g, ''); return isFinite(n) ? n : 0; };
+const sum = (arr, f) => arr.reduce((a, x) => a + (typeof f === 'function' ? f(x) : num(x[f])), 0);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const nf0 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const nf2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = n => { if (!n || Math.abs(n) < 0.5) return '–'; const s = nf0.format(Math.round(Math.abs(n))); return n < 0 ? `(${s})` : s; };
+const fmt2 = n => { if (!n || Math.abs(n) < 0.005) return '–'; const s = nf2.format(Math.abs(n)); return n < 0 ? `(${s})` : s; };
+const qty = n => { if (!n) return '–'; const r = Math.round(n * 100) / 100; return (r < 0 ? '(' : '') + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(Math.abs(r)) + (r < 0 ? ')' : ''); };
+const pct = (r, d = 1) => r == null || !isFinite(r) ? '–' : (r * 100).toFixed(d) + '%';
+const div = (a, b) => b ? a / b : 0;
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const fmonth = mk => mk ? `${MON[+mk.slice(5, 7) - 1]} ${mk.slice(0, 4)}` : '';
+const fmonthL = mk => mk ? `${MONL[+mk.slice(5, 7) - 1]} ${mk.slice(0, 4)}` : '';
+const TODAY = (() => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; })();
+const fyOf = mk => { const y = +mk.slice(0, 4), m = +mk.slice(5, 7); return m >= 4 ? y : y - 1; };
+const fyLabel = Y => `${Y}-${String(Y + 1).slice(2)}`;
+const pill = (cls, txt, title) => `<span class="pill ${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(txt)}</span>`;
+const fa = v => Math.abs(v) < 0.5 ? '<span class="muted">–</span>' : `<span class="fa ${v > 0 ? 'F' : 'A'}">${nf0.format(Math.round(Math.abs(v)))}<b>${v > 0 ? 'F' : 'A'}</b></span>`;
+const meter = (frac, mark) => `<span class="meter" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, frac * 100)).toFixed(1)}%"></i>${mark != null ? `<b style="left:${Math.max(0, Math.min(99.5, mark * 100)).toFixed(1)}%"></b>` : ''}</span>`;
+function varChart(items) {
+  const mx = Math.max(1, ...items.map(x => Math.abs(x.v)));
+  return `<div class="vchart" role="img" aria-label="Variances by cause"><div class="vaxis"><span>Cause</span><span><span>← Adverse</span><span>Favourable →</span></span><span style="text-align:right">₹</span></div>${items.map(x => `<div class="vrow"><span>${esc(x.label)}</span><span class="track">${Math.abs(x.v) >= .5 ? `<i class="${x.v > 0 ? 'F' : 'A'}" style="width:${(Math.abs(x.v) / mx * 50).toFixed(1)}%"></i>` : ''}</span><span class="num">${fa(x.v)}</span></div>`).join('')}</div>`;
+}
+const faTxt = v => Math.abs(v) < 0.5 ? '–' : `${nf0.format(Math.round(Math.abs(v)))} ${v > 0 ? 'F' : 'A'}`;
+const money = v => `<span class="${v < -0.5 ? 'neg' : ''}">${fmt(v)}</span>`;
+const bar = (v, max) => { const w = max ? Math.min(50, Math.abs(v) / max * 50) : 0; return `<div class="bar" aria-hidden="true"><i class="${v >= 0 ? 'pos' : 'neg'}" style="width:${w}%"></i></div>`; };
+
+// ================================================================ registers (inputs) — one schema drives the forms, the Excel template and the import
+// field: [key, label, type, options|hint]  types: t text, n number, s select, c checkbox, m month
+const SCHEMA = {
+  stdProd: { name: 'Standard cost product', sheet: 'Std products', f: [['code', 'Product code'], ['name', 'Product name'], ['unit', 'Unit of output'], ['budgetOutput', 'Budgeted output for the month', 'n'], ['actualOutput', 'Actual output for the month', 'n'],
+    ['vohRate', 'Variable overhead per standard labour hour (₹)', 'n'], ['vohActual', 'Actual variable overhead (₹)', 'n'], ['fohBudget', 'Budgeted fixed overhead (₹)', 'n'], ['fohActual', 'Actual fixed overhead (₹)', 'n']] },
+  stdMat: { name: 'Standard material line', sheet: 'Std materials', f: [['prod', 'Product', 's', co => co.stdProd.map(p => [p.code, `${p.code} — ${p.name}`])], ['item', 'Material'], ['uom', 'Unit of material'],
+    ['sq', 'Standard quantity per unit of output', 'n'], ['sp', 'Standard price per unit of material (₹)', 'n'], ['aq', 'Actual quantity used in the month', 'n'], ['ap', 'Actual price per unit of material (₹)', 'n']] },
+  stdLab: { name: 'Standard labour line', sheet: 'Std labour', f: [['prod', 'Product', 's', co => co.stdProd.map(p => [p.code, `${p.code} — ${p.name}`])], ['grade', 'Labour grade'],
+    ['sh', 'Standard hours per unit of output', 'n'], ['sr', 'Standard rate per hour (₹)', 'n'], ['ah', 'Actual hours paid', 'n'], ['idle', 'Idle hours (part of hours paid)', 'n'], ['ar', 'Actual rate per hour (₹)', 'n']] },
+  proc: { name: 'Process step', sheet: 'Processes', f: [['line', 'Process line (product)'], ['seq', 'Step number in the line', 'n'], ['name', 'Process name'], ['inputUnits', 'Units put in (first step only; later steps take the previous output)', 'n'],
+    ['material', 'Material added in this step (₹)', 'n'], ['labour', 'Labour (₹)', 'n'], ['overhead', 'Overhead (₹)', 'n'], ['nlPct', 'Normal loss, % of units put in', 'n'], ['scrap', 'Scrap value per unit lost (₹)', 'n'],
+    ['output', 'Good units transferred out', 'n'], ['wip', 'Closing work in progress (units)', 'n'], ['wipConv', 'Work in progress: labour and overhead done, %', 'n']] },
+  jobs: { name: 'Job or batch', sheet: 'Jobs', f: [['no', 'Job / batch number'], ['customer', 'Customer'], ['desc', 'Description'], ['kind', 'Type', 's', ['Job', 'Batch']], ['units', 'Units in the job or batch', 'n'], ['status', 'Status', 's', ['Open', 'Completed', 'Invoiced']],
+    ['material', 'Direct material (₹)', 'n'], ['labHrs', 'Direct labour hours', 'n'], ['labRate', 'Labour rate per hour (₹)', 'n'], ['directExp', 'Direct expenses — job work, tooling, testing (₹)', 'n'], ['machHrs', 'Machine hours', 'n'], ['price', 'Price or billing (₹)', 'n']] },
+  abcAct: { name: 'Activity', sheet: 'ABC activities', f: [['name', 'Activity'], ['pool', 'Overhead cost of the activity (₹)', 'n'], ['driver', 'Cost driver (what makes the cost go up)'], ['total', 'Total driver volume in the month', 'n']] },
+  abcObj: { name: 'Product or customer', sheet: 'ABC cost objects', f: [['name', 'Product or customer'], ['kind', 'Type', 's', ['Product', 'Customer']], ['units', 'Units sold or produced', 'n'], ['directCost', 'Direct material and labour, total (₹)', 'n'],
+    ['labHrs', 'Direct labour hours', 'n'], ['price', 'Selling price per unit (₹)', 'n']] },
+  staff: { name: 'Staff member', sheet: 'Staff', f: [['code', 'Staff code'], ['name', 'Name'], ['grade', 'Role'], ['monthlyCost', 'Monthly cost to company (₹)', 'n'], ['availHrs', 'Available hours in a month', 'n'], ['billRate', 'Billing rate per hour (₹)', 'n']] },
+  proj: { name: 'Project', sheet: 'Projects', f: [['code', 'Project code'], ['name', 'Project'], ['client', 'Client'], ['billing', 'Billing', 's', ['Fixed fee', 'Time and material', 'Internal']], ['fee', 'Contract fee for fixed-fee projects (₹)', 'n'],
+    ['budgetHrs', 'Budgeted hours', 'n'], ['otherCost', 'Other direct costs to date — travel, software, sub-consultants (₹)', 'n'], ['status', 'Status', 's', ['Active', 'Completed', 'On hold']]] },
+  time: { name: 'Timesheet entry', sheet: 'Timesheet', f: [['month', 'Month', 'm'], ['project', 'Project', 's', co => co.proj.map(p => [p.code, `${p.code} — ${p.name}`])], ['staff', 'Staff', 's', co => co.staff.map(s => [s.code, `${s.code} — ${s.name}`])],
+    ['hours', 'Hours', 'n'], ['billable', 'Billable to the client', 'c']] },
+  ship: { name: 'Import shipment', sheet: 'Shipments', f: [['ref', 'Shipment / bill of entry ref'], ['supplier', 'Supplier'], ['boeDate', 'Bill of entry date'], ['currency', 'Invoice currency'], ['rate', 'Customs exchange rate (₹ per unit of currency)', 'n'],
+    ['terms', 'Invoice terms', 's', ['FOB', 'CIF']], ['freight', 'Ocean / air freight in invoice currency (blank: 20% of FOB)', 'n'], ['insurance', 'Insurance in invoice currency (blank: 1.125% of FOB)', 'n'], ['swsPct', 'Social welfare surcharge, % of duty', 'n'],
+    ['cha', 'Clearing agent charges (₹)', 'n'], ['port', 'Port, terminal and shipping line charges (₹)', 'n'], ['inland', 'Inland freight to factory (₹)', 'n'], ['other', 'Other charges — testing, demurrage (₹)', 'n'],
+    ['basis', 'Share local charges by', 's', [['value', 'Assessable value'], ['weight', 'Weight'], ['qty', 'Quantity']]], ['igstCredit', 'IGST credit available (leave IGST out of cost)', 'c']] },
+  shipLine: { name: 'Shipment item', sheet: 'Shipment items', f: [['ship', 'Shipment', 's', co => co.ship.map(s => [s.ref, `${s.ref} — ${s.supplier}`])], ['item', 'Item'], ['uom', 'Unit'], ['qty', 'Quantity', 'n'], ['unitPrice', 'Invoice price per unit (in invoice currency)', 'n'],
+    ['weight', 'Gross weight (kg)', 'n'], ['bcdPct', 'Basic customs duty %', 'n'], ['igstPct', 'IGST %', 'n']] },
+  cvp: { name: 'Product for break-even', sheet: 'CVP products', f: [['code', 'Product code'], ['name', 'Product'], ['unit', 'Unit'], ['price', 'Selling price per unit (₹)', 'n'], ['varCost', 'Variable cost per unit (₹)', 'n'], ['units', 'Budgeted units for the month', 'n'], ['capacity', 'Capacity in the month (units)', 'n']] },
+  sales: { name: 'Sales invoice', sheet: 'Sales', f: [['inv', 'Invoice no.'], ['date', 'Date'], ['customer', 'Customer'], ['channel', 'Channel', 's', ['Direct', 'Distributor', 'Export', 'Online']], ['product', 'Product', 's', co => co.cvp.map(p => [p.code, `${p.code} — ${p.name}`])],
+    ['qty', 'Quantity', 'n'], ['rate', 'Rate per unit (₹)', 'n'], ['discount', 'Discount and rebates (₹)', 'n'], ['freight', 'Outward freight (₹)', 'n'], ['commPct', 'Commission or channel fee %', 'n']] },
+  mob: { name: 'Make-or-buy decision', sheet: 'Make or buy', f: [['name', 'Component or service'], ['unit', 'Unit'], ['qty', 'Quantity needed', 'n'], ['dm', 'Make: material per unit (₹)', 'n'], ['dl', 'Make: labour per unit (₹)', 'n'], ['voh', 'Make: variable overhead per unit (₹)', 'n'],
+    ['avoidFixed', 'Fixed cost saved if bought — supervisor, dies, rent (₹)', 'n'], ['oppCost', 'Contribution lost because capacity is used for this (₹)', 'n'], ['buyPrice', 'Buy: supplier price per unit (₹)', 'n'], ['buyFreight', 'Buy: freight and handling per unit (₹)', 'n']] },
+  special: { name: 'Special order', sheet: 'Special orders', f: [['customer', 'Customer'], ['product', 'Product', 's', co => co.cvp.map(p => [p.code, `${p.code} — ${p.name}`])], ['qty', 'Quantity', 'n'], ['price', 'Price offered per unit (₹)', 'n'], ['extraCost', 'Extra one-off costs — packing, tooling, documents (₹)', 'n']] },
+  csheet: { name: 'Cost sheet', sheet: 'Cost sheets', f: [['product', 'Product'], ['unit', 'Unit'], ['installedCap', 'Installed capacity in the month (units)', 'n'], ['normalCap', 'Normal capacity in the month (units)', 'n'], ['actualProd', 'Actual production (units)', 'n'], ['salesQty', 'Quantity sold (units)', 'n'],
+    ['matOpen', 'Materials: opening stock (₹)', 'n'], ['matPurch', 'Materials: purchases incl. freight and duty, net of credits (₹)', 'n'], ['matClose', 'Materials: closing stock (₹)', 'n'], ['utilities', 'Power, fuel and water (₹)', 'n'], ['empCost', 'Direct employee cost (₹)', 'n'],
+    ['directExp', 'Direct expenses — job work, royalty on production (₹)', 'n'], ['stores', 'Consumable stores and spares (₹)', 'n'], ['repairs', 'Repairs and maintenance (₹)', 'n'], ['qc', 'Quality control (₹)', 'n'], ['rnd', 'Research and development (₹)', 'n'],
+    ['royalty', 'Technical know-how fee and royalty (₹)', 'n'], ['depn', 'Depreciation of production assets (₹)', 'n'], ['fohVar', 'Other production overheads — variable (₹)', 'n'], ['fohFixed', 'Other production overheads — fixed (₹)', 'n'],
+    ['wipOpen', 'Opening work in progress (₹)', 'n'], ['wipClose', 'Closing work in progress (₹)', 'n'], ['scrapCredit', 'Credit for scrap, by-products and recoveries (₹)', 'n'], ['packing', 'Primary packing (₹)', 'n'], ['adminProd', 'Administrative overheads relating to production (₹)', 'n'],
+    ['fgOpen', 'Finished goods: opening stock (₹)', 'n'], ['fgClose', 'Finished goods: closing stock (₹)', 'n'], ['adminOther', 'Other administrative overheads (₹)', 'n'], ['selling', 'Selling and distribution (₹)', 'n'], ['interest', 'Interest and finance charges (₹)', 'n'],
+    ['abnormal', 'Abnormal costs kept out of cost — fire, strike, penalties (₹, memo)', 'n'], ['netSales', 'Net sales realisation (₹)', 'n']] },
+};
+const REGS = Object.keys(SCHEMA);
+const KEYF = { stdProd: 'code', staff: 'code', proj: 'code', ship: 'ref', cvp: 'code', abcAct: 'name' };
+const REFS = { stdProd: [['stdMat', 'prod'], ['stdLab', 'prod']], staff: [['time', 'staff']], proj: [['time', 'project']], ship: [['shipLine', 'ship']], cvp: [['sales', 'product'], ['special', 'product']] };
+const CFG_DEF = { ohRate: 0, adminPct: 0, sellPct: 0, abcBase: 'labHrs', svcOhPct: 0, fixedCost: 0, targetProfit: 0, markupPct: 20, targetMarginPct: 20, ebqDemand: 0, ebqSetup: 0, ebqCarry: 0 };
+
+// ================================================================ engines
+function computeStd(co) {
+  const rows = co.stdProd.map(p => {
+    const Q = num(p.actualOutput);
+    const mats = co.stdMat.filter(m => m.prod === p.code).map(m => { const SQ = num(m.sq) * Q, aq = num(m.aq);
+      return { m, SQ, std: SQ * num(m.sp), act: aq * num(m.ap), price: (num(m.sp) - num(m.ap)) * aq, usage: (SQ - aq) * num(m.sp), unit: num(m.sq) * num(m.sp) }; });
+    const labs = co.stdLab.filter(l => l.prod === p.code).map(l => { const SH = num(l.sh) * Q, ah = num(l.ah), AHw = ah - num(l.idle);
+      return { l, SH, AHw, std: SH * num(l.sr), act: ah * num(l.ar), rate: (num(l.sr) - num(l.ar)) * ah, idle: -num(l.idle) * num(l.sr), eff: (SH - AHw) * num(l.sr), unit: num(l.sh) * num(l.sr) }; });
+    const SHt = sum(labs, 'SH'), AHw = sum(labs, 'AHw'), r = num(p.vohRate), shU = sum(labs, x => num(x.l.sh));
+    const voh = { std: SHt * r, act: num(p.vohActual), exp: AHw * r - num(p.vohActual), eff: (SHt - AHw) * r, unit: shU * r };
+    const absRate = div(num(p.fohBudget), num(p.budgetOutput));
+    const foh = { std: Q * absRate, act: num(p.fohActual), exp: num(p.fohBudget) - num(p.fohActual), vol: Q * absRate - num(p.fohBudget), unit: absRate };
+    const V = { mat: sum(mats, x => x.price + x.usage), lab: sum(labs, x => x.rate + x.idle + x.eff), voh: voh.exp + voh.eff, foh: foh.exp + foh.vol };
+    const std = sum(mats, 'std') + sum(labs, 'std') + voh.std + foh.std, act = sum(mats, 'act') + sum(labs, 'act') + voh.act + foh.act;
+    const lines = [];
+    mats.forEach(x => { lines.push({ kind: 'Material price', what: x.m.item, v: x.price }); lines.push({ kind: 'Material usage', what: x.m.item, v: x.usage }); });
+    labs.forEach(x => { lines.push({ kind: 'Labour rate', what: x.l.grade, v: x.rate }); if (num(x.l.idle)) lines.push({ kind: 'Idle time', what: x.l.grade, v: x.idle }); lines.push({ kind: 'Labour efficiency', what: x.l.grade, v: x.eff }); });
+    lines.push({ kind: 'Variable overhead expenditure', what: '', v: voh.exp }, { kind: 'Variable overhead efficiency', what: '', v: voh.eff }, { kind: 'Fixed overhead expenditure', what: '', v: foh.exp }, { kind: 'Fixed overhead volume', what: '', v: foh.vol });
+    return { p, Q, mats, labs, voh, foh, unit: sum(mats, 'unit') + sum(labs, 'unit') + voh.unit + foh.unit, std, act, V, total: std - act, lines, check: Math.abs((std - act) - (V.mat + V.lab + V.voh + V.foh)) < 1 };
+  });
+  return { rows, total: sum(rows, 'total'), mat: sum(rows, r => r.V.mat), lab: sum(rows, r => r.V.lab), oh: sum(rows, r => r.V.voh + r.V.foh), std: sum(rows, 'std'), act: sum(rows, 'act') };
+}
+
+function computeProc(co) {
+  const lines = {};
+  co.proc.slice().sort((a, b) => num(a.seq) - num(b.seq)).forEach(p => (lines[p.line || 'Process line'] = lines[p.line || 'Process line'] || []).push(p));
+  return Object.entries(lines).map(([line, steps]) => {
+    let prev = null;
+    const out = steps.map((p, i) => {
+      const first = i === 0, I = first ? num(p.inputUnits) : prev.O, TI = first ? 0 : prev.outVal, mat = num(p.material), lab = num(p.labour), oh = num(p.overhead);
+      const N = I * num(p.nlPct) / 100, O = num(p.output), W = num(p.wip), c = num(p.wipConv) / 100, sc = num(p.scrap);
+      const ab = I - N - O - W, AbL = ab > 1e-9 ? ab : 0, AbG = ab < -1e-9 ? -ab : 0;
+      const EUm = O + W + AbL - AbG, EUc = O + W * c + AbL - AbG;
+      const poolM = TI + mat - N * sc, poolC = lab + oh;
+      const cm = div(poolM, EUm), cc = div(poolC, EUc), cu = cm + cc;
+      const r = { p, line, I, TI, mat, lab, oh, N, O, W, c, sc, AbL, AbG, EUm, EUc, poolM, poolC, cm, cc, cu,
+        nlVal: N * sc, outVal: O * cu, wipVal: W * cm + W * c * cc, ablVal: AbL * cu, abgVal: AbG * cu, ablNet: AbL * cu - AbL * sc, abgNet: AbG * cu - AbG * sc };
+      r.dr = TI + mat + lab + oh + r.abgVal; r.cr = r.nlVal + r.ablVal + r.outVal + r.wipVal; r.ok = Math.abs(r.dr - r.cr) < 1 && EUm > 0;
+      prev = r; return r;
+    });
+    const last = out[out.length - 1];
+    return { line, steps: out, finishedUnits: last ? last.O : 0, finishedVal: last ? last.outVal : 0, unitCost: last ? last.cu : 0, abnLoss: sum(out, 'ablNet'), abnGain: sum(out, 'abgNet') };
+  });
+}
+
+function computeJobs(co) {
+  const c = co.cfg;
+  const rows = co.jobs.map(j => {
+    const labour = num(j.labHrs) * num(j.labRate), prime = num(j.material) + labour + num(j.directExp), worksOH = num(j.machHrs) * num(c.ohRate);
+    const works = prime + worksOH, admin = works * num(c.adminPct) / 100, cop = works + admin, sell = cop * num(c.sellPct) / 100, total = cop + sell, price = num(j.price);
+    return { j, labour, prime, worksOH, works, admin, cop, sell, total, price, profit: price - total, margin: div(price - total, price), perUnit: div(total, num(j.units)) };
+  });
+  return { rows, profit: sum(rows, 'profit'), price: sum(rows, 'price'), losers: rows.filter(r => r.price && r.profit < 0) };
+}
+
+function computeABC(co) {
+  const acts = co.abcAct.map(a => ({ a, rate: div(num(a.pool), num(a.total)), used: sum(co.abcObj, o => num((o.drv || {})[a.name])) }));
+  acts.forEach(x => { x.unusedCost = (num(x.a.total) - x.used) * x.rate; });
+  const pool = sum(co.abcAct, 'pool'), base = co.cfg.abcBase || 'labHrs', baseTot = sum(co.abcObj, base), tradRate = div(pool, baseTot);
+  const objs = co.abcObj.map(o => {
+    const abc = sum(acts, x => num((o.drv || {})[x.a.name]) * x.rate), trad = num(o[base]) * tradRate, U = num(o.units);
+    const fullAbc = div(num(o.directCost) + abc, U), fullTrad = div(num(o.directCost) + trad, U), price = num(o.price);
+    return { o, abc, trad, U, fullAbc, fullTrad, abcPU: div(abc, U), tradPU: div(trad, U), diff: div(fullAbc - fullTrad, fullTrad), mAbc: div(price - fullAbc, price), mTrad: div(price - fullTrad, price), price };
+  });
+  return { acts, objs, pool, tradRate, base, unused: sum(acts, 'unusedCost') };
+}
+
+function computeSvc(co) {
+  const oh = num(co.cfg.svcOhPct) / 100, mk = co.settings.period;
+  const staff = co.staff.map(s => {
+    const rate = div(num(s.monthlyCost), num(s.availHrs)) * (1 + oh);
+    const mine = co.time.filter(t => t.staff === s.code && t.month === mk);
+    const hrs = sum(mine, 'hours'), bill = sum(mine.filter(t => t.billable), 'hours');
+    return { s, rate, hrs, bill, util: div(bill, num(s.availHrs)), load: div(hrs, num(s.availHrs)), billValue: bill * num(s.billRate) };
+  });
+  const SM = Object.fromEntries(staff.map(x => [x.s.code, x]));
+  const projects = co.proj.map(p => {
+    const ts = co.time.filter(t => t.project === p.code);
+    const hrs = sum(ts, 'hours'), labour = sum(ts, t => num(t.hours) * (SM[t.staff] ? SM[t.staff].rate : 0)), cost = labour + num(p.otherCost);
+    const bh = num(p.budgetHrs), done = bh ? Math.min(1, hrs / bh) : 0;
+    const tm = sum(ts.filter(t => t.billable), t => num(t.hours) * (SM[t.staff] ? num(SM[t.staff].s.billRate) : 0));
+    const revenue = p.billing === 'Fixed fee' ? num(p.fee) * done : p.billing === 'Time and material' ? tm : 0;
+    const eac = p.billing === 'Fixed fee' && hrs ? cost / hrs * Math.max(bh, hrs) : 0;
+    return { p, hrs, labour, cost, revenue, margin: revenue - cost, mPct: div(revenue - cost, revenue), burn: div(hrs, bh), done, eac, eacMargin: p.billing === 'Fixed fee' ? num(p.fee) - eac : null, effRate: div(revenue, hrs), monthHrs: sum(ts.filter(t => t.month === mk), 'hours') };
+  });
+  const bill = projects.filter(x => x.p.billing !== 'Internal');
+  return { staff, projects, oh, revenue: sum(bill, 'revenue'), cost: sum(bill, 'cost'), margin: sum(bill, 'margin'), util: div(sum(staff, 'bill'), sum(co.staff, 'availHrs')), internal: sum(projects.filter(x => x.p.billing === 'Internal'), 'cost') };
+}
+
+function computeLanded(co) {
+  return co.ship.map(s => {
+    const lines = co.shipLine.filter(l => l.ship === s.ref), rate = num(s.rate), cif = s.terms === 'CIF';
+    const fobF = sum(lines, l => num(l.qty) * num(l.unitPrice));
+    const freightF = cif ? 0 : (s.freight === '' || s.freight == null ? fobF * .20 : num(s.freight)), freightRule = !cif && (s.freight === '' || s.freight == null);
+    const insF = cif ? 0 : (s.insurance === '' || s.insurance == null ? fobF * .01125 : num(s.insurance)), insRule = !cif && (s.insurance === '' || s.insurance == null);
+    const local = num(s.cha) + num(s.port) + num(s.inland) + num(s.other), sws = (s.swsPct === '' || s.swsPct == null ? 10 : num(s.swsPct)) / 100;
+    const rows = lines.map(l => {
+      const f = num(l.qty) * num(l.unitPrice), sh = div(f, fobF), av = (f + freightF * sh + insF * sh) * rate;
+      const bcd = av * num(l.bcdPct) / 100, swsA = bcd * sws, igst = (av + bcd + swsA) * num(l.igstPct) / 100;
+      return { l, fobINR: f * rate, freight: freightF * sh * rate, ins: insF * sh * rate, av, bcd, sws: swsA, igst };
+    });
+    const bTot = s.basis === 'weight' ? sum(lines, 'weight') : s.basis === 'qty' ? sum(lines, 'qty') : sum(rows, 'av');
+    rows.forEach(r => {
+      const b = s.basis === 'weight' ? num(r.l.weight) : s.basis === 'qty' ? num(r.l.qty) : r.av;
+      r.local = local * div(b, bTot); r.landed = r.av + r.bcd + r.sws + r.local + (s.igstCredit ? 0 : r.igst);
+      r.perUnit = div(r.landed, num(r.l.qty)); r.uplift = div(r.landed, r.fobINR) - 1;
+    });
+    return { s, rows, fobINR: fobF * rate, freightRule, insRule, av: sum(rows, 'av'), duty: sum(rows, r => r.bcd + r.sws), igst: sum(rows, 'igst'), local, landed: sum(rows, 'landed'), cash: sum(rows, r => r.av + r.bcd + r.sws + r.igst) + local };
+  });
+}
+
+function computeCVP(co) {
+  const F = num(co.cfg.fixedCost), T = num(co.cfg.targetProfit);
+  const rows = co.cvp.map(p => { const U = num(p.units), cmU = num(p.price) - num(p.varCost); return { p, U, cmU, pv: div(cmU, num(p.price)), sales: U * num(p.price), cm: U * cmU, spare: num(p.capacity) - U }; });
+  const S = sum(rows, 'sales'), C = sum(rows, 'cm'), pv = div(C, S), profit = C - F, be = pv > 0 ? F / pv : null;
+  rows.forEach(r => { r.beUnits = be != null ? r.U * be / S : null; r.fixedShare = div(F * r.sales, S); r.fullCost = div(r.fixedShare, r.U) + num(r.p.varCost); });
+  const scen = (label, k) => { const s2 = k(rows.map(r => ({ price: num(r.p.price), vc: num(r.p.varCost), U: r.U })), F); const S2 = sum(s2.rows, r => r.U * r.price), C2 = sum(s2.rows, r => r.U * (r.price - r.vc)); return { label, profit: C2 - s2.F, be: C2 > 0 ? s2.F / div(C2, S2) : null }; };
+  const sens = [
+    scen('As budgeted', (r, f) => ({ rows: r, F: f })),
+    scen('Selling price 5% lower', (r, f) => ({ rows: r.map(x => ({ ...x, price: x.price * .95 })), F: f })),
+    scen('Sales volume 10% lower', (r, f) => ({ rows: r.map(x => ({ ...x, U: x.U * .9 })), F: f })),
+    scen('Variable cost 5% higher', (r, f) => ({ rows: r.map(x => ({ ...x, vc: x.vc * 1.05 })), F: f })),
+    scen('Fixed cost 10% higher', (r, f) => ({ rows: r, F: f * 1.1 })),
+  ];
+  return { rows, F, T, S, C, pv, profit, be, mos: be != null && S ? (S - be) / S : null, target: pv > 0 ? (F + T) / pv : null, dol: profit > 0 ? C / profit : null, sens };
+}
+
+function computeProfit(co) {
+  const PM = Object.fromEntries(co.cvp.map(p => [p.code, p]));
+  const rows = co.sales.map(s => {
+    const p = PM[s.product], gross = num(s.qty) * num(s.rate), net = gross - num(s.discount), vc = num(s.qty) * (p ? num(p.varCost) : 0);
+    const comm = net * num(s.commPct) / 100, cts = num(s.freight) + comm;
+    return { s, p, gross, net, vc, comm, freight: num(s.freight), cts, contrib: net - vc - cts };
+  });
+  const by = dim => { const g = {}; rows.forEach(r => { const k = dim === 'product' ? (r.p ? `${r.p.code} — ${r.p.name}` : r.s.product) : r.s[dim] || '—';
+    const e = g[k] || (g[k] = { k, n: 0, qty: 0, net: 0, vc: 0, cts: 0, contrib: 0, disc: 0 }); e.n++; e.qty += num(r.s.qty); e.net += r.net; e.vc += r.vc; e.cts += r.cts; e.contrib += r.contrib; e.disc += num(r.s.discount); });
+    return Object.values(g).map(e => ({ ...e, cm: div(e.contrib, e.net) })).sort((a, b) => b.contrib - a.contrib); };
+  return { rows, by, net: sum(rows, 'net'), contrib: sum(rows, 'contrib'), unknown: rows.filter(r => !r.p).length };
+}
+
+function computeDecisions(co, CV) {
+  const mob = co.mob.map(d => {
+    const q = num(d.qty), varU = num(d.dm) + num(d.dl) + num(d.voh), buyU = num(d.buyPrice) + num(d.buyFreight);
+    const make = q * varU + num(d.avoidFixed) + num(d.oppCost), buy = q * buyU, diff = buy - make;
+    const ind = buyU > varU ? (num(d.avoidFixed) + num(d.oppCost)) / (buyU - varU) : null;
+    return { d, q, varU, buyU, make, buy, diff, rec: Math.abs(diff) < 0.5 ? 'Either' : diff > 0 ? 'Make' : 'Buy', ind };
+  });
+  const CM = Object.fromEntries(CV.rows.map(r => [r.p.code, r]));
+  const mk = num(co.cfg.markupPct) / 100, tm = num(co.cfg.targetMarginPct) / 100;
+  const pricing = CV.rows.map(r => ({ r, full: r.fullCost, costPlus: r.fullCost * (1 + mk), marginPrice: tm < 1 ? r.fullCost / (1 - tm) : null, min: num(r.p.varCost), price: num(r.p.price), actualMarkup: div(num(r.p.price) - r.fullCost, r.fullCost) }));
+  const special = co.special.map(o => {
+    const r = CM[o.product], q = num(o.qty), vc = r ? num(r.p.varCost) : 0, spare = r ? Math.max(0, r.spare) : 0;
+    const extraContrib = q * (num(o.price) - vc) - num(o.extraCost), short = Math.max(0, q - spare), displaced = short * (r ? r.cmU : 0), net = extraContrib - displaced;
+    const minPrice = q ? vc + (num(o.extraCost) + displaced) / q : 0;
+    return { o, r, q, vc, spare, extraContrib, short, displaced, net, minPrice, rec: !r ? 'Unknown product' : net > 0 ? 'Accept' : 'Decline' };
+  });
+  return { mob, pricing, special };
+}
+
+const CAS_LINES = [
+  ['mat', 'Materials consumed', 'CAS-6'], ['utilities', 'Power, fuel and water', 'CAS-8'], ['empCost', 'Direct employee cost', 'CAS-7'], ['directExp', 'Direct expenses', 'CAS-10'],
+  ['stores', 'Consumable stores and spares', 'CAS-6'], ['repairs', 'Repairs and maintenance', 'CAS-12'], ['qc', 'Quality control', 'CAS-21'], ['rnd', 'Research and development', 'CAS-18'],
+  ['royalty', 'Technical know-how fee and royalty', 'CAS-20'], ['depn', 'Depreciation and amortisation', 'CAS-16'], ['fohVar', 'Other production overheads — variable', 'CAS-3'], ['fohAbs', 'Other production overheads — fixed, absorbed on normal capacity', 'CAS-3 / CAS-2'],
+];
+function computeCAS(co) {
+  return co.csheet.map(s => {
+    const v = k => num(s[k]), A = v('actualProd'), N = v('normalCap'), sold = v('salesQty');
+    const mat = v('matOpen') + v('matPurch') - v('matClose'), util = N ? Math.min(1, A / N) : 1, fohAbs = v('fohFixed') * util, unabs = v('fohFixed') - fohAbs;
+    const L = { mat, fohAbs }; CAS_LINES.forEach(([k]) => { if (L[k] == null) L[k] = v(k); });
+    const sub = sum(CAS_LINES, ([k]) => L[k]);
+    const cop = sub + v('wipOpen') - v('wipClose') - v('scrapCredit') + v('packing') + v('adminProd');
+    const cogs = cop + v('fgOpen') - v('fgClose'), cos = cogs + v('adminOther') + v('selling'), profit = v('netSales') - cos;
+    return { s, A, N, sold, L, sub, cop, cogs, cos, profit, unabs, util, capUtil: div(A, v('installedCap')), copU: div(cop, A), cosU: div(cos, sold), priceU: div(v('netSales'), sold), margin: div(profit, v('netSales')) };
+  });
+}
+function costAudit(st) {
+  const to = num(st.turnover), pto = num(st.productTurnover), sec = st.sector || 'B';
+  if (sec === 'N') return { records: false, audit: false, why: 'The products are not in Table A or Table B of the Companies (Cost Records and Audit) Rules, 2014.' };
+  const records = to >= 35, audit = sec === 'A' ? to >= 50 && pto >= 25 : to >= 100 && pto >= 35;
+  return { records, audit, why: `${sec === 'A' ? 'Regulated sector (Table A): audit when overall turnover is ₹50 crore or more and the covered products are ₹25 crore or more.' : 'Non-regulated sector (Table B): audit when overall turnover is ₹100 crore or more and the covered products are ₹35 crore or more.'} Records are needed from ₹35 crore overall turnover.` };
+}
+
+function computeAll(co) {
+  const S = computeStd(co), P = computeProc(co), J = computeJobs(co), A = computeABC(co), V = computeSvc(co), L = computeLanded(co), C = computeCVP(co), PR = computeProfit(co), D = computeDecisions(co, C), CS = computeCAS(co);
+  const flags = [];
+  const worst = S.rows.flatMap(r => r.lines.map(x => ({ ...x, prod: r.p.name }))).filter(x => x.v < -0.5).sort((a, b) => a.v - b.v)[0];
+  if (worst) flags.push({ tab: 'std', area: 'Standard costing', text: `Largest adverse variance: ${worst.kind.toLowerCase()}${worst.what ? ' on ' + worst.what : ''} (${worst.prod}) ₹${fmt(-worst.v)}`, sev: 'bad' });
+  P.forEach(l => l.steps.filter(s => s.AbL > 0.005).forEach(s => flags.push({ tab: 'proc', area: 'Process', text: `${s.p.name}: abnormal loss of ${qty(s.AbL)} units, ₹${fmt(s.ablNet)} to costing profit and loss`, sev: 'warn' })));
+  J.losers.forEach(r => flags.push({ tab: 'jobs', area: 'Jobs & batches', text: `${r.j.no} for ${r.j.customer} loses ₹${fmt(-r.profit)} (${pct(r.margin)})`, sev: 'bad' }));
+  A.objs.filter(o => Math.abs(o.diff) > .1).forEach(o => flags.push({ tab: 'abc', area: 'Activity-based', text: `${o.o.name}: true cost ${o.diff > 0 ? 'higher' : 'lower'} than the books show by ${pct(Math.abs(o.diff))} per unit`, sev: o.diff > 0 ? 'warn' : 'idle' }));
+  V.projects.filter(x => x.p.billing !== 'Internal' && x.p.status !== 'Completed' && (x.burn > 1 || (x.revenue && x.mPct < .15))).forEach(x => flags.push({ tab: 'svc', area: 'Projects', text: `${x.p.code} ${x.p.name}: ${x.burn > 1 ? `${pct(x.burn, 0)} of budgeted hours used` : `margin ${pct(x.mPct)}`}`, sev: x.margin < 0 || (x.eacMargin != null && x.eacMargin < 0) ? 'bad' : 'warn' }));
+  V.staff.filter(x => x.util < .6 && num(x.s.billRate)).forEach(x => flags.push({ tab: 'svc', area: 'Utilisation', text: `${x.s.name}: ${pct(x.util, 0)} billable in ${fmonth(co.settings.period)}`, sev: 'warn' }));
+  if (C.mos != null && C.mos < .2) flags.push({ tab: 'cvp', area: 'Break-even', text: `Margin of safety only ${pct(C.mos)} of budgeted sales`, sev: 'warn' });
+  PR.by('customer').filter(e => e.contrib < 0).forEach(e => flags.push({ tab: 'prof', area: 'Profitability', text: `${e.k} has negative contribution of ₹${fmt(-e.contrib)} after discounts, freight and commission`, sev: 'bad' }));
+  D.mob.forEach(m => flags.push({ tab: 'dec', area: 'Make or buy', text: `${m.d.name}: ${m.rec === 'Either' ? 'no difference' : `${m.rec.toLowerCase()} — saves ₹${fmt(Math.abs(m.diff))}`}`, sev: 'idle' }));
+  CS.filter(c => c.unabs > 0.5).forEach(c => flags.push({ tab: 'cas', area: 'Cost sheet', text: `${c.s.product}: ₹${fmt(c.unabs)} fixed overhead unabsorbed at ${pct(c.util, 0)} of normal capacity — kept out of cost`, sev: 'warn' }));
+  return { S, P, J, A, V, L, C, PR, D, CS, flags };
+}
+
+// ================================================================ example companies
+function blankCompany(name) {
+  const co = { id: uid('co_'), sample: false, settings: { name: name || 'New company', period: TODAY.slice(0, 7), industry: '', sector: 'B', turnover: '', productTurnover: '' }, cfg: { ...CFG_DEF } };
+  REGS.forEach(k => { co[k] = []; }); return co;
+}
+function exPolymers() {
+  const co = blankCompany('Sanand Polymers Pvt Ltd'); co.id = 'ex-polymers'; co.sample = true;
+  Object.assign(co.settings, { period: '2026-09', industry: 'Engineering plastic compounds', sector: 'B', turnover: 142, productTurnover: 96 });
+  Object.assign(co.cfg, { ohRate: 2400, adminPct: 8, sellPct: 4, abcBase: 'labHrs', fixedCost: 14500000, targetProfit: 6000000, markupPct: 15, targetMarginPct: 18, ebqDemand: 1200, ebqSetup: 18000, ebqCarry: 2600 });
+  co.stdProd = [
+    { code: 'PP-C30', name: 'PP compound, 30% glass filled', unit: 'tonne', budgetOutput: 400, actualOutput: 372, vohRate: 350, vohActual: 548000, fohBudget: 3600000, fohActual: 3710000 },
+    { code: 'ABS-FR', name: 'ABS flame-retardant compound', unit: 'tonne', budgetOutput: 150, actualOutput: 158, vohRate: 350, vohActual: 168000, fohBudget: 1650000, fohActual: 1640000 },
+  ];
+  co.stdMat = [
+    { prod: 'PP-C30', item: 'PP homopolymer', uom: 'tonne', sq: 0.72, sp: 98000, aq: 271, ap: 101200 },
+    { prod: 'PP-C30', item: 'Glass fibre, chopped', uom: 'tonne', sq: 0.30, sp: 72000, aq: 112.5, ap: 70800 },
+    { prod: 'PP-C30', item: 'Coupling agent and stabilisers', uom: 'kg', sq: 12, sp: 450, aq: 4610, ap: 462 },
+    { prod: 'ABS-FR', item: 'ABS resin', uom: 'tonne', sq: 0.86, sp: 142000, aq: 134.2, ap: 139500 },
+    { prod: 'ABS-FR', item: 'FR masterbatch', uom: 'tonne', sq: 0.16, sp: 210000, aq: 25.9, ap: 214000 },
+  ];
+  co.stdLab = [
+    { prod: 'PP-C30', grade: 'Extruder operators', sh: 2.5, sr: 220, ah: 980, idle: 40, ar: 232 },
+    { prod: 'PP-C30', grade: 'Helpers', sh: 1.5, sr: 160, ah: 590, idle: 20, ar: 158 },
+    { prod: 'ABS-FR', grade: 'Extruder operators', sh: 3.0, sr: 220, ah: 470, idle: 0, ar: 225 },
+  ];
+  co.proc = [
+    { line: 'PP compound line', seq: 1, name: 'Dry mixing', inputUnits: 410, material: 39850000, labour: 310000, overhead: 820000, nlPct: 1, scrap: 30000, output: 404, wip: 0, wipConv: 0 },
+    { line: 'PP compound line', seq: 2, name: 'Extrusion and compounding', inputUnits: '', material: 1250000, labour: 640000, overhead: 2460000, nlPct: 2, scrap: 45000, output: 392, wip: 6, wipConv: 40 },
+    { line: 'PP compound line', seq: 3, name: 'Packing', inputUnits: '', material: 290000, labour: 180000, overhead: 240000, nlPct: 0.5, scrap: 0, output: 388, wip: 0, wipConv: 0 },
+  ];
+  co.jobs = [
+    { no: 'TC-2609-04', customer: 'Kaveri Autoparts', desc: 'Toll compounding, customer resin', kind: 'Batch', units: 18, status: 'Invoiced', material: 0, labHrs: 64, labRate: 220, directExp: 38000, machHrs: 72, price: 360000 },
+    { no: 'TC-2609-07', customer: 'Northstar Cables', desc: 'Toll compounding with our additives', kind: 'Batch', units: 12, status: 'Invoiced', material: 186000, labHrs: 48, labRate: 220, directExp: 22000, machHrs: 50, price: 420000 },
+    { no: 'CM-2609-02', customer: 'Lumina Lighting', desc: 'Colour matching, 3 shades', kind: 'Job', units: 1, status: 'Completed', material: 14500, labHrs: 30, labRate: 260, directExp: 6000, machHrs: 8, price: 68000 },
+    { no: 'TC-2609-11', customer: 'Vardhan Pipes', desc: 'Toll compounding, rush order', kind: 'Batch', units: 25, status: 'Completed', material: 92000, labHrs: 110, labRate: 220, directExp: 64000, machHrs: 118, price: 505000 },
+  ];
+  co.abcAct = [
+    { name: 'Machine set-ups', pool: 1440000, driver: 'Set-ups', total: 120 },
+    { name: 'Quality testing', pool: 960000, driver: 'Test batches', total: 240 },
+    { name: 'Material handling', pool: 720000, driver: 'Material moves', total: 900 },
+    { name: 'Order processing and dispatch', pool: 540000, driver: 'Customer orders', total: 180 },
+  ];
+  co.abcObj = [
+    { name: 'PP-C30 compound', kind: 'Product', units: 372, directCost: 38690000, labHrs: 1510, price: 128000, drv: { 'Machine set-ups': 18, 'Quality testing': 40, 'Material handling': 320, 'Order processing and dispatch': 30 } },
+    { name: 'ABS-FR compound', kind: 'Product', units: 158, directCost: 24650000, labHrs: 470, price: 205000, drv: { 'Machine set-ups': 22, 'Quality testing': 60, 'Material handling': 210, 'Order processing and dispatch': 40 } },
+    { name: 'Colour masterbatch, small lots', kind: 'Product', units: 46, directCost: 5520000, labHrs: 380, price: 175000, drv: { 'Machine set-ups': 80, 'Quality testing': 140, 'Material handling': 370, 'Order processing and dispatch': 110 } },
+  ];
+  co.ship = [
+    { ref: 'BE 4471823', supplier: 'Hanil Chemicals Co (Korea)', boeDate: '2026-09-08', currency: 'USD', rate: 88.4, terms: 'FOB', freight: 2400, insurance: '', swsPct: 10, cha: 18500, port: 42000, inland: 36000, other: 0, basis: 'weight', igstCredit: true },
+    { ref: 'BE 4498107', supplier: 'Fibratec GmbH (Germany)', boeDate: '2026-09-21', currency: 'EUR', rate: 103.2, terms: 'CIF', freight: '', insurance: '', swsPct: 10, cha: 12000, port: 26000, inland: 22000, other: 6500, basis: 'value', igstCredit: true },
+  ];
+  co.shipLine = [
+    { ship: 'BE 4471823', item: 'PP homopolymer', uom: 'kg', qty: 40000, unitPrice: 1.08, weight: 40800, bcdPct: 7.5, igstPct: 18 },
+    { ship: 'BE 4471823', item: 'ABS resin', uom: 'kg', qty: 16000, unitPrice: 1.62, weight: 16300, bcdPct: 7.5, igstPct: 18 },
+    { ship: 'BE 4471823', item: 'Antioxidant additive', uom: 'kg', qty: 1000, unitPrice: 6.2, weight: 1100, bcdPct: 7.5, igstPct: 18 },
+    { ship: 'BE 4498107', item: 'Glass fibre, chopped', uom: 'kg', qty: 20000, unitPrice: 1.15, weight: 20600, bcdPct: 7.5, igstPct: 18 },
+  ];
+  co.cvp = [
+    { code: 'PP-C30', name: 'PP compound, 30% glass filled', unit: 'tonne', price: 128000, varCost: 98600, units: 400, capacity: 450 },
+    { code: 'ABS-FR', name: 'ABS flame-retardant compound', unit: 'tonne', price: 205000, varCost: 168000, units: 150, capacity: 180 },
+    { code: 'MB-CLR', name: 'Colour masterbatch', unit: 'tonne', price: 175000, varCost: 128000, units: 50, capacity: 70 },
+  ];
+  const S = (inv, date, customer, channel, product, q, rate, discount, freight, commPct) => ({ inv, date, customer, channel, product, qty: q, rate, discount, freight, commPct });
+  co.sales = [
+    S('SP/26/1841', '2026-09-03', 'Kaveri Autoparts', 'Direct', 'PP-C30', 60, 128000, 0, 54000, 0),
+    S('SP/26/1846', '2026-09-05', 'Kaveri Autoparts', 'Direct', 'ABS-FR', 25, 205000, 102500, 30000, 0),
+    S('SP/26/1850', '2026-09-07', 'Northstar Cables', 'Direct', 'PP-C30', 90, 126500, 0, 96000, 0),
+    S('SP/26/1858', '2026-09-09', 'Vardhan Pipes', 'Direct', 'PP-C30', 70, 122000, 170800, 120000, 0),
+    S('SP/26/1863', '2026-09-11', 'Orbit Appliances', 'Direct', 'ABS-FR', 48, 206000, 0, 41000, 0),
+    S('SP/26/1864', '2026-09-11', 'Orbit Appliances', 'Direct', 'MB-CLR', 6, 182000, 0, 8000, 0),
+    S('SP/26/1871', '2026-09-14', 'Deccan Polymers Trading', 'Distributor', 'PP-C30', 110, 124000, 0, 0, 3),
+    S('SP/26/1872', '2026-09-14', 'Deccan Polymers Trading', 'Distributor', 'ABS-FR', 30, 199000, 0, 0, 3),
+    S('SP/26/1873', '2026-09-14', 'Deccan Polymers Trading', 'Distributor', 'MB-CLR', 14, 168000, 0, 0, 3),
+    S('EX/26/0212', '2026-09-17', 'Gulf Plast LLC', 'Export', 'PP-C30', 40, 131000, 0, 210000, 2),
+    S('EX/26/0213', '2026-09-17', 'Gulf Plast LLC', 'Export', 'ABS-FR', 22, 208000, 0, 118000, 2),
+    S('SP/26/1880', '2026-09-19', 'Lumina Lighting', 'Direct', 'MB-CLR', 3, 140000, 22500, 26000, 0),
+    S('SP/26/1897', '2026-09-26', 'Lumina Lighting', 'Direct', 'MB-CLR', 2, 140000, 14000, 21000, 0),
+    S('SP/26/1899', '2026-09-27', 'Northstar Cables', 'Direct', 'MB-CLR', 9, 176000, 0, 12000, 0),
+    S('SP/26/1902', '2026-09-29', 'Kaveri Autoparts', 'Direct', 'MB-CLR', 8, 178000, 0, 9000, 0),
+  ];
+  co.mob = [
+    { name: '25 kg printed HDPE bags', unit: 'bag', qty: 18000, dm: 34, dl: 6, voh: 9, avoidFixed: 85000, oppCost: 0, buyPrice: 52, buyFreight: 1.5 },
+    { name: 'Colour pre-mix for masterbatch', unit: 'tonne', qty: 12, dm: 92000, dl: 4500, voh: 6200, avoidFixed: 0, oppCost: 180000, buyPrice: 118000, buyFreight: 1200 },
+  ];
+  co.special = [
+    { customer: 'Gulf Plast LLC', product: 'PP-C30', qty: 30, price: 108000, extraCost: 95000 },
+    { customer: 'Vardhan Pipes', product: 'ABS-FR', qty: 40, price: 176000, extraCost: 0 },
+  ];
+  co.csheet = [{ product: 'PP compound, 30% glass filled', unit: 'tonne', installedCap: 500, normalCap: 450, actualProd: 372, salesQty: 380,
+    matOpen: 9800000, matPurch: 33800000, matClose: 9450000, utilities: 2180000, empCost: 1320000, directExp: 260000, stores: 410000, repairs: 520000, qc: 290000, rnd: 140000, royalty: 0, depn: 1150000,
+    fohVar: 640000, fohFixed: 1900000, wipOpen: 820000, wipClose: 760000, scrapCredit: 210000, packing: 300000, adminProd: 420000, fgOpen: 3960000, fgClose: 3100000, adminOther: 610000, selling: 1450000, interest: 380000, abnormal: 145000, netSales: 48600000 }];
+  return co;
+}
+function exConsult() {
+  const co = blankCompany('Arcline Engineering Consultants LLP'); co.id = 'ex-arcline'; co.sample = true;
+  Object.assign(co.settings, { period: '2026-09', industry: 'Engineering design services', sector: 'N', turnover: 9.4, productTurnover: '' });
+  Object.assign(co.cfg, { svcOhPct: 35, fixedCost: 1650000, targetProfit: 600000, markupPct: 25, targetMarginPct: 30 });
+  co.staff = [
+    { code: 'E01', name: 'Ritu Arora', grade: 'Principal', monthlyCost: 450000, availHrs: 160, billRate: 6500 },
+    { code: 'E02', name: 'Sameer Kulkarni', grade: 'Senior engineer', monthlyCost: 210000, availHrs: 168, billRate: 3200 },
+    { code: 'E03', name: 'Farah Sheikh', grade: 'Senior engineer', monthlyCost: 195000, availHrs: 168, billRate: 3200 },
+    { code: 'E04', name: 'Vivek Nair', grade: 'Design engineer', monthlyCost: 120000, availHrs: 176, billRate: 2000 },
+    { code: 'E05', name: 'Pooja Iyer', grade: 'Design engineer', monthlyCost: 115000, availHrs: 176, billRate: 2000 },
+    { code: 'E06', name: 'Arjun Das', grade: 'Draughtsman', monthlyCost: 65000, availHrs: 176, billRate: 1200 },
+  ];
+  co.proj = [
+    { code: 'P-101', name: 'Warehouse structural design', client: 'Sanand Polymers Pvt Ltd', billing: 'Fixed fee', fee: 2400000, budgetHrs: 1100, otherCost: 60000, status: 'Active' },
+    { code: 'P-104', name: 'HVAC retrofit study', client: 'Orbit Appliances', billing: 'Time and material', fee: 0, budgetHrs: 600, otherCost: 25000, status: 'Active' },
+    { code: 'P-107', name: 'Pipe-rack stress analysis', client: 'Vardhan Pipes', billing: 'Fixed fee', fee: 900000, budgetHrs: 380, otherCost: 15000, status: 'Active' },
+    { code: 'P-110', name: 'Factory layout and utilities', client: 'Kaveri Autoparts', billing: 'Fixed fee', fee: 1250000, budgetHrs: 520, otherCost: 40000, status: 'Active' },
+    { code: 'P-099', name: 'Proposals and training', client: 'Internal', billing: 'Internal', fee: 0, budgetHrs: 0, otherCost: 0, status: 'Active' },
+  ];
+  const T = (month, project, staff, hours, billable = true) => ({ month, project, staff, hours, billable });
+  co.time = [
+    T('2026-08', 'P-101', 'E01', 30), T('2026-08', 'P-101', 'E02', 120), T('2026-08', 'P-101', 'E04', 140), T('2026-08', 'P-101', 'E06', 110),
+    T('2026-08', 'P-107', 'E03', 110), T('2026-08', 'P-107', 'E05', 90), T('2026-08', 'P-104', 'E02', 30),
+    T('2026-09', 'P-101', 'E01', 24), T('2026-09', 'P-101', 'E02', 96), T('2026-09', 'P-101', 'E04', 128), T('2026-09', 'P-101', 'E06', 132),
+    T('2026-09', 'P-104', 'E01', 18), T('2026-09', 'P-104', 'E02', 44), T('2026-09', 'P-104', 'E05', 70),
+    T('2026-09', 'P-107', 'E03', 126), T('2026-09', 'P-107', 'E05', 78),
+    T('2026-09', 'P-110', 'E01', 20), T('2026-09', 'P-110', 'E03', 22), T('2026-09', 'P-110', 'E04', 30), T('2026-09', 'P-110', 'E06', 36),
+    T('2026-09', 'P-099', 'E01', 52, false), T('2026-09', 'P-099', 'E02', 12, false), T('2026-09', 'P-099', 'E05', 10, false),
+  ];
+  co.cvp = [
+    { code: 'STR', name: 'Structural design', unit: 'hour', price: 3100, varCost: 1450, units: 520, capacity: 640 },
+    { code: 'MEP', name: 'MEP and utilities studies', unit: 'hour', price: 2600, varCost: 1300, units: 300, capacity: 360 },
+    { code: 'ANA', name: 'Stress analysis', unit: 'hour', price: 3400, varCost: 1500, units: 200, capacity: 220 },
+  ];
+  co.sales = [
+    { inv: 'ARC/26/118', date: '2026-09-30', customer: 'Sanand Polymers Pvt Ltd', channel: 'Direct', product: 'STR', qty: 380, rate: 3100, discount: 0, freight: 0, commPct: 0 },
+    { inv: 'ARC/26/119', date: '2026-09-30', customer: 'Orbit Appliances', channel: 'Direct', product: 'MEP', qty: 132, rate: 2600, discount: 18000, freight: 0, commPct: 0 },
+    { inv: 'ARC/26/120', date: '2026-09-30', customer: 'Vardhan Pipes', channel: 'Online', product: 'ANA', qty: 204, rate: 2200, discount: 0, freight: 0, commPct: 8 },
+    { inv: 'ARC/26/121', date: '2026-09-30', customer: 'Kaveri Autoparts', channel: 'Direct', product: 'MEP', qty: 108, rate: 2700, discount: 0, freight: 0, commPct: 0 },
+  ];
+  co.mob = [{ name: 'Finite-element runs (outsource to a bureau)', unit: 'run', qty: 40, dm: 0, dl: 3800, voh: 900, avoidFixed: 45000, oppCost: 60000, buyPrice: 6200, buyFreight: 0 }];
+  return co;
+}
+const buildExamples = () => [exPolymers(), exConsult()];
+
+// ================================================================ state and storage
+let companies = [], cur = null, tab = 'desk', R = null;
+let col = null, mode = 'example';
+const ui = { procStep: '', ship: '', cas: 0, profDim: 'customer', tsMonth: 'cur' };
+try { const t = localStorage.getItem('costwb-tab'); if (t) tab = t; } catch {}
+function setSaveState(kind, text) { $('save-state').innerHTML = `<span class="dot ${kind}"></span><span>${esc(text)}</span>`; }
+function normalize(co) { REGS.forEach(k => { if (!Array.isArray(co[k])) co[k] = []; }); co.cfg = { ...CFG_DEF, ...(co.cfg || {}) }; co.settings = { period: TODAY.slice(0, 7), sector: 'B', ...(co.settings || {}) }; return co; }
+const saveTimers = {};
+function persist(co = cur) {
+  if (!co) return;
+  if (co.sample) { setSaveState('warn', 'Example — edits reset when you reload'); return; }
+  clearTimeout(saveTimers[co.id]); setSaveState('warn', 'Saving…');
+  saveTimers[co.id] = setTimeout(async () => {
+    delete saveTimers[co.id]; if (!companies.includes(co)) return;
+    const snap = JSON.parse(JSON.stringify(co));
+    if (mode === 'account' && col) {
+      try { await col.doc(snap.id).set(snap); setSaveState('ok', 'Saved to your account'); }
+      catch (e) { setSaveState('warn', e && e.code === 'quota_exceeded' ? 'Storage full — remove old data' : 'Not saved — check your connection'); }
+    } else {
+      try { const all = JSON.parse(localStorage.getItem('costwb-v1') || '{}'); all[snap.id] = snap; localStorage.setItem('costwb-v1', JSON.stringify(all)); setSaveState('ok', 'Saved in this browser'); }
+      catch { setSaveState('warn', 'Not saved — storage unavailable here'); }
+    }
+  }, 700);
+}
+function changed() { persist(); render(); }
+async function boot() {
+  const EX = companies.filter(c => c.sample);
+  render();
+  const use = window.claude && window.claude.use;
+  let db = null, user = null, uidv = null;
+  if (use) { try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch {} }
+  if (user) { try { uidv = await user.id(); } catch {} }
+  let own = [];
+  if (db && uidv) {
+    try { col = db.collection('data/users/' + uidv); const snap = await col.get(); own = snap.docs.map(d => d.data()).filter(v => v && v.settings); mode = 'account'; } catch { col = null; }
+  }
+  if (!col) { try { own = Object.values(JSON.parse(localStorage.getItem('costwb-v1') || '{}')); mode = 'browser'; } catch { own = []; mode = 'example'; } }
+  own = own.filter(c => c && c.settings && !c.sample).map(normalize);
+  companies = [...own, ...EX]; cur = own[0] || EX[0];
+  setSaveState(cur.sample ? 'warn' : 'ok', cur.sample ? 'Example — edits reset when you reload' : mode === 'account' ? 'Saved to your account' : 'Saved in this browser');
+  try { window.__downloads = use ? await window.claude.use('downloads') : null; } catch { window.__downloads = null; }
+  render();
+}
+function removeCompany(co) {
+  clearTimeout(saveTimers[co.id]); delete saveTimers[co.id];
+  companies = companies.filter(c => c !== co);
+  if (mode === 'account' && col) col.doc(co.id).delete().catch(() => setSaveState('warn', 'Could not delete — reload and try again'));
+  else { try { const all = JSON.parse(localStorage.getItem('costwb-v1') || '{}'); delete all[co.id]; localStorage.setItem('costwb-v1', JSON.stringify(all)); } catch {} }
+  cur = companies.find(c => !c.sample) || companies[0]; toast(`Deleted ${co.settings.name}`);
+}
+
+// ================================================================ render shell
+function render() {
+  if (!cur) { companies = buildExamples(); cur = companies[0]; }
+  R = computeAll(cur);
+  const s = cur.settings, mine = companies.filter(c => !c.sample), exs = companies.filter(c => c.sample);
+  const opt = c => `<option value="${esc(c.id)}"${c === cur ? ' selected' : ''}>${esc(c.settings.name)}</option>`;
+  $('company').innerHTML = (mine.length ? `<optgroup label="My companies">${mine.map(opt).join('')}</optgroup>` : '') + `<optgroup label="Examples for study">${exs.map(opt).join('')}</optgroup>`;
+  $('sample-banner').hidden = !cur.sample;
+  $('del-co').hidden = !!cur.sample; $('del-co').textContent = 'Delete company'; delete $('del-co').dataset.confirm;
+  if (cur.sample) $('sample-banner').innerHTML = `<span><strong>Example for study.</strong> ${esc(s.industry || '')}, ${fmonthL(s.period)}. Edits here are not saved and reset when you reload.</span>
+    <div class="actions"><button type="button" data-act="copy-example">Save a copy as my company</button><button type="button" class="primary" data-act="new-company">Create my company</button></div>`;
+  const keep = id => document.activeElement === $(id);
+  if (!keep('s-name')) $('s-name').value = s.name;
+  if (!keep('s-period')) $('s-period').value = s.period || '';
+  if (!keep('s-ind')) $('s-ind').value = s.industry || '';
+  $('s-sector').value = s.sector || 'B';
+  if (!keep('s-to')) $('s-to').value = s.turnover ?? '';
+  if (!keep('s-pto')) $('s-pto').value = s.productTurnover ?? '';
+
+  const S = R.S, J = R.J, V = R.V, C = R.C, cs = R.CS[0];
+  const jobProj = J.profit + V.margin, jpRev = J.price + V.revenue, nLoss = J.losers.length + V.projects.filter(x => x.p.billing !== 'Internal' && x.margin < 0).length;
+  $('totals').innerHTML = `
+    <div class="tot ${!S.rows.length ? '' : S.total >= 0 ? 'good' : 'bad'}"><span class="k">Standard cost variance · ${fmonth(s.period)}</span><span class="v">${S.rows.length ? faTxt(S.total) : '–'}</span><span class="n">${S.rows.length ? `Actual ₹${fmt(S.act)} against standard ₹${fmt(S.std)} (${pct(div(S.act, S.std))})` : 'No standard costs set up'}</span>${S.rows.length ? meter(div(S.act, S.std) / 1.25, 1 / 1.25) : ''}</div>
+    <div class="tot ${!jpRev ? '' : jobProj < 0 ? 'bad' : nLoss ? 'warn' : 'good'}"><span class="k">Job and project margin</span><span class="v">${jpRev ? '₹' + fmt(jobProj) : '–'}</span><span class="n">${jpRev ? `${pct(div(jobProj, jpRev))} of billing · ${nLoss ? `${nLoss} loss-making` : 'none loss-making'} · marker at 15%` : 'No jobs or projects yet'}</span>${jpRev ? meter(div(jobProj, jpRev) / .4, .15 / .4) : ''}</div>
+    <div class="tot ${C.be == null ? '' : C.mos < .2 ? 'warn' : 'lead'}"><span class="k">Break-even sales for the month</span><span class="v">${C.be != null ? '₹' + fmt(C.be) : '–'}</span><span class="n">${C.be != null ? `${pct(div(C.be, C.S), 0)} of budget ₹${fmt(C.S)} · safety ${pct(C.mos)}` : 'Add products with price and variable cost'}</span>${C.be != null ? meter(div(C.be, C.S) / 1.25, 1 / 1.25) : ''}</div>
+    <div class="tot ${cs ? (cs.unabs > .5 ? 'warn' : 'lead') : ''}"><span class="k">Cost of production per unit (CAS-4)</span><span class="v">${cs ? '₹' + fmt(cs.copU) : '–'}</span><span class="n">${cs ? `${esc(cs.s.product)} · capacity used ${pct(cs.capUtil, 0)} (marker: normal)${cs.unabs > .5 ? ` · ₹${fmt(cs.unabs)} unabsorbed` : ''}` : 'No cost sheet yet'}</span>${cs ? meter(cs.capUtil, div(cs.N, num(cs.s.installedCap))) : ''}</div>`;
+  const badge = { std: S.rows.filter(r => r.total < -0.5).length, jobs: J.losers.length, prof: R.PR.by('customer').filter(e => e.contrib < 0).length };
+  document.querySelectorAll('.tab').forEach(t => { t.setAttribute('aria-selected', t.dataset.tab === tab); const base = t.dataset.base || (t.dataset.base = t.textContent.trim()); const b = badge[t.dataset.tab]; t.innerHTML = esc(base) + (b ? `<span class="cnt">${b}</span>` : ''); });
+  const VW = { desk: vDesk, std: vStd, proc: vProc, jobs: vJobs, abc: vABC, svc: vSvc, land: vLand, cvp: vCVP, prof: vProf, dec: vDec, cas: vCAS };
+  $('view').innerHTML = (VW[tab] || vDesk)();
+}
+
+// register table: list the inputs of one register; select a row to edit it
+function regPanel(reg, title, sub, cols, filter) {
+  const rows = cur[reg].map((r, i) => ({ r, i })).filter(x => !filter || filter(x.r));
+  const F = Object.fromEntries(SCHEMA[reg].f.map(f => [f[0], f]));
+  const cell = (r, k) => { const f = F[k]; const v = r[k]; if (!f) return ''; if (f[2] === 'n') return `<td class="num">${v === '' || v == null ? '<span class="muted">blank</span>' : qty(num(v))}</td>`; if (f[2] === 'c') return `<td>${v ? 'Yes' : 'No'}</td>`; return `<td>${esc(v)}</td>`; };
+  return `<section class="panel"><div class="panel-head"><h3>${esc(title)}</h3><div class="actions">${sub ? `<span class="sub">${esc(sub)}</span>` : ''}<button type="button" class="sm primary" data-act="add" data-reg="${reg}">Add ${esc(SCHEMA[reg].name.toLowerCase())}</button></div></div>
+    ${rows.length ? `<div class="scroll"><table><thead><tr>${cols.map(k => `<th${F[k] && F[k][2] === 'n' ? ' class="num"' : ''}>${esc(shortLabel(F[k] ? F[k][1] : k))}</th>`).join('')}</tr></thead><tbody>${rows.map(({ r, i }) => `<tr tabindex="0" data-act="edit" data-reg="${reg}" data-i="${i}">${cols.map(k => cell(r, k)).join('')}</tr>`).join('')}</tbody></table></div>`
+      : `<div class="empty">Nothing here yet. Add the first ${esc(SCHEMA[reg].name.toLowerCase())}, or fill the "${esc(SCHEMA[reg].sheet)}" sheet in the Excel file and import it.</div>`}</section>`;
+}
+const shortLabel = l => l.replace(/ \(.*?\)$/, '').replace(/^(Make|Buy|Materials|Finished goods): /, '');
+
+// ================================================================ views
+function vDesk() {
+  const S = R.S, P = R.P, J = R.J, A = R.A, V = R.V, L = R.L, C = R.C, PR = R.PR, D = R.D, CS = R.CS;
+  const row = (t, what, head, st) => `<tr><td><button type="button" class="link" data-act="tab" data-tab="${t}">${esc(what)}</button></td><td>${head}</td><td>${st}</td></tr>`;
+  const negCust = PR.by('customer').filter(e => e.contrib < 0).length;
+  const body = [
+    row('std', 'Standard costing', S.rows.length ? `${S.rows.length} products · net variance ${fa(S.total)}` : '<span class="muted">Not set up</span>', S.rows.length ? (S.total < 0 ? pill('bad', 'Adverse') : pill('ok', 'Favourable')) : pill('idle', 'Empty')),
+    row('proc', 'Process costing', P.length ? P.map(l => `${esc(l.line)}: ₹${fmt(l.unitCost)} per unit finished`).join('<br>') : '<span class="muted">Not set up</span>', P.length ? (P.some(l => l.abnLoss > .5) ? pill('warn', 'Abnormal loss') : pill('ok', 'Within normal loss')) : pill('idle', 'Empty')),
+    row('jobs', 'Jobs and batches', J.rows.length ? `${J.rows.length} jobs · profit ₹${fmt(J.profit)} (${pct(div(J.profit, J.price))})` : '<span class="muted">No jobs</span>', J.rows.length ? (J.losers.length ? pill('bad', `${J.losers.length} loss-making`) : pill('ok', 'All profitable')) : pill('idle', 'Empty')),
+    row('abc', 'Activity-based costing', A.objs.length ? `${A.acts.length} activities · ₹${fmt(A.pool)} overhead traced${A.unused > .5 ? ` · ₹${fmt(A.unused)} unused capacity` : ''}` : '<span class="muted">Not set up</span>', A.objs.some(o => Math.abs(o.diff) > .1) ? pill('warn', 'Cost distortion found') : A.objs.length ? pill('ok', 'Close to books') : pill('idle', 'Empty')),
+    row('svc', 'Services and projects', V.projects.length ? `${V.projects.length} projects · margin to date ₹${fmt(V.margin)} · billable utilisation ${pct(V.util, 0)}` : '<span class="muted">No projects</span>', V.projects.length ? (V.projects.some(x => x.eacMargin != null && x.eacMargin < 0) ? pill('bad', 'Overrun') : pill('ok', 'On track')) : pill('idle', 'Empty')),
+    row('land', 'Landed cost', L.length ? `${L.length} shipments · landed ₹${fmt(sum(L, 'landed'))} on invoice value ₹${fmt(sum(L, 'fobINR'))}` : '<span class="muted">No imports</span>', L.length ? pill('ok', `${pct(div(sum(L, 'landed'), sum(L, 'fobINR')) - 1)} uplift`) : pill('idle', 'Empty')),
+    row('cvp', 'Contribution and break-even', C.be != null ? `P/V ratio ${pct(C.pv)} · break-even ₹${fmt(C.be)} · profit ₹${fmt(C.profit)}` : '<span class="muted">Not set up</span>', C.be != null ? (C.mos < .2 ? pill('warn', `Safety ${pct(C.mos, 0)}`) : pill('ok', `Safety ${pct(C.mos, 0)}`)) : pill('idle', 'Empty')),
+    row('prof', 'Product, customer and channel profitability', PR.rows.length ? `${PR.rows.length} invoices · contribution ₹${fmt(PR.contrib)} (${pct(div(PR.contrib, PR.net))})` : '<span class="muted">No sales</span>', PR.rows.length ? (negCust ? pill('bad', `${negCust} customer${negCust > 1 ? 's' : ''} below zero`) : pill('ok', 'All positive')) : pill('idle', 'Empty')),
+    row('dec', 'Make or buy and pricing', D.mob.length || D.special.length ? `${D.mob.length} make-or-buy · ${D.special.length} special orders · ${D.pricing.length} price checks` : '<span class="muted">No decisions</span>', D.mob.length || D.special.length ? pill('idle', 'Decision support') : pill('idle', 'Empty')),
+    row('cas', 'Cost sheet (CAS)', CS.length ? CS.map(c => `${esc(c.s.product)}: ₹${fmt(c.copU)} per ${esc(c.s.unit)}, margin ${pct(c.margin)}`).join('<br>') : '<span class="muted">No cost sheet</span>', (() => { const a = costAudit({ ...cur.settings }); return a.audit ? pill('warn', 'Cost audit applies') : a.records ? pill('idle', 'Cost records only') : pill('idle', 'No cost audit'); })()),
+  ].join('');
+  const fl = R.flags.filter(f => f.sev !== 'idle').slice(0, 12);
+  return `<div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Costing methods · ${fmonthL(cur.settings.period)}</h2><span class="sub">Select a method to open it</span></div>
+      <div class="scroll"><table><thead><tr><th>Method</th><th>Headline</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h2>Needs attention</h2><span class="sub">${fl.length} items</span></div>
+      ${fl.length ? `<ul class="todo">${fl.map(f => `<li><span class="d">${esc(f.area)}</span><span><button type="button" class="link" data-act="tab" data-tab="${f.tab}">${esc(f.text)}</button></span>${pill(f.sev, f.sev === 'bad' ? 'Act' : 'Review')}</li>`).join('')}</ul>` : '<div class="empty">Nothing stands out this month.</div>'}
+    </section></div>
+    <section class="panel"><div class="panel-head"><h2>How the workbench fits together</h2></div>
+      <div class="note"><p><strong>Cost what you make.</strong> Standard costing sets the expected cost of each product and explains the gap to actual cost. Process costing follows units and cost through each stage, separating normal loss (built into cost) from abnormal loss (charged to profit and loss). Jobs and batches collect cost per order; services and projects do the same with hours.</p>
+      <p><strong>Find the true cost.</strong> Activity-based costing charges support overheads by what causes them, so small, complex orders carry their share. Landed cost adds freight, insurance, customs duty and clearing to what you pay a foreign supplier.</p>
+      <p><strong>Decide.</strong> Break-even shows how much you must sell to cover fixed costs. Profitability shows which products, customers and channels make money after discounts, freight and commission. Make-or-buy and special orders compare only the costs that change with the decision. The cost sheet presents cost of production and cost of sales in the Cost Accounting Standards layout used for cost records and cost audit.</p></div></section>`;
+}
+
+function vStd() {
+  const S = R.S;
+  const sumRows = S.rows.map(r => `<tr><td><strong>${esc(r.p.code)}</strong><span class="ref">${esc(r.p.name)}</span></td><td class="num">${qty(r.Q)} ${esc(r.p.unit)}</td><td class="num">${fmt2(r.unit)}</td><td class="num">${fmt(r.std)}</td><td class="num">${fmt(r.act)}</td>
+    <td class="num">${fa(r.V.mat)}</td><td class="num">${fa(r.V.lab)}</td><td class="num">${fa(r.V.voh + r.V.foh)}</td><td class="num"><strong>${fa(r.total)}</strong></td><td>${r.check ? '' : pill('bad', 'Does not reconcile')}</td></tr>`).join('');
+  const panels = S.rows.map(r => {
+    const card = [...r.mats.map(x => [`${x.m.item}`, `${qty(num(x.m.sq))} ${x.m.uom || ''} × ₹${fmt2(num(x.m.sp))}`, x.unit]), ...r.labs.map(x => [`${x.l.grade}`, `${qty(num(x.l.sh))} hrs × ₹${fmt2(num(x.l.sr))}`, x.unit]),
+      ['Variable overhead', `${qty(sum(r.labs, x => num(x.l.sh)))} hrs × ₹${fmt2(num(r.p.vohRate))}`, r.voh.unit], ['Fixed overhead', `₹${fmt(num(r.p.fohBudget))} ÷ ${qty(num(r.p.budgetOutput))} ${r.p.unit}`, r.foh.unit]];
+    return `<section class="panel"><div class="panel-head"><h2>${esc(r.p.code)} · ${esc(r.p.name)}</h2><span class="sub">Actual output ${qty(r.Q)} ${esc(r.p.unit)} against budget ${qty(num(r.p.budgetOutput))}</span></div>
+      <div class="grid-2" style="padding:0 0 4px">
+        <div><div class="panel-head" style="padding-top:0"><h3>Standard cost card, per ${esc(r.p.unit)}</h3></div><div class="scroll"><table><thead><tr><th>Element</th><th>Standard</th><th class="num">₹</th></tr></thead><tbody>${card.map(c => `<tr><td>${esc(c[0])}</td><td class="small muted">${esc(c[1])}</td><td class="num">${fmt2(c[2])}</td></tr>`).join('')}</tbody>
+          <tfoot><tr><td colspan="2">Standard cost per ${esc(r.p.unit)}</td><td class="num">${fmt2(r.unit)}</td></tr></tfoot></table></div></div>
+        <div><div class="panel-head" style="padding-top:0"><h3>Variances for the month</h3></div><div class="scroll"><table><thead><tr><th>Variance</th><th>On</th><th class="num">₹</th></tr></thead><tbody>${r.lines.map(x => `<tr><td>${esc(x.kind)}</td><td class="small muted">${esc(x.what)}</td><td class="num">${fa(x.v)}</td></tr>`).join('')}</tbody>
+          <tfoot><tr><td colspan="2">Standard cost ₹${fmt(r.std)} less actual ₹${fmt(r.act)}</td><td class="num">${fa(r.total)}</td></tr></tfoot></table></div></div>
+      </div></section>`;
+  }).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Standard cost against actual · ${fmonthL(cur.settings.period)}</h2><span class="sub">F favourable (actual below standard), A adverse</span></div>
+    ${S.rows.length ? `<div class="scroll"><table><thead><tr><th>Product</th><th class="num">Actual output</th><th class="num">Standard / unit</th><th class="num">Standard cost of output</th><th class="num">Actual cost</th><th class="num">Material</th><th class="num">Labour</th><th class="num">Overhead</th><th class="num">Total variance</th><th></th></tr></thead><tbody>${sumRows}</tbody>
+      <tfoot><tr><td colspan="3">Total</td><td class="num">${fmt(S.std)}</td><td class="num">${fmt(S.act)}</td><td class="num">${fa(S.mat)}</td><td class="num">${fa(S.lab)}</td><td class="num">${fa(S.oh)}</td><td class="num">${fa(S.total)}</td><td></td></tr></tfoot></table></div>`
+      : '<div class="empty">Add a product, then its standard materials and labour.</div>'}
+    ${S.rows.length ? `<div class="panel-head" style="padding-top:18px"><h3>Where the month's variance came from</h3><span class="sub">All products together</span></div>${varChart([
+      { label: 'Material price', v: sum(S.rows, r => sum(r.mats, 'price')) }, { label: 'Material usage', v: sum(S.rows, r => sum(r.mats, 'usage')) },
+      { label: 'Labour rate', v: sum(S.rows, r => sum(r.labs, 'rate')) }, { label: 'Idle time', v: sum(S.rows, r => sum(r.labs, 'idle')) }, { label: 'Labour efficiency', v: sum(S.rows, r => sum(r.labs, 'eff')) },
+      { label: 'Variable overhead', v: sum(S.rows, r => r.voh.exp + r.voh.eff) }, { label: 'Fixed overhead spending', v: sum(S.rows, r => r.foh.exp) }, { label: 'Fixed overhead volume', v: sum(S.rows, r => r.foh.vol) }])}` : ''}
+    <div class="note"><p><strong>Formulas.</strong> Material price = (standard price − actual price) × actual quantity. Material usage = (standard quantity for actual output − actual quantity) × standard price. Labour rate = (standard rate − actual rate) × hours paid. Idle time = idle hours × standard rate (always adverse). Labour efficiency = (standard hours for actual output − hours worked) × standard rate. Variable overhead expenditure = hours worked × standard rate − actual; efficiency = (standard hours − hours worked) × standard rate. Fixed overhead expenditure = budget − actual; volume = absorbed on actual output − budget.</p>
+    <p>The variances add up exactly to standard cost of actual output less actual cost; a row that does not reconcile is flagged. Mix and yield sub-variances are not split here.</p></div></section>
+    ${panels}
+    <div class="grid-2">${regPanel('stdProd', 'Products and overheads', '', ['code', 'name', 'budgetOutput', 'actualOutput', 'vohRate', 'fohBudget', 'fohActual'])}
+    ${regPanel('stdMat', 'Standard materials', '', ['prod', 'item', 'sq', 'sp', 'aq', 'ap'])}</div>
+    ${regPanel('stdLab', 'Standard labour', '', ['prod', 'grade', 'sh', 'sr', 'ah', 'idle', 'ar'])}`;
+}
+
+function vProc() {
+  const P = R.P;
+  if (!P.length) return `${regPanel('proc', 'Process steps', '', ['line', 'seq', 'name', 'inputUnits', 'material', 'labour', 'overhead', 'nlPct', 'output'])}`;
+  const all = P.flatMap(l => l.steps), sel = all.find(s => cur.proc.indexOf(s.p) === +ui.procStep) || all[0];
+  const lines = P.map(l => `<section class="panel"><div class="panel-head"><h2>${esc(l.line)}</h2><span class="sub">${qty(l.finishedUnits)} units finished at ₹${fmt2(l.unitCost)} each · value ₹${fmt(l.finishedVal)}</span></div>
+    <div class="flow">${l.steps.map((s, i) => `${i ? '<span class="arrow" aria-hidden="true">▶</span>' : ''}<div class="st"><span class="ls">Step ${esc(s.p.seq)} · ${qty(s.I)} in</span><span class="nm">${esc(s.p.name)}</span><span class="cu">₹${fmt2(s.cu)}</span><span class="ls">per unit · ${qty(s.O)} out${s.W ? ` · ${qty(s.W)} in WIP` : ''}</span><span class="ls">Normal loss ${qty(s.N)}</span>${s.AbL ? `<span class="ls bad">Abnormal loss ${qty(s.AbL)} · ₹${fmt(s.ablNet)}</span>` : s.AbG ? `<span class="ls good">Abnormal gain ${qty(s.AbG)} · ₹${fmt(s.abgNet)}</span>` : '<span class="ls">No abnormal loss</span>'}</div>`).join('')}</div>
+    <div class="scroll"><table><thead><tr><th>Step</th><th class="num">Units in</th><th class="num">Normal loss</th><th class="num">Abnormal loss / (gain)</th><th class="num">Units out</th><th class="num">Closing WIP</th><th class="num">Equivalent units: material / conversion</th><th class="num">Cost per equivalent unit: material / conversion</th><th class="num">Cost per unit</th><th class="num">Transferred out ₹</th><th></th></tr></thead>
+      <tbody>${l.steps.map(s => `<tr tabindex="0" data-act="proc-sel" data-i="${cur.proc.indexOf(s.p)}"><td><strong>${esc(s.p.name)}</strong><span class="ref">Step ${esc(s.p.seq)}</span></td><td class="num">${qty(s.I)}</td><td class="num">${qty(s.N)}</td>
+        <td class="num">${s.AbL ? `<span class="neg">${qty(s.AbL)}</span>` : s.AbG ? `(${qty(s.AbG)})` : '–'}</td><td class="num">${qty(s.O)}</td><td class="num">${s.W ? `${qty(s.W)} at ${pct(s.c, 0)}` : '–'}</td><td class="num">${qty(s.EUm)} / ${qty(s.EUc)}</td><td class="num">${fmt2(s.cm)} / ${fmt2(s.cc)}</td><td class="num"><strong>${fmt2(s.cu)}</strong></td><td class="num">${fmt(s.outVal)}</td><td>${s.ok ? '' : pill('bad', 'Check inputs')}</td></tr>`).join('')}</tbody></table></div></section>`).join('');
+  const s = sel, row = (side, t, u, v) => `<tr><td>${side}</td><td>${esc(t)}</td><td class="num">${qty(u)}</td><td class="num">${fmt(v)}</td></tr>`;
+  const acct = `<section class="panel"><div class="panel-head"><h2>Process account · ${esc(s.p.name)}</h2><span class="sub">Select a step above to see its account</span></div>
+    <div class="scroll"><table><thead><tr><th></th><th>Particulars</th><th class="num">Units</th><th class="num">₹</th></tr></thead><tbody>
+      <tr class="grp"><td colspan="4">Debit</td></tr>
+      ${s.TI ? row('Dr', 'Transferred in from previous step', s.I, s.TI) : row('Dr', 'Units put in', s.I, 0)}
+      ${row('Dr', 'Material added', 0, s.mat)}${row('Dr', 'Labour', 0, s.lab)}${row('Dr', 'Overhead', 0, s.oh)}${s.AbG ? row('Dr', 'Abnormal gain', s.AbG, s.abgVal) : ''}
+      <tr class="sub"><td></td><td>Total debit</td><td class="num">${qty(s.I + s.AbG)}</td><td class="num">${fmt(s.dr)}</td></tr>
+      <tr class="grp"><td colspan="4">Credit</td></tr>
+      ${row('Cr', `Normal loss (scrap at ₹${fmt(s.sc)})`, s.N, s.nlVal)}${s.AbL ? row('Cr', 'Abnormal loss', s.AbL, s.ablVal) : ''}${row('Cr', 'Transferred to next step / finished stock', s.O, s.outVal)}${s.W ? row('Cr', 'Closing work in progress', s.W, s.wipVal) : ''}
+      <tr class="sub"><td></td><td>Total credit</td><td class="num">${qty(s.N + s.AbL + s.O + s.W)}</td><td class="num">${fmt(s.cr)}</td></tr></tbody></table></div>
+    <div class="note">${s.AbL ? `<p>Abnormal loss account: ₹${fmt(s.ablVal)} debited, less scrap sold ₹${fmt(s.AbL * s.sc)}, leaves ₹${fmt(s.ablNet)} for the costing profit and loss.</p>` : ''}${s.AbG ? `<p>Abnormal gain account: ₹${fmt(s.abgVal)} credited, less scrap value given up on those units ₹${fmt(s.AbG * s.sc)}, leaves ₹${fmt(s.abgNet)} for the costing profit and loss.</p>` : ''}
+      <p>Losses are taken at the end of the step, so lost units carry full cost. Normal loss is spread over good output (its scrap value reduces cost); abnormal loss and gain are valued at the same cost per unit as good output and kept out of product cost. Work in progress is valued by equivalent units: material 100% complete, labour and overhead at the % entered (weighted average, no opening WIP).</p></div></section>`;
+  return `${lines}${acct}${regPanel('proc', 'Process steps', 'Steps run in order of step number within each line', ['line', 'seq', 'name', 'inputUnits', 'material', 'labour', 'overhead', 'nlPct', 'scrap', 'output', 'wip', 'wipConv'])}`;
+}
+
+function cfgInput(k, label, step = '1') { return `<label for="cfg-${k}">${esc(label)}<input id="cfg-${k}" type="number" min="0" step="${step}" data-cfg="${k}" value="${esc(cur.cfg[k] ?? '')}"></label>`; }
+function vJobs() {
+  const J = R.J, c = cur.cfg;
+  const body = J.rows.map((r, i) => `<tr><td><button type="button" class="link" data-act="edit" data-reg="jobs" data-i="${cur.jobs.indexOf(r.j)}">${esc(r.j.no)}</button><span class="ref">${esc(r.j.customer)} · ${esc(r.j.desc || '')}</span></td><td>${esc(r.j.kind)}<span class="ref">${esc(r.j.status)}</span></td>
+    <td class="num">${fmt(r.prime)}</td><td class="num">${fmt(r.worksOH)}</td><td class="num">${fmt(r.admin + r.sell)}</td><td class="num">${fmt(r.total)}</td><td class="num">${r.j.kind === 'Batch' ? `${fmt2(r.perUnit)}<span class="ref">per unit · ${qty(num(r.j.units))} units</span>` : '–'}</td>
+    <td class="num">${fmt(r.price)}</td><td class="num">${money(r.profit)}</td><td>${!r.price ? pill('idle', 'Not priced') : r.profit < 0 ? pill('bad', pct(r.margin)) : r.margin < .1 ? pill('warn', pct(r.margin)) : pill('ok', pct(r.margin))}</td>
+    <td><button type="button" class="sm" data-act="job-sheet" data-i="${i}">Cost sheet</button></td></tr>`).join('');
+  const D = num(c.ebqDemand), Sx = num(c.ebqSetup), Cc = num(c.ebqCarry), ebq = Cc ? Math.sqrt(2 * D * Sx / Cc) : 0;
+  return `<section class="panel"><div class="panel-head"><h2>Jobs and batches</h2><span class="sub">Overhead rates apply to every job</span></div>
+    <div class="form-inline">${cfgInput('ohRate', 'Production overhead per machine hour (₹)')}${cfgInput('adminPct', 'Administration overhead, % of works cost', '0.1')}${cfgInput('sellPct', 'Selling overhead, % of cost of production', '0.1')}</div>
+    ${J.rows.length ? `<div class="scroll"><table><thead><tr><th>Job / batch</th><th>Type</th><th class="num">Prime cost</th><th class="num">Works overhead</th><th class="num">Admin + selling</th><th class="num">Total cost</th><th class="num">Cost per unit</th><th class="num">Price</th><th class="num">Profit</th><th>Margin</th><th></th></tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td colspan="5">${J.rows.length} jobs</td><td class="num">${fmt(sum(J.rows, 'total'))}</td><td></td><td class="num">${fmt(J.price)}</td><td class="num">${money(J.profit)}</td><td>${pct(div(J.profit, J.price))}</td><td></td></tr></tfoot></table></div>` : '<div class="empty">No jobs yet. Add a job or batch with its material, hours and price.</div>'}
+    <div class="note"><p>Prime cost = direct material + labour hours × rate + direct expenses. Works cost adds production overhead at the machine-hour rate. Cost of production adds administration overhead; total cost adds selling overhead. For a batch, cost per unit = total cost ÷ units in the batch.</p></div>
+    <div class="actions" style="padding:0 16px 14px"><button type="button" class="primary" data-act="add" data-reg="jobs">Add job or batch</button></div></section>
+    <section class="panel"><div class="panel-head"><h2>Economic batch quantity</h2><span class="sub">How many units to make per batch</span></div>
+      <div class="form-inline">${cfgInput('ebqDemand', 'Units needed in a year')}${cfgInput('ebqSetup', 'Set-up cost per batch (₹)')}${cfgInput('ebqCarry', 'Cost of holding one unit for a year (₹)', '0.01')}</div>
+      <div class="kv" style="max-width:560px"><div class="strong">Economic batch quantity √(2 × demand × set-up ÷ holding)</div><div class="num strong">${ebq ? qty(Math.round(ebq * 100) / 100) : '–'}</div>
+        <div>Batches a year</div><div class="num">${ebq ? qty(Math.round(D / ebq * 10) / 10) : '–'}</div><div>Set-up cost + holding cost a year</div><div class="num">${ebq ? fmt(D / ebq * Sx + ebq / 2 * Cc) : '–'}</div></div>
+      <div class="note"><p>At this batch size the yearly set-up cost equals the yearly cost of holding stock, which keeps their total lowest.</p></div></section>`;
+}
+function jobSheet(i) {
+  const r = R.J.rows[i], j = r.j, c = cur.cfg, L = (a, b) => `${a.padEnd(46)}${b.padStart(14)}`;
+  const t = [`Job cost sheet — ${j.no}`, `${j.customer} · ${j.desc || ''}`, `${j.kind}${j.kind === 'Batch' ? ` of ${qty(num(j.units))} units` : ''} · ${j.status}`, '',
+    L('Direct material', fmt(num(j.material))), L(`Direct labour ${qty(num(j.labHrs))} hrs × ₹${fmt2(num(j.labRate))}`, fmt(r.labour)), L('Direct expenses', fmt(num(j.directExp))), L('Prime cost', fmt(r.prime)),
+    L(`Production overhead ${qty(num(j.machHrs))} machine hrs × ₹${fmt(num(c.ohRate))}`, fmt(r.worksOH)), L('Works cost', fmt(r.works)), L(`Administration overhead ${num(c.adminPct)}%`, fmt(r.admin)), L('Cost of production', fmt(r.cop)),
+    L(`Selling overhead ${num(c.sellPct)}%`, fmt(r.sell)), L('Total cost', fmt(r.total)), L('Price / billing', fmt(r.price)), L(r.profit >= 0 ? 'Profit' : 'Loss', fmt(Math.abs(r.profit))), L('Margin on price', pct(r.margin)),
+    ...(j.kind === 'Batch' ? ['', L('Cost per unit', fmt2(r.perUnit)), L('Price per unit', fmt2(div(r.price, num(j.units))))] : [])].join('\n');
+  openDlg({ title: `Cost sheet — ${j.no}`, noSave: true, top: `<pre class="sheet" id="sheet">${esc(t)}</pre><div class="actions" style="margin-top:8px"><button type="button" class="sm" data-act="copy" data-src="sheet">Copy</button></div>` });
+}
+
+function vABC() {
+  const A = R.A;
+  const acts = A.acts.map(x => `<tr tabindex="0" data-act="edit" data-reg="abcAct" data-i="${cur.abcAct.indexOf(x.a)}"><td><strong>${esc(x.a.name)}</strong></td><td>${esc(x.a.driver)}</td><td class="num">${fmt(num(x.a.pool))}</td><td class="num">${qty(num(x.a.total))}</td><td class="num">${fmt2(x.rate)}</td><td class="num">${qty(x.used)}</td><td class="num">${x.unusedCost > .5 ? fmt(x.unusedCost) : '–'}</td></tr>`).join('');
+  const objs = A.objs.map(o => `<tr tabindex="0" data-act="edit" data-reg="abcObj" data-i="${cur.abcObj.indexOf(o.o)}"><td><strong>${esc(o.o.name)}</strong><span class="ref">${esc(o.o.kind)} · ${qty(o.U)} units</span></td><td class="num">${fmt2(div(num(o.o.directCost), o.U))}</td>
+    <td class="num">${fmt2(o.tradPU)}</td><td class="num">${fmt2(o.abcPU)}</td><td class="num">${fmt2(o.fullTrad)}</td><td class="num"><strong>${fmt2(o.fullAbc)}</strong></td><td class="num">${Math.abs(o.diff) < .0005 ? '–' : `<span class="${o.diff > 0 ? 'neg' : ''}">${o.diff > 0 ? '+' : ''}${pct(o.diff)}</span>`}</td>
+    <td class="num">${o.price ? fmt2(o.price) : '–'}</td><td>${o.price ? `${pct(o.mTrad)} → ${o.mAbc < 0 ? pill('bad', pct(o.mAbc)) : o.mAbc < .1 ? pill('warn', pct(o.mAbc)) : pill('ok', pct(o.mAbc))}` : ''}</td></tr>`).join('');
+  const baseL = { labHrs: 'direct labour hours', units: 'units' }[A.base];
+  return `<section class="panel"><div class="panel-head"><h2>Activities and cost driver rates</h2><button type="button" class="sm primary" data-act="add" data-reg="abcAct">Add activity</button></div>
+    ${acts ? `<div class="scroll"><table><thead><tr><th>Activity</th><th>Cost driver</th><th class="num">Cost pool ₹</th><th class="num">Driver volume</th><th class="num">Rate per driver ₹</th><th class="num">Used by products</th><th class="num">Unused capacity ₹</th></tr></thead><tbody>${acts}</tbody>
+      <tfoot><tr><td colspan="2">Total support overhead</td><td class="num">${fmt(A.pool)}</td><td colspan="3"></td><td class="num">${fmt(A.unused)}</td></tr></tfoot></table></div>` : '<div class="empty">Add the support activities, their monthly cost and what drives them.</div>'}</section>
+    <section class="panel"><div class="panel-head"><h2>Cost per unit: traditional against activity-based</h2><div class="actions"><label for="abc-base" style="min-width:220px">Traditional overhead charged on<select id="abc-base" data-cfgsel="abcBase"><option value="labHrs"${A.base === 'labHrs' ? ' selected' : ''}>Direct labour hours</option><option value="units"${A.base === 'units' ? ' selected' : ''}>Units</option></select></label><button type="button" class="sm primary" data-act="add" data-reg="abcObj">Add product or customer</button></div></div>
+    ${objs ? `<div class="scroll"><table><thead><tr><th>Product / customer</th><th class="num">Direct cost / unit</th><th class="num">Overhead / unit, traditional</th><th class="num">Overhead / unit, ABC</th><th class="num">Full cost, traditional</th><th class="num">Full cost, ABC</th><th class="num">Change</th><th class="num">Price</th><th>Margin: traditional → ABC</th></tr></thead><tbody>${objs}</tbody></table></div>` : '<div class="empty">Add products or customers and how much of each driver they use.</div>'}
+    <div class="note"><p>Traditional costing spreads all ₹${fmt(A.pool)} of support overhead on ${baseL} at ₹${fmt2(A.tradRate)} each. Activity-based costing charges each activity by its own driver: rate = activity cost ÷ driver volume, and each product carries rate × drivers it used. Products made in many small lots, with many set-ups, tests and orders, usually turn out dearer than the books show; high-volume products turn out cheaper.</p>
+    <p>Driver volume that no product used is unused capacity; its cost is shown separately rather than loaded onto products. Select a product to enter how many set-ups, tests, moves or orders it used.</p></div></section>`;
+}
+
+function vSvc() {
+  const V = R.V, mk = cur.settings.period;
+  const staff = V.staff.map(x => `<tr tabindex="0" data-act="edit" data-reg="staff" data-i="${cur.staff.indexOf(x.s)}"><td><strong>${esc(x.s.name)}</strong><span class="ref">${esc(x.s.code)} · ${esc(x.s.grade)}</span></td><td class="num">${fmt(num(x.s.monthlyCost))}</td><td class="num">${qty(num(x.s.availHrs))}</td>
+    <td class="num">${fmt2(x.rate)}</td><td class="num">${fmt(num(x.s.billRate))}</td><td class="num">${qty(x.hrs)}</td><td class="num">${qty(x.bill)}</td><td>${x.util >= .75 ? pill('ok', pct(x.util, 0)) : x.util >= .6 ? pill('warn', pct(x.util, 0)) : pill('bad', pct(x.util, 0))}</td><td class="num">${pct(x.load, 0)}</td></tr>`).join('');
+  const proj = V.projects.map(x => `<tr tabindex="0" data-act="edit" data-reg="proj" data-i="${cur.proj.indexOf(x.p)}"><td><strong>${esc(x.p.code)}</strong> ${esc(x.p.name)}<span class="ref">${esc(x.p.client)} · ${esc(x.p.billing)} · ${esc(x.p.status)}</span></td>
+    <td class="num">${qty(x.hrs)}${num(x.p.budgetHrs) ? `<span class="ref">${pct(x.burn, 0)} of ${qty(num(x.p.budgetHrs))}</span>` : ''}</td><td class="num">${fmt(x.cost)}</td><td class="num">${x.p.billing === 'Internal' ? '–' : fmt(x.revenue)}${x.p.billing === 'Fixed fee' ? `<span class="ref">${pct(x.done, 0)} of ₹${fmt(num(x.p.fee))}</span>` : ''}</td>
+    <td class="num">${x.p.billing === 'Internal' ? '–' : money(x.margin)}</td><td>${x.p.billing === 'Internal' ? pill('idle', 'Non-billable') : x.margin < 0 ? pill('bad', pct(x.mPct)) : x.mPct < .15 ? pill('warn', pct(x.mPct)) : pill('ok', pct(x.mPct))}</td>
+    <td class="num">${x.p.billing === 'Internal' ? '–' : fmt(x.effRate)}</td><td class="num">${x.eacMargin == null ? '–' : money(x.eacMargin)}</td></tr>`).join('');
+  const bill = V.projects.filter(x => x.p.billing !== 'Internal');
+  const tsF = ui.tsMonth === 'all' ? null : mk;
+  return `<section class="panel"><div class="panel-head"><h2>Staff cost per hour and utilisation · ${fmonthL(mk)}</h2><div class="actions"><button type="button" class="sm primary" data-act="add" data-reg="staff">Add staff</button></div></div>
+    <div class="form-inline">${cfgInput('svcOhPct', 'Overhead loading on staff cost — rent, software, admin (%)', '0.1')}</div>
+    ${staff ? `<div class="scroll"><table><thead><tr><th>Staff</th><th class="num">Monthly cost</th><th class="num">Available hrs</th><th class="num">Cost per hour</th><th class="num">Billing rate</th><th class="num">Hours logged</th><th class="num">Billable hrs</th><th>Billable utilisation</th><th class="num">Total load</th></tr></thead><tbody>${staff}</tbody>
+      <tfoot><tr><td>Team</td><td class="num">${fmt(sum(cur.staff, 'monthlyCost'))}</td><td class="num">${qty(sum(cur.staff, 'availHrs'))}</td><td></td><td></td><td class="num">${qty(sum(V.staff, 'hrs'))}</td><td class="num">${qty(sum(V.staff, 'bill'))}</td><td>${pct(V.util, 0)}</td><td></td></tr></tfoot></table></div>` : '<div class="empty">Add staff with their monthly cost and available hours.</div>'}
+    <div class="note"><p>Cost per hour = monthly cost ÷ available hours × (1 + overhead loading). Billable utilisation = billable hours ÷ available hours for the month; total load includes internal time.</p></div></section>
+    <section class="panel"><div class="panel-head"><h2>Project margin to date</h2><div class="actions"><button type="button" class="sm primary" data-act="add" data-reg="proj">Add project</button></div></div>
+    ${proj ? `<div class="scroll"><table><thead><tr><th>Project</th><th class="num">Hours to date</th><th class="num">Cost to date</th><th class="num">Revenue earned</th><th class="num">Margin</th><th>Margin %</th><th class="num">Revenue per hour</th><th class="num">Margin at completion</th></tr></thead><tbody>${proj}</tbody>
+      <tfoot><tr><td>Billable projects</td><td class="num">${qty(sum(bill, 'hrs'))}</td><td class="num">${fmt(V.cost)}</td><td class="num">${fmt(V.revenue)}</td><td class="num">${money(V.margin)}</td><td>${pct(div(V.margin, V.revenue))}</td><td></td><td></td></tr></tfoot></table></div>` : '<div class="empty">Add projects, then log hours against them.</div>'}
+    <div class="note"><p>Fixed-fee revenue is earned in line with hours used against the budget (capped at 100%). Time-and-material revenue = billable hours × each person's billing rate. Margin at completion assumes the remaining budgeted hours cost the same per hour as so far; once hours pass the budget, every extra hour is unbilled cost.${V.internal ? ` Internal time this year costs ₹${fmt(V.internal)} and is part of overhead.` : ''}</p></div></section>
+    ${regPanel('time', 'Timesheet', '', ['month', 'project', 'staff', 'hours', 'billable'], tsF ? t => t.month === tsF : null).replace('<div class="actions">', `<div class="actions"><button type="button" class="sm" data-act="ts-month">${tsF ? 'Show all months' : `Show ${fmonth(mk)} only`}</button>`)}`;
+}
+
+function vLand() {
+  const L = R.L;
+  if (!L.length) return `${regPanel('ship', 'Import shipments', '', ['ref', 'supplier', 'currency', 'rate', 'terms'])}`;
+  const sel = L.find(x => x.s.ref === ui.ship) || L[0], s = sel.s;
+  const sum0 = L.map(x => `<tr tabindex="0" data-act="ship-sel" data-ref="${esc(x.s.ref)}"${x === sel ? ' style="font-weight:600"' : ''}><td>${esc(x.s.ref)}<span class="ref">${esc(x.s.supplier)} · ${esc(x.s.boeDate || '')}</span></td><td>${esc(x.s.currency)} @ ${fmt2(num(x.s.rate))} · ${esc(x.s.terms)}</td><td class="num">${fmt(x.fobINR)}</td><td class="num">${fmt(x.av)}</td><td class="num">${fmt(x.duty)}</td><td class="num">${fmt(x.igst)}</td><td class="num">${fmt(x.local)}</td><td class="num"><strong>${fmt(x.landed)}</strong></td><td class="num">${pct(div(x.landed, x.fobINR) - 1)}</td></tr>`).join('');
+  const lines = sel.rows.map(r => `<tr tabindex="0" data-act="edit" data-reg="shipLine" data-i="${cur.shipLine.indexOf(r.l)}"><td><strong>${esc(r.l.item)}</strong><span class="ref">${qty(num(r.l.qty))} ${esc(r.l.uom)} @ ${esc(s.currency)} ${fmt2(num(r.l.unitPrice))}</span></td><td class="num">${fmt(r.fobINR)}</td><td class="num">${fmt(r.freight + r.ins)}</td>
+    <td class="num">${fmt(r.av)}</td><td class="num">${fmt(r.bcd)}<span class="ref">${num(r.l.bcdPct)}%</span></td><td class="num">${fmt(r.sws)}</td><td class="num">${fmt(r.igst)}<span class="ref">${s.igstCredit ? 'credit — not cost' : 'added to cost'}</span></td><td class="num">${fmt(r.local)}</td><td class="num"><strong>${fmt(r.landed)}</strong></td><td class="num"><strong>${fmt2(r.perUnit)}</strong><span class="ref">per ${esc(r.l.uom)}</span></td><td class="num">${pct(r.uplift)}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Import shipments</h2><button type="button" class="sm primary" data-act="add" data-reg="ship">Add shipment</button></div>
+    <div class="scroll"><table><thead><tr><th>Shipment</th><th>Currency and terms</th><th class="num">Invoice value ₹</th><th class="num">Assessable value</th><th class="num">Customs duty</th><th class="num">IGST paid</th><th class="num">Local charges</th><th class="num">Landed cost</th><th class="num">Uplift</th></tr></thead><tbody>${sum0}</tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h2>${esc(s.ref)} · ${esc(s.supplier)}</h2><div class="actions"><button type="button" class="sm" data-act="edit" data-reg="ship" data-i="${cur.ship.indexOf(s)}">Edit shipment</button><button type="button" class="sm primary" data-act="add-line" data-ref="${esc(s.ref)}">Add item</button></div></div>
+      <div class="scroll"><table><thead><tr><th>Item</th><th class="num">Invoice ₹</th><th class="num">Freight + insurance ₹</th><th class="num">Assessable value</th><th class="num">Basic duty</th><th class="num">SWS</th><th class="num">IGST</th><th class="num">Local charges</th><th class="num">Landed cost</th><th class="num">Per unit</th><th class="num">Uplift</th></tr></thead><tbody>${lines}</tbody>
+      <tfoot><tr><td>Total</td><td class="num">${fmt(sel.fobINR)}</td><td class="num">${fmt(sel.av - sel.fobINR)}</td><td class="num">${fmt(sel.av)}</td><td class="num">${fmt(sum(sel.rows, 'bcd'))}</td><td class="num">${fmt(sum(sel.rows, 'sws'))}</td><td class="num">${fmt(sel.igst)}</td><td class="num">${fmt(sel.local)}</td><td class="num">${fmt(sel.landed)}</td><td></td><td></td></tr></tfoot></table></div>
+      <div class="kv" style="max-width:620px"><div>Cash paid at the port and to agents (duty, IGST, charges)</div><div class="num">${fmt(sel.cash - sel.av)}</div><div>IGST recoverable as input tax credit</div><div class="num">${s.igstCredit ? fmt(sel.igst) : '–'}</div></div>
+      <div class="note"><p>Assessable value = (invoice value + freight + insurance) × the customs exchange rate notified for the bill of entry date. ${s.terms === 'CIF' ? 'This invoice is CIF, so freight and insurance are already in the price.' : `${sel.freightRule ? 'Freight was not entered, so 20% of FOB is used. ' : ''}${sel.insRule ? 'Insurance was not entered, so 1.125% of FOB is used. ' : ''}`}Basic customs duty is charged on assessable value; social welfare surcharge is ${s.swsPct === '' || s.swsPct == null ? 10 : num(s.swsPct)}% of the duty; IGST is charged on assessable value + duty + surcharge. Freight and insurance are shared by invoice value; local charges by ${({ value: 'assessable value', weight: 'weight', qty: 'quantity' })[s.basis] || 'assessable value'}.</p>
+      <p>Enter the effective duty rate from the tariff and any notification (a trade-agreement rate, AIDC or exemption) in the item's duty %. Confirm rates and the exchange rate against the bill of entry.</p></div></section>
+    <div class="grid-2">${regPanel('ship', 'Shipment inputs', '', ['ref', 'currency', 'rate', 'terms', 'freight', 'insurance', 'cha', 'port', 'inland'])}${regPanel('shipLine', 'Item inputs', '', ['ship', 'item', 'qty', 'unitPrice', 'weight', 'bcdPct', 'igstPct'])}</div>`;
+}
+
+function cvpChart(C) {
+  if (C.be == null || !C.S) return '';
+  const W = 640, H = 270, l = 70, r = 20, t = 14, b = 36, xm = Math.max(C.S, C.be, C.target || 0) * 1.15, ym = xm;
+  const X = v => l + v / xm * (W - l - r), Y = v => H - b - v / ym * (H - t - b);
+  const tc = x => C.F + (1 - C.pv) * x;
+  const ticks = [0, .25, .5, .75, 1].map(f => f * xm);
+  const lab = v => !v ? '0' : v >= 1e7 ? (v / 1e7).toFixed(1) + ' cr' : v >= 1e5 ? (v / 1e5).toFixed(0) + ' L' : fmt(v);
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Break-even chart: sales and total cost lines cross at ₹${fmt(C.be)}">
+    ${ticks.map(v => `<line class="ax" x1="${l}" x2="${W - r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="lbl" x="${l - 6}" y="${Y(v) + 4}" text-anchor="end">${lab(v)}</text><text class="lbl" x="${X(v)}" y="${H - b + 16}" text-anchor="middle">${lab(v)}</text>`).join('')}
+    <text class="lbl" x="${(l + W - r) / 2}" y="${H - 4}" text-anchor="middle">Sales value (₹)</text>
+    <polygon class="loss" points="${X(0)},${Y(0)} ${X(0)},${Y(tc(0))} ${X(C.be)},${Y(C.be)}"/><polygon class="prof" points="${X(C.be)},${Y(C.be)} ${X(xm)},${Y(ym)} ${X(xm)},${Y(Math.min(ym, tc(xm)))}"/>
+    <line class="s3" x1="${X(0)}" y1="${Y(C.F)}" x2="${X(xm)}" y2="${Y(C.F)}" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+    <line class="s2" x1="${X(0)}" y1="${Y(tc(0))}" x2="${X(xm)}" y2="${Y(Math.min(ym, tc(xm)))}" stroke-width="2.5" fill="none"/>
+    <line class="s1" x1="${X(0)}" y1="${Y(0)}" x2="${X(xm)}" y2="${Y(ym)}" stroke-width="2.5" fill="none"/>
+    <line class="ax" x1="${X(C.S)}" x2="${X(C.S)}" y1="${t}" y2="${H - b}" stroke-dasharray="2 3"/><text class="lbl" x="${X(C.S) + 4}" y="${t + 10}">Budget</text>
+    <circle class="pt" cx="${X(C.be)}" cy="${Y(C.be)}" r="5"/><text class="lbl" x="${X(C.be) + 8}" y="${Y(C.be) + 16}">Break-even ₹${lab(C.be)}</text></svg></div>
+    <div class="legend"><span class="l1">Sales</span><span class="l2">Total cost</span><span class="l3">Fixed cost</span><span class="nl">Red area: loss · green area: profit</span></div>`;
+}
+function vCVP() {
+  const C = R.C;
+  const rows = C.rows.map(r => `<tr tabindex="0" data-act="edit" data-reg="cvp" data-i="${cur.cvp.indexOf(r.p)}"><td><strong>${esc(r.p.code)}</strong><span class="ref">${esc(r.p.name)}</span></td><td class="num">${fmt(num(r.p.price))}</td><td class="num">${fmt(num(r.p.varCost))}</td><td class="num">${fmt(r.cmU)}</td><td class="num">${pct(r.pv)}</td>
+    <td class="num">${qty(r.U)}</td><td class="num">${fmt(r.sales)}</td><td class="num">${fmt(r.cm)}</td><td class="num">${r.beUnits != null ? qty(Math.round(r.beUnits * 10) / 10) : '–'}</td><td class="num">${r.spare < 0 ? `<span class="neg">${qty(r.spare)}</span>` : qty(r.spare)}</td></tr>`).join('');
+  const sens = C.sens.map(x => `<tr><td>${esc(x.label)}</td><td class="num">${money(x.profit)}</td><td class="num">${x.be != null ? fmt(x.be) : '–'}</td><td class="num">${x.label === 'As budgeted' ? '–' : money(x.profit - C.sens[0].profit)}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Contribution by product · ${fmonthL(cur.settings.period)}</h2><button type="button" class="sm primary" data-act="add" data-reg="cvp">Add product</button></div>
+    <div class="form-inline">${cfgInput('fixedCost', 'Fixed costs for the month (₹)')}${cfgInput('targetProfit', 'Target profit for the month (₹)')}</div>
+    ${rows ? `<div class="scroll"><table><thead><tr><th>Product</th><th class="num">Price</th><th class="num">Variable cost</th><th class="num">Contribution / unit</th><th class="num">P/V ratio</th><th class="num">Budget units</th><th class="num">Sales ₹</th><th class="num">Contribution ₹</th><th class="num">Break-even units</th><th class="num">Spare capacity</th></tr></thead><tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="5">Weighted P/V ratio ${pct(C.pv)}</td><td></td><td class="num">${fmt(C.S)}</td><td class="num">${fmt(C.C)}</td><td></td><td></td></tr></tfoot></table></div>` : '<div class="empty">Add products with price, variable cost and budgeted units.</div>'}</section>
+    ${rows ? `<div class="grid-2"><section class="panel"><div class="panel-head"><h2>Break-even</h2></div>
+      <div class="kv"><div>Contribution</div><div class="num">${fmt(C.C)}</div><div>Less fixed costs</div><div class="num">(${fmt(C.F)})</div><div class="strong">Profit for the month</div><div class="num strong">${money(C.profit)}</div>
+        <div class="strong">Break-even sales = fixed costs ÷ P/V ratio</div><div class="num strong">${C.be != null ? fmt(C.be) : '–'}</div><div>Margin of safety (budget − break-even)</div><div class="num">${C.be != null ? `${fmt(C.S - C.be)} · ${pct(C.mos)}` : '–'}</div>
+        <div>Sales needed for target profit ₹${fmt(C.T)}</div><div class="num">${C.target != null ? fmt(C.target) : '–'}</div><div>Operating leverage (contribution ÷ profit)</div><div class="num">${C.dol ? C.dol.toFixed(2) + '×' : '–'}</div></div>
+      ${cvpChart(C)}</section>
+      <section class="panel"><div class="panel-head"><h2>What if</h2><span class="sub">One change at a time, same sales mix</span></div>
+      <div class="scroll"><table><thead><tr><th>Scenario</th><th class="num">Profit</th><th class="num">Break-even sales</th><th class="num">Change in profit</th></tr></thead><tbody>${sens}</tbody></table></div>
+      <div class="note"><p>Contribution = sales − variable costs. P/V ratio = contribution ÷ sales. Break-even assumes the budgeted sales mix holds; a shift toward low-P/V products raises it. Operating leverage shows how much profit moves for a 1% change in sales.</p></div></section></div>` : ''}`;
+}
+
+function vProf() {
+  const PR = R.PR, dim = ui.profDim, g = PR.by(dim), mx = Math.max(1, ...g.map(e => Math.abs(e.contrib)));
+  const seg = `<div class="actions" role="group" aria-label="View by">${[['customer', 'Customer'], ['product', 'Product'], ['channel', 'Channel']].map(([k, l]) => `<button type="button" class="sm${dim === k ? ' primary' : ''}" data-act="prof-dim" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const body = g.map(e => `<tr><td><strong>${esc(e.k)}</strong><span class="ref">${e.n} invoice${e.n > 1 ? 's' : ''}</span></td><td class="num">${qty(e.qty)}</td><td class="num">${fmt(e.net)}${e.disc ? `<span class="ref">after ₹${fmt(e.disc)} discount</span>` : ''}</td><td class="num">${fmt(e.vc)}</td><td class="num">${fmt(e.cts)}</td>
+    <td class="num"><strong>${money(e.contrib)}</strong></td><td>${e.contrib < 0 ? pill('bad', pct(e.cm)) : e.cm < .1 ? pill('warn', pct(e.cm)) : pill('ok', pct(e.cm))}</td><td>${bar(e.contrib, mx)}</td></tr>`).join('');
+  let cum = 0; const tot = Math.max(1, PR.contrib);
+  const whale = dim === 'customer' && g.length > 2 ? `<p>Cumulative contribution by customer: ${g.map(e => { cum += e.contrib; return `${esc(e.k)} ${pct(cum / tot, 0)}`; }).join(' → ')}. Customers that take the line back down cost more to serve than they bring in.</p>` : '';
+  return `<section class="panel"><div class="panel-head"><h2>Profitability by ${dim} · ${fmonthL(cur.settings.period)}</h2>${seg}</div>
+    ${body ? `<div class="scroll"><table><thead><tr><th>${dim[0].toUpperCase() + dim.slice(1)}</th><th class="num">Quantity</th><th class="num">Net sales</th><th class="num">Variable product cost</th><th class="num">Cost to serve</th><th class="num">Contribution</th><th>Margin</th><th>Contribution</th></tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td>Total</td><td></td><td class="num">${fmt(PR.net)}</td><td class="num">${fmt(sum(g, 'vc'))}</td><td class="num">${fmt(sum(g, 'cts'))}</td><td class="num">${money(PR.contrib)}</td><td>${pct(div(PR.contrib, PR.net))}</td><td></td></tr></tfoot></table></div>` : '<div class="empty">Add sales invoices with product, customer and channel. Product variable costs come from the Break-even tab.</div>'}
+    <div class="note"><p>Net sales = quantity × rate − discounts. Variable product cost = quantity × variable cost per unit from the Break-even tab. Cost to serve = outward freight + commission or channel fee. Contribution is what is left to pay fixed costs; a customer or channel below zero loses money on every sale.</p>${whale}${PR.unknown ? `<p class="neg">${PR.unknown} invoice${PR.unknown > 1 ? 's use' : ' uses'} a product code that is not on the Break-even tab, so product cost is zero there.</p>` : ''}</div></section>
+    ${regPanel('sales', 'Sales invoices', '', ['inv', 'date', 'customer', 'channel', 'product', 'qty', 'rate', 'discount', 'freight', 'commPct'])}`;
+}
+
+function vDec() {
+  const D = R.D, c = cur.cfg;
+  const mob = D.mob.map(m => `<tr tabindex="0" data-act="edit" data-reg="mob" data-i="${cur.mob.indexOf(m.d)}"><td><strong>${esc(m.d.name)}</strong><span class="ref">${qty(m.q)} ${esc(m.d.unit || 'units')}</span></td><td class="num">${fmt2(m.varU)}</td><td class="num">${fmt(num(m.d.avoidFixed))}</td><td class="num">${fmt(num(m.d.oppCost))}</td>
+    <td class="num">${fmt(m.make)}</td><td class="num">${fmt2(m.buyU)}</td><td class="num">${fmt(m.buy)}</td><td>${pill(m.rec === 'Make' ? 'ok' : m.rec === 'Buy' ? 'warn' : 'idle', m.rec === 'Either' ? 'No difference' : `${m.rec} · saves ₹${fmt(Math.abs(m.diff))}`)}</td><td class="num">${m.ind != null ? qty(Math.round(m.ind)) : '–'}</td></tr>`).join('');
+  const pr = D.pricing.map(x => `<tr><td><strong>${esc(x.r.p.code)}</strong><span class="ref">${esc(x.r.p.name)}</span></td><td class="num">${fmt(x.min)}</td><td class="num">${fmt(x.full)}</td><td class="num">${fmt(x.costPlus)}</td><td class="num">${x.marginPrice != null ? fmt(x.marginPrice) : '–'}</td><td class="num">${fmt(x.price)}</td>
+    <td>${x.price < x.full ? pill('bad', `${pct(x.actualMarkup)} on cost`) : x.price < x.costPlus ? pill('warn', `${pct(x.actualMarkup)} on cost`) : pill('ok', `${pct(x.actualMarkup)} on cost`)}</td></tr>`).join('');
+  const sp = D.special.map(o => `<tr tabindex="0" data-act="edit" data-reg="special" data-i="${cur.special.indexOf(o.o)}"><td><strong>${esc(o.o.customer)}</strong><span class="ref">${qty(o.q)} × ${esc(o.r ? o.r.p.code : o.o.product)} at ₹${fmt(num(o.o.price))}</span></td><td class="num">${fmt(o.vc)}</td><td class="num">${qty(o.spare)}</td>
+    <td class="num">${money(o.extraContrib)}</td><td class="num">${o.displaced ? `(${fmt(o.displaced)})<span class="ref">${qty(o.short)} units of regular sales lost</span>` : '–'}</td><td class="num"><strong>${money(o.net)}</strong></td><td class="num">${fmt(o.minPrice)}</td><td>${pill(o.rec === 'Accept' ? 'ok' : 'bad', o.rec)}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Make or buy</h2><button type="button" class="sm primary" data-act="add" data-reg="mob">Add decision</button></div>
+    ${mob ? `<div class="scroll"><table><thead><tr><th>Component</th><th class="num">Make: variable / unit</th><th class="num">Fixed cost saved if bought</th><th class="num">Contribution given up</th><th class="num">Cost to make</th><th class="num">Buy: price / unit</th><th class="num">Cost to buy</th><th>Cheaper option</th><th class="num">Quantity where equal</th></tr></thead><tbody>${mob}</tbody></table></div>` : '<div class="empty">Add a component you could make or buy.</div>'}
+    <div class="note"><p>Only costs that change with the decision count. Cost to make = quantity × variable cost + fixed costs that stop if you buy + contribution lost on work the capacity could otherwise do. Allocated overheads that continue either way are left out. Below the "quantity where equal", buying is cheaper; above it, making is cheaper. Also weigh quality, supplier reliability and lead time.</p></div></section>
+    <section class="panel"><div class="panel-head"><h2>Pricing support</h2><span class="sub">Products and fixed costs from the Break-even tab</span></div>
+      <div class="form-inline">${cfgInput('markupPct', 'Mark-up on full cost (%)', '0.1')}${cfgInput('targetMarginPct', 'Target margin on price (%)', '0.1')}</div>
+      ${pr ? `<div class="scroll"><table><thead><tr><th>Product</th><th class="num">Floor price (variable cost)</th><th class="num">Full cost / unit</th><th class="num">Cost-plus price</th><th class="num">Price for target margin</th><th class="num">Current price</th><th>Current mark-up</th></tr></thead><tbody>${pr}</tbody></table></div>` : '<div class="empty">Add products on the Break-even tab first.</div>'}
+      <div class="note"><p>Full cost per unit = variable cost + fixed costs shared by budgeted sales value. Cost-plus price = full cost × (1 + mark-up). Price for target margin = full cost ÷ (1 − margin). Below variable cost, every unit sold adds to the loss; between variable and full cost, a sale still helps pay fixed costs but does not cover them in full.</p></div></section>
+    <section class="panel"><div class="panel-head"><h2>Special orders</h2><button type="button" class="sm primary" data-act="add" data-reg="special">Add special order</button></div>
+      ${sp ? `<div class="scroll"><table><thead><tr><th>Order</th><th class="num">Variable cost / unit</th><th class="num">Spare capacity</th><th class="num">Extra contribution</th><th class="num">Regular sales displaced</th><th class="num">Net gain</th><th class="num">Lowest acceptable price</th><th>Decision</th></tr></thead><tbody>${sp}</tbody></table></div>` : '<div class="empty">Add a one-off order at a special price to test it.</div>'}
+      <div class="note"><p>With spare capacity, any price above variable cost plus the order's own extra costs adds profit. Without it, the order also pays for the contribution of regular sales it pushes out. Check that the special price will not undercut existing customers.</p></div></section>`;
+}
+
+function vCAS() {
+  const CS = R.CS, st = cur.settings, ca = costAudit(st), Y = fyOf(st.period || TODAY.slice(0, 7));
+  const audit = `<section class="panel"><div class="panel-head"><h2>Cost records and cost audit · FY ${fyLabel(Y)}</h2><span class="sub">Companies (Cost Records and Audit) Rules, 2014</span></div>
+    <div class="kv" style="max-width:720px"><div>Turnover last year / covered products</div><div class="num">₹${qty(num(st.turnover))} cr / ₹${qty(num(st.productTurnover))} cr</div>
+      <div class="strong">Maintain cost records (Form CRA-1)</div><div class="num strong">${ca.records ? 'Yes' : 'No'}</div><div class="strong">Cost audit required</div><div class="num strong">${ca.audit ? 'Yes' : 'No'}</div>
+      ${ca.audit ? `<div>Appoint cost auditor and file Form CRA-2 (within 30 days of the board meeting if that is earlier)</div><div class="num">by 27-Sep-${Y}</div><div>Cost audit report (Form CRA-3) due from auditor</div><div class="num">by 27-Sep-${Y + 1}</div><div>File report with MCA in Form CRA-4</div><div class="num">within 30 days of receiving it</div>` : ''}</div>
+    <div class="note"><p>${esc(ca.why)} Micro and small enterprises, and companies with more than 75% export revenue in foreign exchange, are exempt. Turnover thresholds use the previous year's figures. Confirm the product classification (CETA heading) and dates against the Rules as currently amended.</p></div></section>`;
+  if (!CS.length) return `<section class="panel"><div class="empty"><h3>No cost sheet yet</h3><span>Add a product's figures for the month to build its cost statement.</span><button type="button" class="primary" data-act="add" data-reg="csheet">Add cost sheet</button></div></section>${audit}`;
+  const c = CS[Math.min(ui.cas, CS.length - 1)], s = c.s, U = c.A, Q = c.sold, v = k => num(s[k]);
+  const ln = (t, ref, amt, per, cls = '') => `<tr class="${cls}"><td>${esc(t)}</td><td class="small muted">${esc(ref || '')}</td><td class="num">${money(amt)}</td><td class="num">${per == null ? '' : fmt2(per)}</td></tr>`;
+  const sel = CS.length > 1 ? `<label for="cas-sel" style="min-width:240px">Product<select id="cas-sel" data-uisel="cas">${CS.map((x, i) => `<option value="${i}"${x === c ? ' selected' : ''}>${esc(x.s.product)}</option>`).join('')}</select></label>` : '';
+  const stmt = `<tbody>
+    <tr class="grp"><td colspan="4">Quantitative information — installed ${qty(v('installedCap'))}, normal ${qty(c.N)}, produced ${qty(U)}, sold ${qty(Q)} ${esc(s.unit)}</td></tr>
+    ${ln(`Materials consumed (opening ${fmt(v('matOpen'))} + purchases ${fmt(v('matPurch'))} − closing ${fmt(v('matClose'))})`, 'CAS-6', c.L.mat, div(c.L.mat, U))}
+    ${CAS_LINES.slice(1).map(([k, t, ref]) => ln(t, ref, c.L[k], div(c.L[k], U))).join('')}
+    ${ln('Total', '', c.sub, div(c.sub, U), 'sub')}
+    ${ln('Add opening work in progress', '', v('wipOpen'), null)}${ln('Less closing work in progress', '', -v('wipClose'), null)}
+    ${ln('Less credit for scrap, by-products and recoveries', 'CAS-19 / CAS-24', -v('scrapCredit'), null)}${ln('Primary packing', 'CAS-9', v('packing'), div(v('packing'), U))}
+    ${ln('Administrative overheads relating to production', 'CAS-11', v('adminProd'), div(v('adminProd'), U))}
+    ${ln('Cost of production', 'CAS-4', c.cop, c.copU, 'sub')}
+    ${ln('Add opening stock of finished goods', '', v('fgOpen'), null)}${ln('Less closing stock of finished goods', '', -v('fgClose'), null)}
+    ${ln('Cost of goods sold', '', c.cogs, div(c.cogs, Q), 'sub')}
+    ${ln('Other administrative overheads', 'CAS-11', v('adminOther'), div(v('adminOther'), Q))}${ln('Selling and distribution overheads', 'CAS-15', v('selling'), div(v('selling'), Q))}
+    ${ln('Cost of sales', '', c.cos, c.cosU, 'sub')}
+    ${ln('Net sales realisation', 'CAS-24', v('netSales'), c.priceU)}
+    ${ln(c.profit >= 0 ? 'Margin' : 'Loss', '', c.profit, div(c.profit, Q), 'sub')}
+    <tr class="grp"><td colspan="4">Kept out of cost</td></tr>
+    ${ln(`Fixed production overhead not absorbed — ${pct(c.util, 1)} of normal capacity used`, 'CAS-2 / CAS-3', c.unabs, null, 'memo')}${ln('Interest and finance charges', 'CAS-17', v('interest'), null, 'memo')}${ln('Abnormal and non-recurring costs (excluded under each CAS)', '', v('abnormal'), null, 'memo')}</tbody>`;
+  return `<section class="panel"><div class="panel-head"><h2>Cost sheet · ${esc(s.product)} · ${fmonthL(st.period)}</h2><div class="actions">${sel}<button type="button" class="sm" data-act="edit" data-reg="csheet" data-i="${cur.csheet.indexOf(s)}">Edit figures</button><button type="button" class="sm primary" data-act="add" data-reg="csheet">Add product</button></div></div>
+    <div class="scroll"><table><thead><tr><th>Particulars</th><th>Standard</th><th class="num">Amount ₹</th><th class="num">Per ${esc(s.unit)} ₹</th></tr></thead>${stmt}</table></div>
+    <div class="kv" style="max-width:620px"><div>Capacity utilisation (production ÷ installed)</div><div class="num">${pct(c.capUtil)}</div><div>Production against normal capacity</div><div class="num">${pct(div(U, c.N))}</div><div>Margin on net sales</div><div class="num">${pct(c.margin)}</div></div>
+    <div class="note"><p>Layout follows CAS-4 (cost of production for captive consumption) and the product-wise cost statement kept under Form CRA-1. Per-unit figures to cost of production are on quantity produced; from cost of goods sold onward, on quantity sold. Fixed production overhead is absorbed on normal capacity (CAS-2): when production is below normal, the unabsorbed part is a period cost, not product cost. Interest (CAS-17), abnormal costs and penalties are kept out.</p></div></section>${audit}`;
+}
+
+// ================================================================ dialog
+let dlgSave = null, dlgDelete = null;
+function openDlg({ title, fields = [], values = {}, onSave, onDelete, top = '', saveLabel = 'Save', noSave = false }) {
+  $('dlg-title').textContent = title; $('dlg-top').innerHTML = top; $('dlg-err').textContent = '';
+  $('dlg-body').innerHTML = fields.map(f => {
+    const id = 'd-' + f.k.replace(/[^\w-]/g, '_'), v = values[f.k] ?? '', cls = f.full ? ' class="full"' : '', hint = f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : '';
+    if (f.t === 'check') return `<label class="check${f.full ? ' full' : ''}" for="${id}"><input id="${id}" type="checkbox"${v ? ' checked' : ''}> ${esc(f.l)}</label>`;
+    if (f.t === 'select') return `<label for="${id}"${cls}>${esc(f.l)}${hint}<select id="${id}">${f.o.map(o => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(ov)}"${String(ov) === String(v) ? ' selected' : ''}>${esc(ol)}</option>`; }).join('')}</select></label>`;
+    return `<label for="${id}"${cls}>${esc(f.l)}${hint}<input id="${id}" type="${f.t || 'text'}"${f.t === 'number' ? ' step="any"' : ''} value="${esc(v)}"></label>`;
+  }).join('');
+  dlgSave = onSave; dlgDelete = onDelete;
+  $('dlg-save').hidden = noSave; $('dlg-save').textContent = saveLabel; $('dlg-cancel').textContent = noSave ? 'Close' : 'Cancel';
+  $('dlg-del').hidden = !onDelete; $('dlg-del2').hidden = true;
+  $('dlg')._fields = fields; $('dlg').showModal();
+  const first = $('dlg-body').querySelector('input:not([type=checkbox]), select'); if (first) first.focus();
+}
+function dlgValues() { const o = {}; ($('dlg')._fields || []).forEach(f => { const el = $('d-' + f.k.replace(/[^\w-]/g, '_')); o[f.k] = f.t === 'check' ? el.checked : f.t === 'number' ? (el.value === '' ? '' : +el.value) : el.value.trim(); }); return o; }
+$('dlg-form').addEventListener('submit', e => { e.preventDefault(); if (!dlgSave) return; const err = dlgSave(dlgValues()); if (err) { $('dlg-err').textContent = err; return; } $('dlg').close(); changed(); });
+$('dlg-cancel').addEventListener('click', () => $('dlg').close());
+$('dlg-del').addEventListener('click', () => { $('dlg-del').hidden = true; $('dlg-del2').hidden = false; });
+$('dlg-del2').addEventListener('click', () => { if (dlgDelete) dlgDelete(); $('dlg').close(); changed(); });
+
+const TYPE = { n: 'number', c: 'check', s: 'select', m: 'month' };
+function fieldsOf(reg) {
+  const fs = SCHEMA[reg].f.map(([k, l, t, o]) => ({ k, l, t: TYPE[t] || 'text', o: t === 's' ? (typeof o === 'function' ? o(cur) : o) : undefined, full: t === 'c' }));
+  if (reg === 'abcObj') cur.abcAct.forEach(a => fs.push({ k: 'drv:' + a.name, l: `${a.driver} used — ${a.name}`, t: 'number' }));
+  if (reg === 'sales' || reg === 'ship') fs.forEach(f => { if (f.k === 'date' || f.k === 'boeDate') f.t = 'date'; });
+  return fs;
+}
+const DEFAULTS = {
+  stdMat: () => ({ prod: (cur.stdProd[0] || {}).code || '' }), stdLab: () => ({ prod: (cur.stdProd[0] || {}).code || '' }),
+  proc: () => { const l = cur.proc.length ? cur.proc[cur.proc.length - 1].line : 'Process line'; return { line: l, seq: cur.proc.filter(p => p.line === l).length + 1, wipConv: 0 }; },
+  jobs: () => ({ kind: 'Job', status: 'Open', units: 1 }), abcObj: () => ({ kind: 'Product' }), proj: () => ({ billing: 'Fixed fee', status: 'Active' }),
+  time: () => ({ month: cur.settings.period, billable: true, project: (cur.proj[0] || {}).code || '', staff: (cur.staff[0] || {}).code || '' }),
+  ship: () => ({ terms: 'FOB', swsPct: 10, basis: 'value', igstCredit: true, currency: 'USD', boeDate: TODAY }),
+  shipLine: () => ({ ship: ui.ship || (cur.ship[0] || {}).ref || '', bcdPct: 7.5, igstPct: 18, uom: 'kg' }),
+  sales: () => ({ date: TODAY, channel: 'Direct', product: (cur.cvp[0] || {}).code || '' }), special: () => ({ product: (cur.cvp[0] || {}).code || '' }),
+};
+function editRow(reg, i, init) {
+  if ((reg === 'stdMat' || reg === 'stdLab') && !cur.stdProd.length) { toast('Add a product first.'); return; }
+  if (reg === 'time' && (!cur.proj.length || !cur.staff.length)) { toast('Add staff and a project first.'); return; }
+  if (reg === 'shipLine' && !cur.ship.length) { toast('Add a shipment first.'); return; }
+  if ((reg === 'sales' || reg === 'special') && !cur.cvp.length) { toast('Add products on the Break-even tab first.'); return; }
+  const isNew = i == null, row = isNew ? { ...(DEFAULTS[reg] ? DEFAULTS[reg]() : {}), ...(init || {}) } : cur[reg][i];
+  const values = { ...row }; if (reg === 'abcObj') Object.entries(row.drv || {}).forEach(([k, v]) => { values['drv:' + k] = v; });
+  const kf = KEYF[reg];
+  openDlg({ title: `${isNew ? 'Add' : 'Edit'} ${SCHEMA[reg].name.toLowerCase()}`, fields: fieldsOf(reg), values,
+    onSave: v => {
+      const first = SCHEMA[reg].f[0][0];
+      if (SCHEMA[reg].f[0][2] !== 's' && SCHEMA[reg].f[0][2] !== 'm' && !String(v[first] ?? '').trim()) return `Enter ${SCHEMA[reg].f[0][1].toLowerCase()}.`;
+      if (kf && cur[reg].some((x, j) => j !== i && String(x[kf]).toLowerCase() === String(v[kf]).toLowerCase())) return `${SCHEMA[reg].f.find(f => f[0] === kf)[1]} "${v[kf]}" is already used.`;
+      if (reg === 'proc' && num(v.wipConv) > 100) return 'Work in progress completion cannot be more than 100%.';
+      if (reg === 'stdLab' && num(v.idle) > num(v.ah)) return 'Idle hours cannot exceed hours paid.';
+      if (reg === 'csheet' && num(v.normalCap) > num(v.installedCap) && num(v.installedCap)) return 'Normal capacity cannot exceed installed capacity.';
+      const o = {}; Object.entries(v).forEach(([k, x]) => { if (!k.startsWith('drv:')) o[k] = x; });
+      if (reg === 'abcObj') { o.drv = {}; Object.entries(v).forEach(([k, x]) => { if (k.startsWith('drv:') && x !== '') o.drv[k.slice(4)] = x; }); }
+      if (!isNew && kf && row[kf] !== o[kf]) { (REFS[reg] || []).forEach(([r2, f2]) => cur[r2].forEach(x => { if (x[f2] === row[kf]) x[f2] = o[kf]; })); if (reg === 'abcAct') cur.abcObj.forEach(x => { if (x.drv && row.name in x.drv) { x.drv[o.name] = x.drv[row.name]; delete x.drv[row.name]; } }); }
+      if (isNew) cur[reg].push(o); else cur[reg][i] = { ...row, ...o };
+      toast(isNew ? `${SCHEMA[reg].name} added` : 'Saved');
+    },
+    onDelete: isNew ? null : () => {
+      const used = (REFS[reg] || []).filter(([r2, f2]) => cur[r2].some(x => x[f2] === row[kf]));
+      if (used.length) { toast(`Still used in ${used.map(([r2]) => SCHEMA[r2].sheet).join(', ')} — remove those rows first.`); return; }
+      cur[reg].splice(i, 1); toast('Deleted');
+    } });
+}
+function companyDialog() {
+  openDlg({ title: 'Create company', values: { name: '', period: TODAY.slice(0, 7), industry: '' }, saveLabel: 'Create company',
+    fields: [{ k: 'name', l: 'Company name', full: true }, { k: 'period', l: 'First costing month', t: 'month' }, { k: 'industry', l: 'Industry / product group' }],
+    onSave: v => { if (!v.name) return 'Enter the company name.'; const c = blankCompany(v.name); Object.assign(c.settings, { period: v.period || TODAY.slice(0, 7), industry: v.industry }); companies.splice(companies.filter(x => !x.sample).length, 0, c); cur = c; setTimeout(() => toast(`${v.name} created — start with the method you use, or import the Excel template`), 50); } });
+}
+
+// ================================================================ events
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'tab') return setTab(b.dataset.tab);
+  if (a === 'add') return editRow(b.dataset.reg, null);
+  if (a === 'edit') return editRow(b.dataset.reg, +b.dataset.i);
+  if (a === 'add-line') return editRow('shipLine', null, { ship: b.dataset.ref });
+  if (a === 'proc-sel') { ui.procStep = b.dataset.i; render(); return; }
+  if (a === 'ship-sel') { ui.ship = b.dataset.ref; render(); return; }
+  if (a === 'prof-dim') { ui.profDim = b.dataset.v; render(); return; }
+  if (a === 'ts-month') { ui.tsMonth = ui.tsMonth === 'all' ? 'cur' : 'all'; render(); return; }
+  if (a === 'job-sheet') return jobSheet(+b.dataset.i);
+  if (a === 'new-company') return companyDialog();
+  if (a === 'copy-example') { const c = JSON.parse(JSON.stringify(cur)); c.id = uid('co_'); c.sample = false; c.settings.name += ' (my copy)'; companies.splice(companies.filter(x => !x.sample).length, 0, c); cur = c; persist(c); render(); toast('Copy saved under My companies — the example stays as it was'); return; }
+  if (a === 'del-company') { if (b.dataset.confirm) { removeCompany(cur); render(); } else { b.dataset.confirm = '1'; b.textContent = 'Confirm delete'; } return; }
+  if (a === 'copy') { const el = $(b.dataset.src), txt = el.textContent, sel = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(txt).then(() => toast('Copied'), () => { sel(); toast('Selected — press Ctrl+C to copy'); }); } catch { sel(); toast('Selected — press Ctrl+C to copy'); } return; }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('tr[data-act]')) e.target.click(); });
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.cfg) { cur.cfg[el.dataset.cfg] = el.value === '' ? 0 : +el.value; changed(); return; }
+  if (el.dataset.cfgsel) { cur.cfg[el.dataset.cfgsel] = el.value; changed(); return; }
+  if (el.dataset.uisel) { ui[el.dataset.uisel] = +el.value; render(); return; }
+});
+function setTab(t) { tab = t; try { localStorage.setItem('costwb-tab', t); } catch {} render(); window.scrollTo({ top: 0 }); }
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+$('s-name').addEventListener('change', e => { cur.settings.name = e.target.value.trim() || 'Untitled company'; changed(); });
+$('s-period').addEventListener('change', e => { if (e.target.value) { cur.settings.period = e.target.value; changed(); } });
+$('s-ind').addEventListener('change', e => { cur.settings.industry = e.target.value.trim(); changed(); });
+$('s-sector').addEventListener('change', e => { cur.settings.sector = e.target.value; changed(); });
+$('s-to').addEventListener('change', e => { cur.settings.turnover = e.target.value === '' ? '' : +e.target.value; changed(); });
+$('s-pto').addEventListener('change', e => { cur.settings.productTurnover = e.target.value === '' ? '' : +e.target.value; changed(); });
+$('company').addEventListener('change', e => { cur = companies.find(c => c.id === e.target.value) || cur; ui.ship = ''; ui.procStep = ''; ui.cas = 0; setSaveState(cur.sample ? 'warn' : 'ok', cur.sample ? 'Example — edits reset when you reload' : mode === 'account' ? 'Saved to your account' : 'Saved in this browser'); render(); });
+$('new-company').addEventListener('click', companyDialog);
+
+// ================================================================ Excel: one workbook carries inputs (re-importable) and results
+const coFile = () => (cur.settings.name.replace(/[^\w\- ]+/g, '').trim() || 'Company');
+function sheet(wb, name, aoa, widths) { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = (widths || aoa[0].map(() => 16)).map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31)); }
+async function saveBook(wb, name) {
+  const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }), dl = window.__downloads;
+  if (dl) { try { await dl.save({ filename: name, data: new Uint8Array(data) }); toast('Excel file saved'); } catch (e) { if (e && e.code !== 'declined') toast('The download could not start here.'); } return; }
+  try { const url = URL.createObjectURL(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('Excel file downloaded'); }
+  catch { toast('Downloading is not available in this view.'); }
+}
+$('export').addEventListener('click', () => {
+  if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return; }
+  const wb = XLSX.utils.book_new(), s = cur.settings, Rx = R;
+  sheet(wb, 'Read me', [[`${s.name} — Costing Workbench, ${fmonthL(s.period)}`], ['Every sheet whose name does not start with "Result" is an input. Edit or fill those sheets (keep the column headings) and use "Import Excel" to load them back. "Result" sheets are worked out by the workbench and are ignored on import. The settings below are imported too.'], [],
+    ['Setting', 'Value'], ...Object.entries(cur.cfg).map(([k, v]) => [k, v]), ['period', s.period], ['industry', s.industry || ''], ['sector', s.sector], ['turnover', s.turnover], ['productTurnover', s.productTurnover]], [34, 60]);
+  REGS.forEach(reg => {
+    const F = SCHEMA[reg].f, extra = reg === 'abcObj' ? cur.abcAct.map(a => a.name) : [];
+    const head = [...F.map(f => f[1]), ...extra.map(n => `Driver: ${n}`)];
+    const rows = cur[reg].map(r => [...F.map(f => f[2] === 'c' ? (r[f[0]] ? 'Y' : 'N') : r[f[0]] ?? ''), ...extra.map(n => (r.drv || {})[n] ?? '')]);
+    sheet(wb, SCHEMA[reg].sheet, [head, ...rows], head.map(h => Math.min(40, Math.max(12, h.length * .8))));
+  });
+  sheet(wb, 'Result - variances', [['Product', 'Variance', 'On', 'Amount', 'F/A'], ...Rx.S.rows.flatMap(r => r.lines.map(x => [r.p.code, x.kind, x.what, Math.round(Math.abs(x.v)), Math.abs(x.v) < .5 ? '' : x.v > 0 ? 'F' : 'A'])),
+    ...Rx.S.rows.map(r => [r.p.code, 'Total (standard cost of output − actual)', '', Math.round(Math.abs(r.total)), r.total >= 0 ? 'F' : 'A'])], [12, 32, 30, 14, 6]);
+  sheet(wb, 'Result - process', [['Line', 'Step', 'Units in', 'Normal loss', 'Abnormal loss', 'Abnormal gain', 'Units out', 'Closing WIP', 'EU material', 'EU conversion', 'Cost/EU material', 'Cost/EU conversion', 'Cost per unit', 'Transferred out', 'WIP value', 'Abnormal loss value', 'Abnormal gain value'],
+    ...Rx.P.flatMap(l => l.steps.map(x => [l.line, x.p.name, x.I, x.N, x.AbL, x.AbG, x.O, x.W, x.EUm, x.EUc, +x.cm.toFixed(2), +x.cc.toFixed(2), +x.cu.toFixed(2), Math.round(x.outVal), Math.round(x.wipVal), Math.round(x.ablVal), Math.round(x.abgVal)]))]);
+  sheet(wb, 'Result - jobs', [['Job', 'Customer', 'Type', 'Units', 'Prime cost', 'Works overhead', 'Works cost', 'Admin', 'Cost of production', 'Selling', 'Total cost', 'Cost per unit', 'Price', 'Profit', 'Margin'],
+    ...Rx.J.rows.map(r => [r.j.no, r.j.customer, r.j.kind, num(r.j.units), r.prime, r.worksOH, r.works, Math.round(r.admin), Math.round(r.cop), Math.round(r.sell), Math.round(r.total), +r.perUnit.toFixed(2), r.price, Math.round(r.profit), +r.margin.toFixed(4)])]);
+  sheet(wb, 'Result - ABC', [['Product / customer', 'Units', 'Overhead traditional', 'Overhead ABC', 'Full cost/unit traditional', 'Full cost/unit ABC', 'Change', 'Margin traditional', 'Margin ABC'],
+    ...Rx.A.objs.map(o => [o.o.name, o.U, Math.round(o.trad), Math.round(o.abc), +o.fullTrad.toFixed(2), +o.fullAbc.toFixed(2), +o.diff.toFixed(4), +o.mTrad.toFixed(4), +o.mAbc.toFixed(4)]), [], ['Activity', 'Rate per driver', 'Unused capacity cost'], ...Rx.A.acts.map(x => [x.a.name, +x.rate.toFixed(2), Math.round(x.unusedCost)])]);
+  sheet(wb, 'Result - projects', [['Project', 'Client', 'Billing', 'Hours', 'Cost', 'Revenue earned', 'Margin', 'Margin %', 'Margin at completion'], ...Rx.V.projects.map(x => [x.p.code + ' ' + x.p.name, x.p.client, x.p.billing, x.hrs, Math.round(x.cost), Math.round(x.revenue), Math.round(x.margin), +x.mPct.toFixed(4), x.eacMargin == null ? '' : Math.round(x.eacMargin)]),
+    [], ['Staff', 'Cost per hour', 'Hours logged', 'Billable hours', 'Utilisation'], ...Rx.V.staff.map(x => [x.s.name, +x.rate.toFixed(2), x.hrs, x.bill, +x.util.toFixed(4)])]);
+  sheet(wb, 'Result - landed cost', [['Shipment', 'Item', 'Qty', 'Invoice ₹', 'Assessable value', 'Basic duty', 'SWS', 'IGST', 'Local charges', 'Landed cost', 'Per unit'], ...Rx.L.flatMap(x => x.rows.map(r => [x.s.ref, r.l.item, num(r.l.qty), Math.round(r.fobINR), Math.round(r.av), Math.round(r.bcd), Math.round(r.sws), Math.round(r.igst), Math.round(r.local), Math.round(r.landed), +r.perUnit.toFixed(2)]))]);
+  const C = Rx.C;
+  sheet(wb, 'Result - break-even', [['Product', 'Price', 'Variable cost', 'Contribution/unit', 'P/V', 'Budget units', 'Contribution', 'Break-even units'], ...C.rows.map(r => [r.p.code, num(r.p.price), num(r.p.varCost), r.cmU, +r.pv.toFixed(4), r.U, r.cm, r.beUnits == null ? '' : +r.beUnits.toFixed(2)]),
+    [], ['Fixed costs', C.F], ['Weighted P/V', +C.pv.toFixed(4)], ['Break-even sales', C.be == null ? '' : Math.round(C.be)], ['Margin of safety', C.mos == null ? '' : +C.mos.toFixed(4)], ['Sales for target profit', C.target == null ? '' : Math.round(C.target)], ['Profit', Math.round(C.profit)]]);
+  ['customer', 'product', 'channel'].forEach(d => sheet(wb, `Result - by ${d}`, [[d, 'Quantity', 'Net sales', 'Variable cost', 'Cost to serve', 'Contribution', 'Margin'], ...Rx.PR.by(d).map(e => [e.k, e.qty, Math.round(e.net), Math.round(e.vc), Math.round(e.cts), Math.round(e.contrib), +e.cm.toFixed(4)])]));
+  sheet(wb, 'Result - decisions', [['Make or buy', 'Cost to make', 'Cost to buy', 'Cheaper', 'Saving', 'Quantity where equal'], ...Rx.D.mob.map(m => [m.d.name, Math.round(m.make), Math.round(m.buy), m.rec, Math.round(Math.abs(m.diff)), m.ind == null ? '' : Math.round(m.ind)]),
+    [], ['Special order', 'Extra contribution', 'Displaced', 'Net gain', 'Lowest price', 'Decision'], ...Rx.D.special.map(o => [`${o.o.customer} ${o.o.product} ${o.q}`, Math.round(o.extraContrib), Math.round(o.displaced), Math.round(o.net), Math.round(o.minPrice), o.rec]),
+    [], ['Pricing', 'Variable cost', 'Full cost', 'Cost-plus price', 'Price for target margin', 'Current price'], ...Rx.D.pricing.map(x => [x.r.p.code, x.min, Math.round(x.full), Math.round(x.costPlus), x.marginPrice == null ? '' : Math.round(x.marginPrice), x.price])]);
+  Rx.CS.forEach((c, i) => sheet(wb, `Result - cost sheet ${i + 1}`, [[`Cost sheet — ${c.s.product}`, 'Standard', 'Amount', `Per ${c.s.unit}`], ...CAS_LINES.map(([k, t, ref]) => [t, ref, Math.round(c.L[k]), +div(c.L[k], c.A).toFixed(2)]),
+    ['Cost of production', 'CAS-4', Math.round(c.cop), +c.copU.toFixed(2)], ['Cost of goods sold', '', Math.round(c.cogs), +div(c.cogs, c.sold).toFixed(2)], ['Cost of sales', '', Math.round(c.cos), +c.cosU.toFixed(2)], ['Net sales', '', num(c.s.netSales), +c.priceU.toFixed(2)], ['Margin', '', Math.round(c.profit), +div(c.profit, c.sold).toFixed(2)], ['Unabsorbed fixed overhead (not in cost)', 'CAS-2', Math.round(c.unabs), '']], [52, 14, 16, 14]));
+  saveBook(wb, `${coFile()} - Costing ${s.period}.xlsx`);
+});
+const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+$('import-btn').addEventListener('click', () => $('import-file').click());
+$('import-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return; }
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true }), done = [];
+    let made = '';
+    if (cur.sample && REGS.some(reg => wb.SheetNames.some(n => norm(n) === norm(SCHEMA[reg].sheet)))) {   // never import into an example: start the user's own company
+      const c = blankCompany(file.name.replace(/\.[^.]+$/, '').replace(/\s*-\s*Costing.*$/i, '').trim() || 'Imported company'); c.settings.period = cur.settings.period;
+      companies.splice(companies.filter(x => !x.sample).length, 0, c); cur = c; made = c.settings.name;
+    }
+    const iso = v => v instanceof Date ? new Date(v.getTime() - v.getTimezoneOffset() * 6e4).toISOString().slice(0, 10) : String(v ?? '').trim();
+    REGS.forEach(reg => {
+      const name = wb.SheetNames.find(n => norm(n) === norm(SCHEMA[reg].sheet)); if (!name) return;
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }); if (!aoa.length) return;
+      const head = aoa[0].map(norm), F = SCHEMA[reg].f;
+      const idx = F.map(f => head.indexOf(norm(f[1])));
+      const drvCols = head.map((h, i) => [h, i]).filter(([h]) => h.startsWith('driver'));
+      const rows = aoa.slice(1).filter(r => r.some(c => String(c).trim() !== '')).map(r => {
+        const o = {}; F.forEach((f, j) => { const v = idx[j] >= 0 ? r[idx[j]] : ''; o[f[0]] = f[2] === 'n' ? (v === '' ? '' : num(v)) : f[2] === 'c' ? /^(y|yes|true|1)$/i.test(String(v).trim()) : f[2] === 'm' ? (v instanceof Date ? iso(v).slice(0, 7) : String(v).trim().slice(0, 7)) : iso(v); });
+        if (reg === 'abcObj') { o.drv = {}; drvCols.forEach(([, i]) => { const nm = String(aoa[0][i]).replace(/^Driver:\s*/i, ''); if (r[i] !== '') o.drv[nm] = num(r[i]); }); }
+        return o;
+      });
+      cur[reg] = rows; done.push(`${rows.length} ${SCHEMA[reg].sheet.toLowerCase()}`);
+    });
+    const rm = wb.SheetNames.find(n => norm(n) === 'readme');
+    if (rm) { const aoa = XLSX.utils.sheet_to_json(wb.Sheets[rm], { header: 1, raw: true, defval: '' }); aoa.forEach(([k, v]) => { if (k in CFG_DEF) cur.cfg[k] = k === 'abcBase' ? v : num(v); if (['period', 'industry', 'sector', 'turnover', 'productTurnover'].includes(k) && v !== '') cur.settings[k] = v instanceof Date ? iso(v).slice(0, 7) : v; }); }
+    if (!done.length) { toast('No input sheets found. Download Excel first and use its sheet names and column headings.'); return; }
+    changed(); toast(`${made ? `Created "${made}" under My companies. ` : ''}Imported ${done.join(', ')}`);
+  } catch { toast('That file could not be read. Save it as .xlsx and try again.'); }
+});
+
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3400); }
+
+companies = buildExamples(); cur = companies[0];
+boot();
+</script>
+<script>
+// ===== Look & feel kit (shared by every Finance Model tool) — colour combinations, custom colours, light / dark, spacing, type
+(function () {
+  const CFG = {"key": "costwb", "name": "Costing Workbench", "host": ".company", "map": "cost", "own": {"accent": "#0D2350", "accent2": "#2F62B3", "tint": "#5A6577"}, "ownDark": true, "ownName": "Cost office colours", "ownDesc": "Deep navy band with blue, as first designed.", "skin": "html.lk-soc .tot { border-radius: 16px; border-top-width: 1px; }"};
+  const PRESETS = [
+    { k: 'society', n: 'Society Desk', d: 'Slate, sky blue and amber, as in your Society Desk app.', accent: '#0284C7', accent2: '#D97706', tint: '#64748B' },
+    { k: 'navy', n: 'Ledger navy', d: 'Navy with a teal highlight.', accent: '#1F3864', accent2: '#0F766E', tint: '#5B6B8C' },
+    { k: 'teal', n: 'Treasury teal', d: 'Teal with an amber highlight.', accent: '#0F5E63', accent2: '#A16207', tint: '#4F7F80' },
+    { k: 'maroon', n: 'Rupee maroon', d: 'Maroon with a green highlight.', accent: '#7A1F3D', accent2: '#1D6B5F', tint: '#8A6170' },
+    { k: 'forest', n: 'Audit green', d: 'Ledger green with brass.', accent: '#23563A', accent2: '#8A5A14', tint: '#5E7A66' },
+    { k: 'indigo', n: 'Indigo slate', d: 'Indigo with cyan.', accent: '#3730A3', accent2: '#0E7490', tint: '#5D6283' },
+    { k: 'saffron', n: 'Saffron ink', d: 'Saffron-brown with navy.', accent: '#8F3F06', accent2: '#1F3864', tint: '#8A7360' },
+    { k: 'graphite', n: 'Graphite', d: 'Neutral grey with blue.', accent: '#2F3542', accent2: '#2563EB', tint: '#6B7280' },
+  ];
+  const FONTS = {
+    jakarta: { n: 'Plus Jakarta Sans (Society Desk)', d: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', b: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', m: '"JetBrains Mono", ui-monospace, Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap' },
+    own: { n: "This tool's own type" },
+    plex: { n: 'IBM Plex', d: '"IBM Plex Serif", Georgia, serif', b: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', m: '"IBM Plex Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap' },
+    source: { n: 'Source Serif + Sans', d: '"Source Serif 4", Georgia, serif', b: '"Source Sans 3", "Segoe UI", Arial, sans-serif', m: '"Source Code Pro", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap' },
+    public: { n: 'Public Sans + Literata', d: '"Literata", Georgia, serif', b: '"Public Sans", "Segoe UI", Arial, sans-serif', m: '"JetBrains Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Literata:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap' },
+  };
+  const KEY = CFG.key + '-look';
+  const DEF = { preset: CFG.colours === false ? 'own' : 'society', custom: { ...CFG.own }, mode: CFG.defMode || 'system', density: 'comfortable', font: 'jakarta', skin: 'society', saved: [], v: 2 };
+  let L = JSON.parse(JSON.stringify(DEF));
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) { if (!s.v) { if (s.preset === 'own' && CFG.colours !== false) s.preset = 'society'; if (s.font === 'own') s.font = 'jakarta'; s.skin = 'society'; s.v = 2; } L = { ...L, ...s }; } } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch {} };
+
+  // ---- colour maths
+  const hexRgb = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0); };
+  const rgbHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+  function hexHsl(h) { let [r, g, b] = hexRgb(h).map(v => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let hh = 0, ss = 0;
+    if (mx !== mn) { const d = mx - mn; ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh *= 60; }
+    return [hh, ss * 100, l * 100]; }
+  function hsl(h, s, l) { s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return rgbHex([f(0) * 255, f(8) * 255, f(4) * 255]); }
+  const lum = h => { const c = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  function fit(hex, bg, min, dir) { let [h, s, l] = hexHsl(hex), out = hex, n = 0; while (contrast(out, bg) < min && n++ < 50) { l = Math.max(0, Math.min(100, l + dir * 2)); out = hsl(h, s, l); } return out; }
+  const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  // one base palette, mapped onto each tool's own token names
+  function base(c, dark) {
+    const [ah, as] = hexHsl(c.accent), [bh, bs] = hexHsl(c.accent2), [th, ts0] = hexHsl(c.tint || c.accent), ts = Math.min(ts0, 40);
+    const P = { dark };
+    if (!dark) {
+      Object.assign(P, { bg: hsl(th, ts * .5, 97), surface: '#FFFFFF', sunk: hsl(th, ts * .55, 94), line: hsl(th, ts * .45, 86), line2: hsl(th, ts * .45, 78), fg: hsl(th, Math.min(ts, 35), 13), muted: hsl(th, ts * .4, 38), faint: hsl(th, ts * .3, 55) });
+      P.accent = fit(c.accent, '#FFFFFF', 4.6, -1); P.accentInk = contrast(P.accent, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accentHi = fit(hsl(ah, as, Math.min(hexHsl(P.accent)[2] + 10, 48)), '#FFFFFF', 4.5, -1);
+      P.accent2 = fit(c.accent2, '#FFFFFF', 4.5, -1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 70); P.accent2Ink = contrast(P.accent2, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accent2Soft = hsl(bh, Math.min(bs, 60), 95); P.accent2Text = fit(hsl(bh, bs, 30), P.accent2Soft, 5, -1);
+      P.band = hsl(ah, Math.min(as, 70), Math.min(hexHsl(c.accent)[2], 20)); P.band2 = hsl(ah, Math.min(as, 65), Math.min(hexHsl(c.accent)[2] + 7, 28));
+      P.focus = hsl(ah, Math.max(as, 70), 48);
+      Object.assign(P, { good: '#15803D', goodBg: '#DCFCE7', warn: '#B45309', warnBg: '#FEF3C7', bad: '#B91C1C', badBg: '#FEE2E2' });
+    } else {
+      Object.assign(P, { bg: hsl(th, ts * .7, 8), surface: hsl(th, ts * .6, 12), sunk: hsl(th, ts * .55, 16), line: hsl(th, ts * .45, 25), line2: hsl(th, ts * .45, 32), fg: hsl(th, ts * .3, 91), muted: hsl(th, ts * .3, 66), faint: hsl(th, ts * .25, 50) });
+      P.accent = fit(hsl(ah, Math.min(as, 70), Math.max(hexHsl(c.accent)[2], 66)), P.surface, 5, 1); P.accentInk = P.bg; P.accentHi = hsl(ah, Math.min(as, 75), 80);
+      P.accent2 = fit(hsl(bh, Math.min(bs, 70), 60), P.surface, 4.5, 1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 74); P.accent2Ink = P.bg;
+      P.accent2Soft = hsl(bh, Math.min(bs, 40), 17); P.accent2Text = hsl(bh, Math.min(bs, 70), 78);
+      P.band = hsl(ah, Math.min(as, 60), 11); P.band2 = hsl(ah, Math.min(as, 55), 18);
+      P.focus = hsl(ah, 90, 72);
+      Object.assign(P, { good: '#4ADE80', goodBg: '#12301F', warn: '#F5B451', warnBg: '#3A2A10', bad: '#F87171', badBg: '#3B1717' });
+    }
+    return P;
+  }
+  const MAPS = {
+    std: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--fg': P.fg, '--muted': P.muted, '--navy': P.accent, '--navy-ink': P.accentInk, '--teal': P.accent2, '--focus': P.focus }),
+    cfo: P => ({ '--bg': P.bg, '--bg2': P.sunk, '--surface': P.surface, '--raise': mix(P.surface, P.sunk, .5), '--line': P.line, '--line2': P.line2, '--fg': P.fg, '--muted': P.muted, '--faint': P.faint,
+      '--navy': P.accent, '--navy2': P.accentHi, '--gold': P.accent2, '--gold2': P.accent2Hi, '--gold-ink': P.accent2Ink, '--gold-soft': P.accent2Soft, '--side': P.surface, '--side-fg': P.accent, '--side-muted': P.muted, '--side-line': P.line,
+      '--focus': P.focus, '--input': P.accent2Soft, '--input-ink': P.accent2Text, '--s1': P.accent, '--s2': P.accent2, '--s3': P.line2,
+      '--good': P.good, '--good-bg': P.goodBg, '--warn': P.warn, '--warn-bg': P.warnBg, '--bad': P.bad, '--bad-bg': P.badBg, '--shadow': P.dark ? '0 1px 2px rgba(0,0,0,.3), 0 10px 28px -18px rgba(0,0,0,.6)' : '' }),
+    cost: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--rule': mix(P.line, P.surface, .45), '--fg': P.fg, '--muted': P.muted,
+      '--ink': P.band, '--ink-2': P.band2, '--sel': P.dark ? hsl(hexHsl(P.accent)[0], 50, 38) : P.band, '--band-fg': hsl(hexHsl(P.accent)[0], 40, 95), '--band-muted': hsl(hexHsl(P.accent)[0], 25, 75),
+      '--brass': P.accent2, '--brass-hi': P.accent2Hi, '--brass-bg': P.accent2Soft, '--focus': P.focus, '--chart-a': P.dark ? P.accentHi : P.band, '--chart-c': P.accent2 }),
+  };
+  const comboOf = () => L.preset === 'custom' ? L.custom : L.preset === 'own' ? null : (PRESETS.find(p => p.k === L.preset) || null);
+  let ownTheme = false, applied = [];
+  const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+  function apply() {
+    const root = document.documentElement;
+    if (L.mode === 'light' || L.mode === 'dark') { root.setAttribute('data-theme', L.mode); ownTheme = true; }
+    else if (ownTheme) { root.removeAttribute('data-theme'); ownTheme = false; }
+    applied.forEach(k => root.style.removeProperty(k)); applied = [];
+    const dark = isDark() && (L.mode !== 'system' || CFG.followDevice !== false);
+    let combo = comboOf();
+    if (CFG.colours !== false && !combo && dark && !CFG.ownDark) combo = CFG.own;   // a tool without its own dark design gets one built from its colours
+    if (CFG.colours !== false && combo) {
+      const P = base(combo, dark), vars = MAPS[CFG.map](P);
+      Object.entries(vars).forEach(([k, v]) => { if (v) { root.style.setProperty(k, v); applied.push(k); } });
+      root.style.setProperty('color-scheme', dark ? 'dark' : 'light'); applied.push('color-scheme');
+    }
+    const F = FONTS[L.font];
+    if (F && F.url) {
+      if (!document.querySelector(`link[data-lk-font="${L.font}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = F.url; l.dataset.lkFont = L.font; document.head.appendChild(l); }
+      [['--f-display', F.d], ['--f-body', F.b], ['--f-num', F.m]].forEach(([k, v]) => { root.style.setProperty(k, v); applied.push(k); });
+    }
+    root.classList.toggle('lk-compact', L.density === 'compact');
+    root.classList.toggle('lk-soc', L.skin === 'society');
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+  new MutationObserver(() => { if (!ownTheme) apply(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---- panel
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const css = document.createElement('style');
+  css.textContent = `
+.lk-compact table th, .lk-compact table td { padding-top: 3px !important; padding-bottom: 3px !important; }
+dialog.lk { border: 1px solid var(--lk-line); border-radius: 14px; padding: 0; width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); background: var(--lk-bg); color: var(--lk-fg); font: 14px/1.45 "Segoe UI", system-ui, Arial, sans-serif; }
+dialog.lk::backdrop { background: rgb(10 15 25 / .45); }
+.lk-in { padding: 18px; display: grid; gap: 16px; }
+.lk-head { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; }
+.lk h2 { margin: 0; font-size: 1.15rem; font-family: inherit; } .lk h3 { margin: 0 0 8px; font-size: .92rem; font-family: inherit; color: var(--lk-muted); text-transform: uppercase; letter-spacing: .06em; }
+.lk button { font: inherit; cursor: pointer; border-radius: 7px; border: 1px solid var(--lk-line); background: var(--lk-surface); color: var(--lk-fg); padding: 6px 11px; font-size: 13px; }
+.lk button:hover { border-color: var(--lk-accent); }
+.lk button.lk-p { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk button:focus-visible, .lk input:focus-visible, .lk select:focus-visible { outline: 2px solid var(--lk-accent); outline-offset: 2px; }
+.lk-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 8px; }
+.lk-sw button { text-align: left; display: grid; gap: 6px; padding: 10px; }
+.lk-sw button[aria-pressed="true"] { border-color: var(--lk-accent); box-shadow: 0 0 0 2px var(--lk-accent); }
+.lk-bar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; border: 1px solid var(--lk-line); } .lk-bar span { flex: 1; }
+.lk-nm { font-weight: 600; } .lk-ds { font-size: 12px; color: var(--lk-muted); }
+.lk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px; align-items: end; }
+.lk label { display: grid; gap: 4px; font-size: 12px; color: var(--lk-muted); font-weight: 500; }
+.lk input, .lk select { font: inherit; color: var(--lk-fg); background: var(--lk-surface); border: 1px solid var(--lk-line); border-radius: 7px; padding: 6px 8px; width: 100%; min-width: 0; }
+.lk input[type="color"] { height: 36px; padding: 3px; cursor: pointer; }
+.lk-seg { display: flex; flex-wrap: wrap; gap: 6px; } .lk-seg button[aria-pressed="true"] { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk-chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; } .lk-chip { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--lk-line); }
+.lk-chip.ok { color: #15803D; border-color: #15803D; } .lk-chip.no { color: #B91C1C; border-color: #B91C1C; }
+.lk-saved { display: flex; flex-wrap: wrap; gap: 6px; } .lk-saved span { display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--lk-line); border-radius: 999px; padding: 2px 3px 2px 9px; font-size: 12px; }
+.lk-saved i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1px solid var(--lk-line); }
+.lk-note { font-size: 12px; color: var(--lk-muted); margin: 0; max-width: 90ch; }
+.lk-sec { border-top: 1px solid var(--lk-line); padding-top: 14px; display: grid; gap: 10px; }
+@media (max-width: 560px) { .lk-in { padding: 14px; } }
+html.lk-soc body { -webkit-font-smoothing: antialiased; }
+html.lk-soc h1 { font-weight: 800; letter-spacing: -.01em; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi, html.lk-soc .card, html.lk-soc .page, html.lk-soc .col, html.lk-soc .verdict, html.lk-soc .answer, html.lk-soc .node { border-radius: 16px; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi { box-shadow: 0 1px 2px rgb(15 23 42 / .06); }
+html.lk-soc .banner, html.lk-soc .lawbar { border-radius: 16px; }
+html.lk-soc .pill, html.lk-soc .chip { border-radius: 999px; }
+html.lk-soc button:not(.tab):not(.link):not(.sw):not([data-lk]):not([data-pal]) { border-radius: 12px; font-weight: 600; }
+html.lk-soc input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), html.lk-soc select, html.lk-soc textarea { border-radius: 10px; }
+html.lk-soc dialog:not(.lk) { border-radius: 20px; }
+html.lk-soc th { letter-spacing: .06em; }
+${CFG.skin || ''}`;
+  document.head.appendChild(css);
+  const dlg = document.createElement('dialog'); dlg.className = 'lk'; dlg.setAttribute('aria-label', 'Look and feel'); document.body.appendChild(dlg);
+  function dlgVars() {
+    const P = base(comboOf() || CFG.own, isDark());
+    Object.entries({ bg: P.surface, surface: P.dark ? P.sunk : P.bg, fg: P.fg, muted: P.muted, line: P.line, accent: P.accent, ink: P.accentInk }).forEach(([k, v]) => dlg.style.setProperty('--lk-' + k, v));
+  }
+  const code = () => btoa(unescape(encodeURIComponent(JSON.stringify({ p: L.preset === 'own' ? 'own' : L.preset, c: L.custom, m: L.mode, d: L.density, f: L.font, s: L.skin }))));
+  function draw() {
+    dlgVars();
+    const card = (k, n, d, c) => { const cc = c || CFG.own, a = base(cc, false), b = base(cc, true), bar = [a.accent, a.accent2, a.sunk, b.accent, b.surface];
+      return `<button type="button" data-lk="preset" data-v="${k}" aria-pressed="${L.preset === k}"><span class="lk-bar">${bar.map(x => `<span style="background:${x}"></span>`).join('')}</span><span class="lk-nm">${esc(n)}</span><span class="lk-ds">${esc(d)}</span></button>`; };
+    const seg = (key, opts) => `<div class="lk-seg">${opts.map(([v, l]) => `<button type="button" data-lk="set" data-k="${key}" data-v="${v}" aria-pressed="${L[key] === v}">${esc(l)}</button>`).join('')}</div>`;
+    const c = comboOf() || CFG.own, A = base(c, false), B = base(c, true);
+    const ck = (x, y, lbl) => { const r = contrast(x, y); return `<span class="lk-chip ${r >= 4.5 ? 'ok' : 'no'}">${esc(lbl)} ${r.toFixed(1)}:1</span>`; };
+    dlg.innerHTML = `<div class="lk-in">
+      <div class="lk-head"><h2>Look &amp; feel · ${esc(CFG.name)}</h2><div class="lk-seg"><button type="button" data-lk="reset">Back to the tool's own look</button><button type="button" class="lk-p" data-lk="close">Done</button></div></div>
+      ${CFG.colours === false ? `<p class="lk-note">${esc(CFG.colourNote || '')}</p>` : `<div class="lk-sec" style="border:0;padding:0"><h3>Colour combination</h3>
+        <div class="lk-sw">${card('own', CFG.ownName, CFG.ownDesc, null)}${PRESETS.map(p => card(p.k, p.n, p.d, p)).join('')}${card('custom', 'My colours', 'Your own three colours, set below.', L.custom)}</div></div>
+      <div class="lk-sec"><h3>Custom combination</h3>
+        <div class="lk-row"><label>Main colour (buttons, headings, tabs)<input type="color" data-lkc="accent" value="${L.custom.accent.toLowerCase()}"></label>
+          <label>Highlight colour (chips, labels)<input type="color" data-lkc="accent2" value="${L.custom.accent2.toLowerCase()}"></label>
+          <label>Page tint (backgrounds, lines)<input type="color" data-lkc="tint" value="${L.custom.tint.toLowerCase()}"></label></div>
+        <div class="lk-chips">${ck(A.accent, A.surface, 'Main on light')}${ck(A.accentInk, A.accent, 'Button text')}${ck(B.accent, B.surface, 'Main on dark')}${ck(A.accent2, A.surface, 'Highlight on light')}</div>
+        <div class="lk-row"><label>Name this combination<input type="text" id="lk-name" maxlength="30" placeholder="e.g. Firm colours"></label><button type="button" class="lk-p" data-lk="savec">Save combination</button></div>
+        ${L.saved.length ? `<div class="lk-saved">${L.saved.map((x, i) => `<span><i style="background:${x.accent}"></i><i style="background:${x.accent2}"></i><button type="button" data-lk="use" data-v="${i}" style="border:0;padding:2px 4px;text-decoration:underline">${esc(x.name)}</button><button type="button" data-lk="del" data-v="${i}" aria-label="Remove ${esc(x.name)}" style="padding:1px 6px">✕</button></span>`).join('')}</div>` : ''}
+        <p class="lk-note">Any colours work: they are darkened or lightened just enough to stay readable, and a matching dark version is built. Status colours (green, amber, red) never change.</p></div>`}
+      <div class="lk-sec"><h3>Display</h3><div class="lk-row">
+        <label>Light or dark${seg('mode', [['system', 'Follow device'], ['light', 'Light'], ['dark', 'Dark']])}</label>
+        <label>Shapes${seg('skin', [['society', 'Society Desk style'], ['own', "Tool's own style"]])}</label>
+        <label>Table spacing${seg('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</label>
+        <label>Type<select data-lkf="1">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${L.font === k ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label></div></div>
+      <div class="lk-sec"><h3>Use the same look in your other tools</h3>
+        <div class="lk-row"><label>Look code of this tool<input type="text" readonly id="lk-code" value="${esc(code())}"></label><button type="button" data-lk="copy">Copy look code</button></div>
+        <div class="lk-row"><label>Paste a look code from another tool<input type="text" id="lk-paste" placeholder="Paste here"></label><button type="button" data-lk="paste">Apply code</button></div>
+        <p class="lk-note">Each tool remembers its look in this browser. Copy the code here and paste it in the Look &amp; feel panel of any other Finance Model tool to match them.</p></div></div>`;
+  }
+  let tmr;
+  dlg.addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if (!b) { if (e.target === dlg) dlg.close(); return; } const a = b.dataset.lk;
+    if (a === 'close') { dlg.close(); return; }
+    if (a === 'preset') L.preset = b.dataset.v;
+    if (a === 'set') L[b.dataset.k] = b.dataset.v;
+    if (a === 'reset') { const keep = L.saved; L = { ...JSON.parse(JSON.stringify(DEF)), saved: keep }; }
+    if (a === 'savec') { const nm = (dlg.querySelector('#lk-name').value || '').trim(); if (!nm) { dlg.querySelector('#lk-name').focus(); return; } L.saved = [...L.saved.filter(x => x.name !== nm), { name: nm, ...L.custom }].slice(-8); }
+    if (a === 'use') { const x = L.saved[+b.dataset.v]; L.custom = { accent: x.accent, accent2: x.accent2, tint: x.tint }; L.preset = 'custom'; }
+    if (a === 'del') L.saved.splice(+b.dataset.v, 1);
+    if (a === 'copy') { const el = dlg.querySelector('#lk-code'); try { navigator.clipboard.writeText(el.value).then(() => { b.textContent = 'Copied'; }, () => { el.select(); b.textContent = 'Press Ctrl+C'; }); } catch { el.select(); } return; }
+    if (a === 'paste') { try { const v = JSON.parse(decodeURIComponent(escape(atob(dlg.querySelector('#lk-paste').value.trim())))); L = { ...L, preset: v.p === 'own' ? 'own' : v.p, custom: v.c || L.custom, mode: v.m || L.mode, density: v.d || L.density, font: v.f || L.font, skin: v.s || L.skin }; }
+      catch { dlg.querySelector('#lk-paste').value = ''; dlg.querySelector('#lk-paste').placeholder = 'That is not a look code — copy it again'; return; } }
+    save(); apply(); draw(); });
+  dlg.addEventListener('input', e => { const k = e.target.dataset.lkc; if (!k) return; L.custom[k] = e.target.value.toUpperCase(); L.preset = 'custom'; apply(); clearTimeout(tmr); tmr = setTimeout(save, 300); });
+  dlg.addEventListener('change', e => { if (e.target.dataset.lkc) { save(); draw(); } if (e.target.dataset.lkf) { L.font = e.target.value; save(); apply(); draw(); } });
+  function open() { draw(); if (!dlg.open) dlg.showModal(); }
+  function addButton() {
+    if (document.getElementById('lk-open')) return;
+    const host = document.querySelector(CFG.host);
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'lk-open'; b.textContent = 'Look & feel'; if (CFG.btnClass) b.className = CFG.btnClass;
+    b.addEventListener('click', open);
+    if (host) host.appendChild(b); else { b.style.cssText = 'position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:20'; document.body.appendChild(b); }
+  }
+  apply(); addButton();
+  window.lookFeel = { open, apply };
+})();
+</script>
+
+
+
+</body></html>

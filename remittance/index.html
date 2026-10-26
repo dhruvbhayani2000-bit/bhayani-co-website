@@ -1,0 +1,1251 @@
+<!doctype html><html><head><meta charset=utf8><meta name="robots" content="noindex"><script src="/portal/supabase.js"></script><script src="/portal/config.js"></script><script src="/portal/connect.js" data-tool="remittance"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Foreign Remittance Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: Society Desk design family — white top bar with logo tile, left rail menu with icons, dark ocean hero, separate rounded tiles and cards; slate neutrals, sky primary, amber highlight. */
+:root {
+  --bg: #F8FAFC; --surface: #FFFFFF; --sunk: #F1F5F9; --line: #E2E8F0; --fg: #0F172A; --muted: #64748B;
+  --navy: #0274B0; --navy-ink: #FFFFFF; --teal: #B45309; --focus: #0284C7;
+  --hero-a: #0F172A; --hero-b: #0C4A6E; --hero-eyebrow: #38BDF8;
+  --good: #047857; --good-bg: #ECFDF5; --warn: #B45309; --warn-bg: #FFFBEB; --bad: #DC2626; --bad-bg: #FEF2F2;
+  --shadow: 0 1px 2px rgb(15 23 42 / .05); --shadow-lg: 0 10px 30px -12px rgb(15 23 42 / .35);
+  --r-sm: 10px; --r-md: 12px; --r-lg: 16px; --cell-y: 9px; --accent-soft: color-mix(in srgb, var(--navy) 10%, transparent);
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --f-num: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --rail-w: 252px; --top-h: 64px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B1120; --surface: #111A2E; --sunk: #0F172A; --line: #1E293B; --fg: #E2E8F0; --muted: #94A3B8;
+  --navy: #38BDF8; --navy-ink: #082F49; --teal: #FBBF24; --focus: #7DD3FC; --hero-a: #0B1222; --hero-b: #0C3A57; --hero-eyebrow: #7DD3FC;
+  --good: #34D399; --good-bg: #062E22; --warn: #FBBF24; --warn-bg: #2A1F0A; --bad: #F87171; --bad-bg: #3B1212; --shadow: 0 1px 2px rgb(0 0 0 / .4); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0B1120; --surface: #111A2E; --sunk: #0F172A; --line: #1E293B; --fg: #E2E8F0; --muted: #94A3B8;
+  --navy: #38BDF8; --navy-ink: #082F49; --teal: #FBBF24; --focus: #7DD3FC; --hero-a: #0B1222; --hero-b: #0C3A57; --hero-eyebrow: #7DD3FC;
+  --good: #34D399; --good-bg: #062E22; --warn: #FBBF24; --warn-bg: #2A1F0A; --bad: #F87171; --bad-bg: #3B1212; --shadow: 0 1px 2px rgb(0 0 0 / .4); color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14.5px; line-height: 1.5; margin: 0; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 41; background: var(--surface); }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -.01em; line-height: 1.2; }
+h1 { font-size: 1.6rem; font-weight: 800; } h2 { font-size: 1.05rem; } h3 { font-size: .96rem; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13px; }
+.mono { font-family: var(--f-num); font-size: 12.5px; }
+td.mono { white-space: nowrap; }
+.muted { color: var(--muted); } .small { font-size: 12px; }
+.eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; font-weight: 600; font-size: 13.5px; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--navy) 55%, transparent); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.link { border: 0; background: none; padding: 0; color: var(--navy); text-decoration: underline; text-underline-offset: 2px; text-align: left; font-weight: 600; box-shadow: none; }
+button.sm { padding: 5px 11px; font-size: 12.5px; border-radius: var(--r-sm); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+input, select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; width: 100%; min-width: 0; }
+input[type="checkbox"], input[type="radio"] { width: auto; accent-color: var(--navy); }
+textarea { resize: vertical; }
+label { display: grid; gap: 5px; font-size: 12px; color: var(--muted); font-weight: 600; }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 13px; font-weight: 500; }
+a.btn { display: inline-flex; align-items: center; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); padding: 5px 11px; font-size: 12.5px; font-weight: 600; color: var(--fg); text-decoration: none; }
+a.btn:hover { border-color: var(--muted); }
+
+/* ---------- app shell */
+.app { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; }
+.topbar { grid-column: 1 / -1; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px;
+  min-height: var(--top-h); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1 1 auto; }
+.logo-tile { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); display: grid; place-items: center; flex: none; }
+.logo-tile svg { width: 26px; height: 26px; }
+.brand-name { font-weight: 700; font-size: 1rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand > div { min-width: 0; }
+.company { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.company select { width: auto; max-width: 240px; font-weight: 600; border-radius: var(--r-md); }
+.save-state { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; border: 1px solid var(--line); color: var(--muted); background: var(--sunk); white-space: nowrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--good); } .dot.warn { background: var(--warn); }
+.menu-btn { display: none; padding: 7px 9px; }
+.rail { background: var(--surface); border-right: 1px solid var(--line); position: sticky; top: calc(var(--top-h) + env(safe-area-inset-top, 0px)); height: calc(100vh - var(--top-h) - env(safe-area-inset-top, 0px)); overflow: auto; display: flex; flex-direction: column; }
+.rail-label { padding: 18px 22px 6px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.tabs { display: flex; flex-direction: column; padding: 4px 12px 8px; gap: 2px; }
+.tab { all: unset; box-sizing: border-box; cursor: pointer; padding: 9px 12px; border-radius: 12px; color: var(--muted); font-weight: 500; font-size: 13.5px; display: flex; align-items: center; gap: 12px; }
+.tab svg { width: 18px; height: 18px; flex: none; opacity: .85; }
+.tab .l { flex: 1; min-width: 0; }
+.tab:hover { background: var(--sunk); color: var(--fg); }
+.tab[aria-selected="true"] { background: var(--navy); color: var(--navy-ink); font-weight: 600; box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--navy) 60%, transparent); }
+.tab[aria-selected="true"] svg { opacity: 1; }
+.tab:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tab .cnt { font-family: var(--f-num); font-size: 11px; background: var(--teal); color: var(--surface); border-radius: 999px; padding: 0 7px; line-height: 1.6; font-weight: 600; }
+.tab[aria-selected="true"] .cnt { background: var(--navy-ink); color: var(--navy); }
+.rail-foot { margin-top: auto; padding: 14px 16px 18px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.scrim { display: none; }
+main.main { min-width: 0; padding-block: 24px 60px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; align-content: start; max-width: 1320px; width: 100%; }
+main.main > *, #view > * { min-width: 0; }
+#view { display: grid; gap: 18px; align-content: start; min-width: 0; }
+@media (max-width: 960px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .menu-btn { display: inline-flex; }
+  .rail { position: fixed; z-index: 45; top: 0; bottom: 0; left: 0; height: 100%; width: min(290px, 86vw); transform: translateX(-102%); transition: transform .2s ease; padding-top: env(safe-area-inset-top, 0px); padding-left: env(safe-area-inset-left, 0px); box-shadow: var(--shadow-lg); }
+  .rail.open { transform: none; }
+  .scrim.open { display: block; position: fixed; inset: 0; z-index: 44; background: rgb(10 15 25 / .45); }
+  main.main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 16px; }
+  .company .save-state, .company #edit-company { display: none; }
+  .brand-sub { display: none; }
+}
+@media (max-width: 560px) { .company #new-company { display: none; } .company select { max-width: 150px; } }
+
+/* ---------- hero, banners */
+.hero { border-radius: 24px; padding: 26px 28px; background: linear-gradient(120deg, var(--hero-a) 0%, var(--hero-a) 35%, var(--hero-b) 100%); color: #F8FAFC; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; box-shadow: var(--shadow-lg); }
+.hero .eyebrow { color: var(--hero-eyebrow); }
+.hero h1 { color: #FFFFFF; margin-top: 6px; font-size: clamp(1.4rem, 3vw, 1.9rem); }
+.hero p { color: #CBD5E1; max-width: 64ch; margin: 6px 0 0; font-size: 14px; }
+.hero p b { color: #FFFFFF; }
+.hero .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero button { border-radius: 12px; padding: 10px 16px; }
+.hero .hero-primary { background: #0EA5E9; border-color: #0EA5E9; color: #FFFFFF; }
+.hero .hero-ghost { background: rgb(255 255 255 / .1); border-color: rgb(255 255 255 / .2); color: #FFFFFF; }
+.hero .hero-ghost:hover { background: rgb(255 255 255 / .16); }
+.banner { background: var(--warn-bg); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: var(--r-lg); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.banner strong { color: var(--warn); }
+.lawbar { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px 16px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; box-shadow: var(--shadow); }
+.lawbar .muted { font-size: 12px; }
+
+/* ---------- tiles */
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; }
+@media (max-width: 560px) { .totals { grid-template-columns: 1fr 1fr; gap: 10px; } .tot { padding: 14px; } .tot .ic { display: none; } .tot .k { padding-right: 0; } }
+.tot { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; display: grid; gap: 4px; align-content: start; box-shadow: var(--shadow); min-width: 0; }
+.tot .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; padding-right: 30px; }
+.tot .v { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 600; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.tot .n { font-size: 12px; color: var(--muted); }
+.tot .ic { position: absolute; top: 15px; right: 16px; width: 20px; height: 20px; color: var(--navy); }
+.tot.lead .v { color: var(--fg); }
+.tot.bad .v, .tot.bad .ic { color: var(--bad); } .tot.warn .v, .tot.warn .ic { color: var(--warn); } .tot.good .v, .tot.good .ic { color: var(--good); }
+
+/* ---------- toolbar, pills, chips */
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.pill.ok { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.pill.idle { background: var(--sunk); color: var(--muted); border-color: var(--line); }
+.chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--sunk); color: var(--muted); white-space: nowrap; display: inline-block; margin: 0 4px 3px 0; }
+.chip.teal { color: var(--navy); background: var(--accent-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+.chip.navy { color: var(--navy-ink); background: var(--navy); }
+
+/* ---------- panels and tables */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); min-width: 0; box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { padding: 16px 20px 10px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.panel-head .sub { color: var(--muted); font-size: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 20px 14px; align-items: end; }
+.filters label { min-width: 150px; flex: 0 1 220px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: var(--cell-y) 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th:first-child, td:first-child { padding-left: 20px; } th:last-child, td:last-child { padding-right: 20px; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; background: var(--sunk); white-space: nowrap; }
+th.num { text-align: right; }
+td .ref { display: block; font-size: 11px; color: var(--muted); }
+tbody tr[tabindex] { cursor: pointer; }
+tbody tr[tabindex]:hover td { background: color-mix(in srgb, var(--navy) 5%, var(--surface)); }
+tr[tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+tbody tr:last-child td { border-bottom: 0; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--line); border-bottom: 0; background: var(--sunk); }
+tr.grp td { background: var(--sunk); font-weight: 700; font-size: 12px; }
+.empty { padding: 36px 20px; text-align: center; color: var(--muted); display: grid; gap: 10px; justify-items: center; }
+.note { padding: 12px 20px 16px; color: var(--muted); font-size: 12.5px; max-width: 100ch; }
+.note p { margin: 0 0 6px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 18px; }
+.todo { list-style: none; margin: 0; padding: 0 20px 14px; display: grid; }
+.todo li { display: grid; grid-template-columns: 84px 1fr auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: center; }
+.todo li:last-child { border-bottom: 0; }
+.todo .d { font-family: var(--f-num); font-size: 12px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: 1fr auto; }
+.kv div { padding: 8px 20px; border-bottom: 1px solid var(--line); }
+.kv .strong { font-weight: 700; }
+
+/* ---------- decision wizard */
+.wiz { padding: 4px 20px 20px; display: grid; gap: 10px; }
+.q { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 8px; background: var(--surface); }
+.q.off { opacity: .45; }
+.q .qt { font-weight: 700; font-size: 13.5px; }
+.q .qh { font-size: 12.5px; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button[aria-pressed="true"] { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); }
+.result { border-radius: var(--r-lg); padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--navy) 35%, transparent); background: var(--accent-soft); display: grid; gap: 6px; }
+.result .big { font-family: var(--f-display); font-size: 1.2rem; color: var(--navy); font-weight: 800; }
+.result ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.trace { list-style: none; margin: 0; padding: 0; display: grid; }
+.trace li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+.trace li:last-child { border-bottom: 0; }
+.trace .n { width: 24px; height: 24px; border-radius: 50%; background: var(--sunk); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.trace .stop .n { background: var(--navy); color: var(--navy-ink); }
+.trace .a { color: var(--muted); font-size: 12.5px; display: block; }
+.pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; padding: 4px 20px 18px; }
+.stage { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; display: grid; gap: 2px; background: var(--sunk); }
+.stage .v { font-family: var(--f-num); font-size: 1.3rem; font-weight: 600; }
+.stage .k { font-size: 12px; color: var(--muted); }
+.docgrid { display: grid; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.docrow { display: grid; grid-template-columns: minmax(150px, 1.2fr) auto minmax(120px, 1fr) auto; gap: 8px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.docrow:last-child { border-bottom: 0; }
+.docrow .dn { font-size: 13px; font-weight: 600; }
+.docrow .dn .ref { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+@media (max-width: 640px) { .docrow { grid-template-columns: 1fr auto; } .docrow input { grid-column: 1 / -1; } }
+
+/* ---------- look & feel */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: 10px; padding: 4px 20px 20px; }
+.sw { text-align: left; display: grid; gap: 8px; padding: 12px; border-radius: var(--r-md); background: var(--surface); font-weight: 400; }
+.sw[aria-pressed="true"] { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
+.sw .bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.sw .bar span { flex: 1; }
+.sw .nm { font-weight: 700; font-size: 13px; }
+.sw .ds { font-size: 12px; color: var(--muted); }
+.lookrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 12px; padding: 4px 20px 16px; align-items: end; }
+.lookrow input[type="color"] { height: 40px; padding: 3px; cursor: pointer; }
+.contrast { font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 14px; }
+.previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; padding: 4px 20px 20px; }
+.pv { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px; display: grid; gap: 10px; font-family: var(--f-body); }
+.pv .pvh { font-family: var(--f-display); color: var(--fg); font-weight: 800; font-size: 1.05rem; }
+.pv .pvt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pv .pvt div { background: var(--surface); padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-md); font-family: var(--f-num); }
+.pv .k { display: block; font-family: var(--f-body); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.saved { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 16px; }
+.saved .it { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12px; }
+.saved .dotc { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
+
+/* ---------- dialog, toast */
+dialog { border: 1px solid var(--line); border-radius: 20px; padding: 0; width: min(840px, calc(100vw - 24px)); max-height: calc(100vh - 32px); background: var(--surface); color: var(--fg); box-shadow: var(--shadow-lg); }
+dialog::backdrop { background: rgb(10 15 25 / .5); }
+.form { padding: 20px 22px; display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.grid2 .full { grid-column: 1 / -1; }
+.grid2 h3.full { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); font-size: .9rem; color: var(--navy); }
+.form-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.err { color: var(--bad); font-size: 12px; min-height: 1em; }
+.hint { font-size: 11px; color: var(--muted); font-weight: 400; }
+pre.sheet { background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px; font-family: var(--f-num); font-size: 12px; white-space: pre-wrap; margin: 0; max-height: 46vh; overflow: auto; }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); background: var(--fg); color: var(--bg); padding: 11px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; max-width: min(420px, calc(100vw - 32px)); z-index: 60; box-shadow: var(--shadow-lg); }
+@media (prefers-reduced-motion: no-preference) { .tab, button { transition: border-color .15s, background .15s; } }
+@media (prefers-reduced-motion: reduce) { .rail { transition: none; } }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <button type="button" class="menu-btn" id="menu-btn" aria-label="Open menu" aria-controls="rail" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="brand">
+      <div class="logo-tile"><svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="8.5" style="fill:none;stroke:#E0F2FE" stroke-width="1.5"/><path d="M4.5 13h17M13 4.5c3 2.6 3 14.4 0 17M13 4.5c-3 2.6-3 14.4 0 17" style="fill:none;stroke:#E0F2FE" stroke-width="1.2"/><path d="M18.5 21.5l4-4M22.5 17.5h-3.4M22.5 17.5v3.4" style="fill:none;stroke:#FBBF24" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div><div class="brand-name">Foreign Remittance Desk</div><div class="brand-sub">Form 145 / 146 (old 15CA / 15CB) · DTAA · Form 144 link · CA register</div></div>
+    </div>
+    <div class="company">
+      <select id="company" aria-label="Remitter"></select>
+      <button id="edit-company" type="button" class="sm">Remitter details</button>
+      <button id="new-company" type="button" class="sm">New remitter</button>
+      <div class="save-state" id="save-state"><span class="dot"></span><span>Loading…</span></div>
+    </div>
+  </header>
+  <aside class="rail" id="rail" aria-label="Menu">
+    <div class="rail-label">Payments abroad</div>
+    <nav class="tabs" role="tablist" aria-label="Registers">
+      <button class="tab" role="tab" data-tab="desk" data-base="Desk">Desk</button>
+      <button class="tab" role="tab" data-tab="rem" data-base="Remittances">Remittances</button>
+      <button class="tab" role="tab" data-tab="wiz" data-base="Part A/B/C/D wizard">Part A/B/C/D wizard</button>
+      <button class="tab" role="tab" data-tab="payees" data-base="Payees & TRC">Payees &amp; TRC</button>
+      <button class="tab" role="tab" data-tab="dtaa" data-base="DTAA rates">DTAA rates</button>
+      <button class="tab" role="tab" data-tab="docs" data-base="Documents">Documents</button>
+    </nav>
+    <div class="rail-label">Returns &amp; certificates</div>
+    <nav class="tabs" role="tablist" aria-label="Returns">
+      <button class="tab" role="tab" data-tab="ret" data-base="Form 144 link">Form 144 link</button>
+      <button class="tab" role="tab" data-tab="ca" data-base="Form 146 register">Form 146 register</button>
+    </nav>
+    <div class="rail-label">Settings</div>
+    <nav class="tabs" role="tablist" aria-label="Settings">
+      <button class="tab" role="tab" data-tab="look" data-base="Look & feel">Look &amp; feel</button>
+    </nav>
+    <div class="rail-foot">
+      <label for="s-fy">Tax year<select id="s-fy"></select></label>
+      <button id="export" type="button">Download Excel</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <div class="banner" id="sample-banner" hidden></div>
+    <div id="hero-slot"></div>
+    <section class="totals" id="totals" aria-label="Year status"></section>
+    <div class="lawbar" id="law-bar"></div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <form class="form" id="dlg-form" novalidate>
+    <h2 id="dlg-title">Edit</h2>
+    <div id="dlg-top"></div>
+    <div class="grid2" id="dlg-body"></div>
+    <div id="dlg-extra"></div>
+    <div class="err" id="dlg-err" role="alert"></div>
+    <div class="form-foot">
+      <div class="actions"><button type="button" id="dlg-del" class="danger" hidden>Delete</button><button type="button" id="dlg-del2" class="danger" hidden>Confirm delete</button></div>
+      <div class="actions"><button type="button" id="dlg-cancel">Cancel</button><button type="submit" class="primary" id="dlg-save">Save</button></div>
+    </div>
+  </form>
+</dialog>
+<input id="doc-file" type="file" hidden>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ================================================================ law
+const LAW = {
+  '1961': { name: 'Income-tax Act, 1961', f145: 'Form 15CA', f146: 'Form 15CB', f41: 'Form 10F', ret: 'Form 27Q', sec: 'section 195', ao: 'section 195(2) / 195(3) / 197', gross: 'section 195A', noPan: 'section 206AA', rule: 'rule 37BB', ccForm: 'Form 15CC', pen: 'section 271-I' },
+  '2025': { name: 'Income-tax Act, 2025', f145: 'Form 145', f146: 'Form 146', f41: 'Form 41', ret: 'Form 144', sec: 'section 393 (old 195)', ao: 'lower / nil deduction certificate (old 195(2), 195(3), 197)', gross: 'grossing up (old 195A)', noPan: 'section 397 (old 206AA)', rule: 'rule 220 of the Income-tax Rules, 2026 (old 37BB)', ccForm: 'Form 147 (old 15CC)', pen: 'penalty (old section 271-I, ₹1,00,000)' },
+};
+const lawOfD = d => (d || '') >= '2026-04-01' ? '2025' : '1961';
+const lawOfY = Y => Y >= 2026 ? '2025' : '1961';
+const both = (law, k) => law === '2025' ? `${LAW['2025'][k]} (old ${LAW['1961'][k].replace('Form ', '')})` : LAW['1961'][k];
+
+// natures of remittance — Act rate is before surcharge and cess; art = DTAA article used for comparison
+const NAT = [
+  { k: 'fts', l: 'Fees for technical / consultancy services', rate: .20, art: 'fts', charge: true, agr: true },
+  { k: 'roy', l: 'Royalty (brand, patent, know-how)', rate: .20, art: 'roy', charge: true, agr: true },
+  { k: 'int', l: 'Interest on loan (other)', rate: .20, art: 'int', charge: true, agr: true },
+  { k: 'ecb', l: 'Interest on ECB / long-term bonds (old 194LC)', rate: .05, art: 'int', charge: true, agr: true },
+  { k: 'div', l: 'Dividend', rate: .20, art: 'div', charge: true },
+  { k: 'cg', l: 'Long-term capital gains', rate: .125, art: '', charge: true, agr: true },
+  { k: 'oth', l: 'Other income chargeable (business income with PE)', rate: .35, rateNC: .30, art: '', charge: true, agr: true },
+  { k: 'sw', l: 'Software licence / SaaS subscription (not royalty after Engineering Analysis, 2021)', rate: 0, art: '', charge: false, why: 'Payment for a copy of software or SaaS access is not royalty (Supreme Court, Engineering Analysis, 2021); business income, not taxable without a PE in India' },
+  { k: 'bp', l: 'Services rendered abroad, no PE (marketing, commission, legal)', rate: 0, art: '', charge: false, npe: true, why: 'Business income of a non-resident with no PE or business connection in India is not chargeable' },
+  { k: 'reimb', l: 'Reimbursement of expenses at actual cost', rate: 0, art: '', charge: false, why: 'Pure reimbursement with no income element is not chargeable — it follows the main payment if linked to fees' },
+  { k: 'goods', l: 'Import of goods (incl. advance for imports)', spec: true },
+  { k: 'travel', l: 'Travel, hotel, education fees abroad', spec: true },
+  { k: 'lrs', l: 'Remittance by an individual under LRS (no RBI approval needed)', spec: true, lrs: true },
+];
+const NM = Object.fromEntries(NAT.map(n => [n.k, n]));
+// DTAA library — indicative headline rates, edit after reading the treaty, protocol and MLI position
+const TREATY = [
+  { cc: 'US', c: 'United States', div: 25, divQ: 15, int: 15, roy: 15, fts: 15, ma: true, note: 'Fees for included services: make-available test. Interest 10% for banks.' },
+  { cc: 'GB', c: 'United Kingdom', div: 15, divQ: 10, int: 15, roy: 15, fts: 15, ma: true, note: 'Royalty / FTS 10% for equipment rental and ancillary services. Interest 10% for banks.' },
+  { cc: 'SG', c: 'Singapore', div: 15, divQ: 10, int: 15, roy: 10, fts: 10, ma: true, note: 'Make-available test for FTS. Limitation of benefits article. Interest 10% for banks.' },
+  { cc: 'AE', c: 'United Arab Emirates', div: 10, divQ: 10, int: 12.5, roy: 10, fts: null, ma: false, note: 'No FTS article — fees taxable only as business profits with a PE. Interest 5% for banks.' },
+  { cc: 'DE', c: 'Germany', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'JP', c: 'Japan', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'FR', c: 'France', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: 'Most-favoured-nation clause in the protocol: needs a notification after the Nestle ruling (2023).' },
+  { cc: 'NL', c: 'Netherlands', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: true, note: 'Make-available test for FTS. MFN claim to 5% dividend needs a notification.' },
+  { cc: 'MU', c: 'Mauritius', div: 15, divQ: 5, int: 7.5, roy: 15, fts: 10, ma: false, note: '5% dividend for 10% holding. Capital gains on shares bought after 1 April 2017 taxable in India.' },
+  { cc: 'CY', c: 'Cyprus', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'CA', c: 'Canada', div: 25, divQ: 15, int: 15, roy: 20, fts: 20, ma: true, note: 'Royalty / FIS 10% to 20% by type — read the article.' },
+  { cc: 'AU', c: 'Australia', div: 15, divQ: 15, int: 15, roy: 15, fts: 15, ma: false, note: 'Technical services sit inside the royalty article (10% for equipment).' },
+  { cc: 'CN', c: 'China', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'HK', c: 'Hong Kong', div: 5, divQ: 5, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'CH', c: 'Switzerland', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'IE', c: 'Ireland', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'SE', c: 'Sweden', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'IT', c: 'Italy', div: 25, divQ: 15, int: 15, roy: 20, fts: 20, ma: false, note: '' },
+  { cc: 'KR', c: 'South Korea', div: 15, divQ: 15, int: 10, roy: 10, fts: 10, ma: false, note: '' },
+  { cc: 'SA', c: 'Saudi Arabia', div: 5, divQ: 5, int: 10, roy: 10, fts: null, ma: false, note: 'No FTS article.' },
+];
+const DOCS = [
+  ['inv', 'Invoice'], ['agr', 'Agreement / contract'], ['trc', 'Tax Residency Certificate (TRC)'], ['f41', 'Form 41 (old 10F)'], ['npe', 'No-PE and beneficial owner declaration'],
+  ['ao', 'Lower / nil deduction certificate from the AO'], ['f146', 'Form 146 acknowledgement with UDIN (old 15CB)'], ['f145', 'Form 145 acknowledgement (old 15CA)'],
+  ['ch', 'TDS challan'], ['a2', 'Bank Form A2'], ['swift', 'SWIFT / MT103 copy'],
+];
+const DOCN = Object.fromEntries(DOCS);
+const UDIN_RE = /^\d{8}[A-Z0-9]{10}$/, PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/, TAN_RE = /^[A-Z]{4}[0-9]{5}[A-Z]$/;
+
+// ================================================================ dates and formatting
+const pad = n => String(n).padStart(2, '0');
+const day = s => s ? Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5 : null;
+const isoOf = dn => new Date(dn * 864e5).toISOString().slice(0, 10);
+const TODAY = (() => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; })();
+const daysTo = s => day(s) - day(TODAY);
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fdate = s => s ? `${s.slice(8, 10)}-${MON[+s.slice(5, 7) - 1]}-${s.slice(2, 4)}` : '';
+const nf = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const nf2 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
+const fmt = n => { if (!n || Math.abs(n) < 0.5) return '–'; const s = nf.format(Math.round(Math.abs(n))); return n < 0 ? `(${s})` : s; };
+const pct = r => r == null ? '–' : (+(r * 100).toFixed(3)) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const $ = id => document.getElementById(id);
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const qOf = s => { const m = +s.slice(5, 7); return m >= 4 && m <= 6 ? 1 : m >= 7 && m <= 9 ? 2 : m >= 10 ? 3 : 4; };
+const fyYOf = d => +d.slice(5, 7) >= 4 ? +d.slice(0, 4) : +d.slice(0, 4) - 1;
+const yearLabel = Y => Y >= 2026 ? `Tax year ${Y}-${String(Y + 1).slice(2)}` : `FY ${Y}-${String(Y + 1).slice(2)}`;
+const retDue = (Y, q) => [`${Y}-07-31`, `${Y}-10-31`, `${Y + 1}-01-31`, `${Y + 1}-05-31`][q - 1];
+function depDue(d) { const y = +d.slice(0, 4), m = +d.slice(5, 7); if (m === 3) return `${y}-04-30`; return m === 12 ? `${y + 1}-01-07` : `${y}-${pad(m + 1)}-07`; }
+const monthsPart = (a, b) => (+b.slice(0, 4) * 12 + +b.slice(5, 7)) - (+a.slice(0, 4) * 12 + +a.slice(5, 7)) + 1;
+const pill = (cls, txt, title) => `<span class="pill ${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(txt)}</span>`;
+
+// ================================================================ engine
+function treatyOf(co, cc) { const t = TREATY.find(x => x.cc === cc); if (!t && !(co.treatyOv || {})[cc]) return null; return { ...(t || { cc, c: cc, note: '' }), ...((co.treatyOv || {})[cc] || {}) }; }
+const COUNTRIES = () => [...TREATY.map(t => [t.cc, t.c])];
+function payeeDocs(p, d) {
+  const out = { trc: !!(p.trcFrom && p.trcTo && d >= p.trcFrom && d <= p.trcTo), f41: !!p.f41On, npe: !!p.npeOn, tin: !!p.tin };
+  out.ok = out.trc && out.f41 && p.pe !== 'Has PE in India';
+  out.miss = [!out.trc && (p.trcTo && d > p.trcTo ? `TRC expired ${fdate(p.trcTo)}` : 'No valid TRC'), !out.f41 && 'Form 41 (10F) not received', p.pe === 'Has PE in India' && 'Payee has a PE in India'].filter(Boolean);
+  return out;
+}
+function compute(co, Yo) {
+  const Y = Yo ?? +co.settings.fyStart.slice(0, 4), start = `${Y}-04-01`, end = `${Y + 1}-03-31`, law = lawOfY(Y);
+  const PM = Object.fromEntries(co.payees.map(p => [p.code, p]));
+  const rows = co.rem.filter(r => r.date >= start && r.date <= end).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const agg = {}, aggAll = {};
+  const out = rows.map(r => {
+    const N = NM[r.nature] || NM.fts, p = PM[r.payee], L = LAW[lawOfD(r.date)], T = p ? treatyOf(co, p.country) : null;
+    const inr = r.inrOv ? +r.inrOv : Math.round((+r.fx || 0) * (+r.xr || 0));
+    const o = { r, N, p, T, L, law: lawOfD(r.date), inr, trace: [], issues: [], tax: 0, rate: 0, basis: '', part: '', q: qOf(r.dedOn || r.date) };
+    if (!p) { o.issues.push(['bad', 'Payee not in master']); o.part = '?'; return o; }
+    const step = (q, a, stop) => o.trace.push({ q, a, stop });
+    const pd = payeeDocs(p, r.date); let why = '';
+    // 1 specified list
+    if (N.spec) {
+      step(`Is the payment on the list that needs no ${L.f145}?`, `Yes — ${N.l.toLowerCase()} (${L.rule}).`, true);
+      o.part = 'none'; o.partLabel = `No ${L.f145}`; o.basis = 'Specified list';
+    } else {
+    step(`Is the payment on the list that needs no ${L.f145}?`, 'No.');
+    // 2 chargeability
+    let charge = N.charge; why = N.charge ? `${N.l} is income chargeable in India under the Act.` : N.why;
+    if (charge && N.art === 'fts' && T && pd.ok) {
+      if (T.fts == null) { charge = false; why = `The ${T.c} treaty has no FTS article: the fee is business profits, not taxable without a PE (treaty relief, TRC and Form 41 on file).`; }
+      else if (T.ma && r.maNotMet) { charge = false; why = `The ${T.c} treaty taxes FTS only if it "makes available" technical knowledge; recorded as not met, so not taxable without a PE.`; }
+    }
+    if (r.chargeOv === 'yes') { charge = true; why = 'Chargeable — set by hand (CA opinion). ' + (r.ovNote || ''); }
+    if (r.chargeOv === 'no') { charge = false; why = 'Not chargeable — set by hand (CA opinion). ' + (r.ovNote || ''); }
+    o.charge = charge;
+    if (!charge) {
+      step('Is the payment chargeable to tax in India?', 'No — ' + why, true);
+      o.part = 'D'; o.partLabel = `${L.f145} Part D`; o.basis = 'Not chargeable';
+    } else {
+      step('Is the payment chargeable to tax in India?', 'Yes — ' + why);
+      // 3 rate
+      aggAll[p.code] = (aggAll[p.code] || 0) + inr;
+      const isCo = p.status === 'Company';
+      const sc = isCo ? (aggAll[p.code] > 1e8 ? .05 : aggAll[p.code] > 1e7 ? .02 : 0) : (+p.sc || 0) / 100;
+      const base = isCo || N.rateNC == null ? N.rate : N.rateNC;
+      const actEff = base * (1 + sc) * 1.04;
+      let tRate = null;
+      if (T && N.art) { const v = N.art === 'div' && p.qual ? T.divQ : T[N.art]; tRate = v == null ? null : v / 100; }
+      let rate = actEff, basis = 'Act';
+      const actTxt = `Act rate ${pct(base)}${sc ? ` + surcharge ${pct(sc)}` : ''} + cess 4% = ${pct(actEff)}`;
+      if (r.ldcNo) { rate = (+r.ldcRate || 0) / 100; basis = 'AO certificate'; step('Which rate applies?', `AO certificate ${r.ldcNo} at ${pct(rate)} (${L.ao}).`); }
+      else if (tRate != null && r.basisPref !== 'act') {
+        if (!pd.ok) { step('Which rate applies?', `Treaty rate ${pct(tRate)} not available — ${pd.miss.join('; ')}. ${actTxt}.`); o.issues.push(['warn', 'Treaty documents missing — Act rate used']); o.treatyLost = Math.round(inr * (actEff - tRate)); }
+        else if (tRate < actEff) { rate = tRate; basis = 'DTAA'; step('Which rate applies?', `DTAA ${T.c}: ${pct(tRate)} (no surcharge or cess) is lower than the ${actTxt}. TRC, Form 41 and no-PE on file.`); }
+        else step('Which rate applies?', `${actTxt} is not higher than the DTAA ${pct(tRate)} — Act rate used.`);
+      } else step('Which rate applies?', `${actTxt}${tRate == null && T ? ` (no matching ${T.c} treaty rate)` : !T ? ' (no treaty in the library for this country)' : ''}.`);
+      if (!p.pan && !(p.tin && pd.trc && p.address)) { const hr = Math.max(rate, .2 * 1.04); if (hr > rate) { rate = hr; basis += ' · higher rate, no PAN'; o.issues.push(['bad', `No PAN, and TIN / TRC / address incomplete — ${L.noPan}`]); } }
+      o.rate = rate; o.basis = basis; o.sc = sc;
+      o.tax = r.grossUp ? Math.round(inr * rate / (1 - rate)) : Math.round(inr * rate);
+      o.base = r.grossUp ? inr + o.tax : inr;
+      if (r.grossUp) step('Who bears the tax?', `The remitter (${L.gross}): ₹${fmt(inr)} is grossed up to ₹${fmt(o.base)}; TDS ₹${fmt(o.tax)}.`);
+      // 4 threshold
+      agg[p.code] = (agg[p.code] || 0) + inr; o.agg = agg[p.code];
+      if (agg[p.code] <= 500000) { step('Taxable remittances to this payee in the year, including this one, up to ₹5 lakh?', `Yes — ₹${fmt(agg[p.code])}.`, true); o.part = 'A'; }
+      else {
+        step('Taxable remittances to this payee in the year, including this one, up to ₹5 lakh?', `No — ₹${fmt(agg[p.code])}${agg[p.code] - inr <= 500000 && agg[p.code] - inr > 0 ? ' (this remittance crosses ₹5 lakh)' : ''}.`);
+        if (r.ldcNo) { step('Lower / nil deduction certificate from the AO?', `Yes — ${r.ldcNo}.`, true); o.part = 'B'; }
+        else { step('Lower / nil deduction certificate from the AO?', `No — ${L.f146} from a chartered accountant needed first.`, true); o.part = 'C'; }
+      }
+      o.partLabel = `${L.f145} Part ${o.part}`;
+    }
+    }
+    // documents needed
+    const need = ['inv'];
+    if (N.agr || (o.part === 'D' && N.npe)) need.push('agr');
+    if (o.basis.startsWith('DTAA') || (o.part === 'D' && (N.npe || why.includes('treaty')))) need.push('trc', 'f41', 'npe');
+    if (o.part === 'B') need.push('ao');
+    if (o.part === 'C') need.push('f146');
+    if (o.part !== 'none') need.push('f145');
+    if (o.tax > 0) need.push('ch');
+    need.push('a2', 'swift');
+    o.need = [...new Set(need)];
+    const has = k => { const d = (r.docs || {})[k] || {};
+      if (k === 'f146') return !!(r.f146Ack && UDIN_RE.test(r.udin || ''));
+      if (k === 'f145') return !!r.f145Ack; if (k === 'ch') return !!(r.chBsr && r.chDate && r.chSerial);
+      if (k === 'a2') return !!(r.a2Ref || d.ref || d.file); if (k === 'swift') return !!(r.swiftRef || d.file);
+      if (k === 'trc') return !!(d.ref || d.file) || pd.trc; if (k === 'f41') return !!(d.ref || d.file) || pd.f41; if (k === 'npe') return !!(d.ref || d.file) || pd.npe;
+      if (k === 'ao') return !!(d.ref || d.file) || !!r.ldcNo;
+      return !!(d.ref || d.file); };
+    o.has = Object.fromEntries(o.need.map(k => [k, has(k)]));
+    o.docsDone = o.need.filter(k => o.has[k]).length;
+    // compliance checks
+    if (o.part === 'C' && !r.f146Ack) o.issues.push([r.date <= TODAY ? 'bad' : 'warn', `${L.f146} pending`]);
+    if (r.f146Ack && !UDIN_RE.test(r.udin || '')) o.issues.push(['bad', 'UDIN missing or not 18 characters']);
+    if (!r.f145Ack && o.part !== 'none') o.issues.push([r.swiftRef ? 'bad' : 'warn', `${L.f145} not filed`]);
+    if (r.swiftRef && r.f145Ack && r.swiftDate && r.f145Date && r.swiftDate < r.f145Date) o.issues.push(['bad', `Remitted before ${L.f145} was filed`]);
+    if (o.part === 'C' && r.f146Date && r.f145Date && r.f145Date < r.f146Date) o.issues.push(['bad', `${L.f145} filed before ${L.f146}`]);
+    o.dedOn = r.dedOn || r.date; o.due = depDue(o.dedOn);
+    if (o.tax > 0) {
+      if (r.chDate) { if (r.chDate > o.due) { o.issues.push(['warn', `TDS deposited late (${fdate(r.chDate)})`]); o.int = Math.round(o.tax * .015 * monthsPart(o.dedOn, r.chDate)); } }
+      else if (TODAY > o.due) { o.issues.push(['bad', `TDS deposit overdue since ${fdate(o.due)}`]); o.int = Math.round(o.tax * .015 * monthsPart(o.dedOn, TODAY)); }
+      if ((+r.tdsBooked || 0) && Math.abs(+r.tdsBooked - o.tax) > 10) o.issues.push(['bad', `Books show TDS ₹${fmt(+r.tdsBooked)} against ₹${fmt(o.tax)} worked out`]);
+    }
+    o.stage = r.swiftRef ? (o.tax > 0 && !r.chDate ? 'remitted' : 'closed') : (r.f145Ack || o.part === 'none') ? 'ready' : (o.part === 'C' && r.f146Ack) ? 'f146' : 'draft';
+    return o;
+  });
+  const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+  const live = out.filter(o => o.part !== 'none');
+  const T = { n: out.length, inr: sum(out, o => o.inr), tax: sum(out, o => o.tax), int: sum(out, o => o.int || 0), lost: sum(out, o => o.treatyLost || 0),
+    open146: out.filter(o => o.part === 'C' && !o.r.f146Ack).length, open145: live.filter(o => !o.r.f145Ack).length,
+    docsMissing: sum(out, o => (o.need || []).length - (o.docsDone || 0)), bad: out.filter(o => o.issues.some(i => i[0] === 'bad')).length };
+  return { Y, law, start, end, rows: out, T, PM };
+}
+
+// ================================================================ example data
+function exampleABC() {
+  const P = (code, name, country, extra = {}) => ({ code, name, country, status: 'Company', address: '', email: '', tin: '', pan: '', trcNo: '', trcFrom: '', trcTo: '', f41On: '', npeOn: '', pe: 'No PE in India', qual: false, sc: 0, notes: '', ...extra });
+  const payees = [
+    P('NR01', 'TechNova Inc', 'US', { address: '2200 Mission College Blvd, Santa Clara, CA 95054, USA', email: 'ar@technova.example', tin: '94-3217765', trcNo: 'Form 6166 / 2026', trcFrom: '2026-01-01', trcTo: '2026-12-31', f41On: '2026-04-10', npeOn: '2026-04-10' }),
+    P('NR02', 'Brandhaus BV', 'NL', { address: 'Herengracht 450, 1017 CA Amsterdam, Netherlands', email: 'licensing@brandhaus.example', tin: 'NL859372641B01', trcNo: 'NL-TRC-2026-11873', trcFrom: '2026-01-01', trcTo: '2026-12-31', f41On: '2026-05-02', npeOn: '2026-05-02' }),
+    P('NR03', 'Helio Systems GmbH', 'DE', { address: 'Leopoldstrasse 120, 80802 Munich, Germany', email: 'billing@helio.example', tin: 'DE281734650', trcNo: 'DE-ANS-2026-4471', trcFrom: '2026-01-01', trcTo: '2026-12-31', f41On: '2026-07-20', npeOn: '2026-07-20' }),
+    P('NR04', 'CloudStack Pte Ltd', 'SG', { address: '1 Raffles Place, #20-01, Singapore 048616', email: 'billing@cloudstack.example', tin: '201734521K', trcNo: 'IRAS/COR/2026/7781', trcFrom: '2026-01-01', trcTo: '2026-12-31', f41On: '2026-06-30', npeOn: '2026-06-30' }),
+    P('NR05', 'Al Noor Marketing FZE', 'AE', { address: 'Office 1204, JAFZA One, Jebel Ali, Dubai, UAE', email: 'accounts@alnoor.example', tin: '100398547200003', trcNo: 'UAE-TRC-2026-55102', trcFrom: '2026-02-01', trcTo: '2027-01-31', f41On: '2026-08-25', npeOn: '2026-08-25' }),
+    P('NR06', 'Harrington & Lowe LLP', 'GB', { status: 'Firm / LLP', address: '10 Fleet Place, London EC4M 7RB, UK', email: 'fees@harringtonlowe.example', tin: '7781456320', trcNo: 'HMRC-CoR-2025-8812', trcFrom: '2025-04-06', trcTo: '2026-04-05', f41On: '2025-06-15', npeOn: '2025-06-15', notes: 'Ask for the 2026-27 certificate of residence' }),
+    P('NR07', 'Kansai Machinery Co Ltd', 'JP', { address: '3-6 Nakanoshima, Kita-ku, Osaka, Japan', tin: '5120001048721' }),
+    P('NR08', 'Lion City Capital Pte Ltd', 'SG', { address: '8 Marina View, #33-02, Singapore 018960', email: 'loans@lioncity.example', tin: '201901122M', trcNo: 'IRAS/COR/2026/9120', trcFrom: '2026-01-01', trcTo: '2026-12-31', f41On: '2026-04-15', npeOn: '2026-04-15' }),
+  ];
+  const R = (date, payee, nature, inv, ccy, fx, xr, extra = {}) => ({ id: uid('r_'), date, payee, nature, inv, ccy, fx, xr, inrOv: '', purpose: '', grossUp: false, chargeOv: '', ovNote: '', maNotMet: false, basisPref: 'auto', ldcNo: '', ldcRate: '', dedOn: '',
+    f146Ack: '', udin: '', f146Date: '', caName: '', f145Ack: '', f145Date: '', chBsr: '', chDate: '', chSerial: '', a2Ref: '', swiftRef: '', swiftDate: '', tdsBooked: '', notes: '', docs: {}, ...extra });
+  const D = (...ks) => Object.fromEntries(ks.map(k => [k, { ref: 'On file', on: TODAY }]));
+  const rem = [
+    R('2026-02-12', 'NR01', 'fts', 'TN-INV-2026-19', 'USD', 12000, 86.70, { purpose: 'S1006', f146Ack: '581902260211', udin: '26045678BKCDXY4471', f146Date: '2026-02-10', caName: 'Mehta & Associates', f145Ack: '582911260211', f145Date: '2026-02-11', chBsr: '0510308', chDate: '2026-03-06', chSerial: '30212', a2Ref: 'A2/HDFC/26/0211', swiftRef: 'HDFCINBB260212TN', swiftDate: '2026-02-12', docs: D('inv', 'agr') }),
+    R('2026-05-20', 'NR02', 'roy', 'BH-2026-031', 'EUR', 4000, 90.00, { purpose: 'S1401', f145Ack: '611204260519', f145Date: '2026-05-19', chBsr: '0510308', chDate: '2026-06-05', chSerial: '31105', a2Ref: 'A2/HDFC/26/0520', swiftRef: 'HDFCINBB260520BH', swiftDate: '2026-05-20', docs: D('inv', 'agr') }),
+    R('2026-06-05', 'NR01', 'fts', 'TN-INV-2026-77', 'USD', 18000, 83.33, { purpose: 'S1006', dedOn: '2026-06-29', f146Ack: '612774260603', udin: '26045678BKCEAB1192', f146Date: '2026-06-03', caName: 'Mehta & Associates', f145Ack: '612801260604', f145Date: '2026-06-04', chBsr: '0510308', chDate: '2026-07-07', chSerial: '31507', a2Ref: 'A2/HDFC/26/0605', swiftRef: 'HDFCINBB260605TN', swiftDate: '2026-06-05', docs: D('inv', 'agr') }),
+    R('2026-07-15', 'NR04', 'sw', 'CS-SG-88412', 'USD', 6000, 83.50, { purpose: 'S0803', f145Ack: '614420260714', f145Date: '2026-07-14', a2Ref: 'A2/HDFC/26/0715', swiftRef: 'HDFCINBB260715CS', swiftDate: '2026-07-15', docs: D('inv', 'agr') }),
+    R('2026-08-01', 'NR07', 'goods', 'KM-EXP-2026-118', 'JPY', 4500000, .56, { purpose: 'S0102', a2Ref: 'A2/HDFC/26/0801', swiftRef: 'HDFCINBB260801KM', swiftDate: '2026-08-01', docs: D('inv') }),
+    R('2026-08-20', 'NR03', 'fts', 'HS-2026-114', 'EUR', 8889, 90.00, { purpose: 'S1006', ldcNo: 'AO/INTL-TAX/2026-27/0412', ldcRate: 2, f145Ack: '617730260819', f145Date: '2026-08-19', chBsr: '0510308', chDate: '2026-09-07', chSerial: '32004', a2Ref: 'A2/HDFC/26/0820', swiftRef: 'HDFCINBB260820HS', swiftDate: '2026-08-20', docs: D('inv', 'agr', 'ao') }),
+    R('2026-09-10', 'NR05', 'bp', 'ANM/2026/77', 'AED', 30000, 22.70, { purpose: 'S1007', f145Ack: '619912260911', f145Date: '2026-09-11', a2Ref: 'A2/HDFC/26/0910', swiftRef: 'HDFCINBB260909AN', swiftDate: '2026-09-09', docs: D('inv', 'agr') }),
+    R('2026-09-30', 'NR08', 'ecb', 'LCC-INT-Q2-2026', 'USD', 30000, 83.80, { purpose: 'S1501', f146Ack: '621045260928', udin: '26045678BKCEZK7730', f146Date: '2026-09-28', caName: 'Mehta & Associates', f145Ack: '621101260929', f145Date: '2026-09-29', a2Ref: 'A2/HDFC/26/0930', swiftRef: 'HDFCINBB260930LC', swiftDate: '2026-09-30', docs: D('inv', 'agr') }),
+    R('2026-10-08', 'NR06', 'fts', 'HL/IN/2026/044', 'GBP', 9000, 111.00, { purpose: 'S1004', caName: 'Mehta & Associates', notes: 'Advisory on the UK acquisition — waiting for the 2026-27 certificate of residence', docs: D('inv') }),
+    R('2026-10-14', 'NR02', 'roy', 'BH-2026-058', 'EUR', 2000, 91.00, { purpose: 'S1401', notes: 'Second royalty this year: the ₹5 lakh limit is crossed', docs: D('inv', 'agr') }),
+  ];
+  const co = { id: 'ex-abc', sample: true, settings: { name: 'ABC Industries Ltd', pan: 'AABCA1234C', tan: 'AHMA12345B', constitution: 'Company', address: 'Plot 14, GIDC Sanand, Ahmedabad 382110', email: 'treasury@abcindustries.example',
+    adBank: 'HDFC Bank, Ashram Road, Ahmedabad', resp: 'Rakesh Shah, CFO', fyStart: '2026-04-01' }, payees, rem, returns: { '2025|4': { filedOn: '2026-05-28', token: '482510000716630' }, '2026|1': { filedOn: '2026-07-30', token: '482610000131902' } }, treatyOv: {} };
+  return co;
+}
+function exampleCA() {
+  const firm = { name: 'Mehta & Associates', frn: '112233W', partner: 'CA Rajesh Mehta', mno: '045678', gstin: '24AAFFM7788Q1ZB', email: 'certs@mehta-associates.example', sac: '998221' };
+  const C = (certDate, client, clientPan, beneficiary, country, nature, inr, tds, ack, udin, fee, invNo, invDate, paidOn, extra = {}) => ({ id: uid('c_'), certDate, client, clientPan, beneficiary, country, nature, inr, tds, ack, udin, udinOn: udin ? certDate : '', fee, gst: 18, invNo, invDate, paidOn, remId: '', notes: '', ...extra });
+  const rows = [
+    C('2026-02-10', 'ABC Industries Ltd', 'AABCA1234C', 'TechNova Inc', 'US', 'Fees for technical services', 1040400, 156060, '581902260211', '26045678BKCDXY4471', 5000, 'MA/26/0144', '2026-02-12', '2026-03-02'),
+    C('2026-06-03', 'ABC Industries Ltd', 'AABCA1234C', 'TechNova Inc', 'US', 'Fees for technical services', 1499940, 224991, '612774260603', '26045678BKCEAB1192', 5000, 'MA/26/0391', '2026-06-05', '2026-06-28'),
+    C('2026-07-22', 'Zenith Projects Ltd', 'AABCZ5678K', 'Zenith Holdings Ltd', 'MU', 'Dividend', 4200000, 210000, '615520260722', '26045678BKCEJM2205', 7500, 'MA/26/0452', '2026-07-24', '2026-08-30'),
+    C('2026-08-28', 'Orbit Retail Pvt Ltd', 'AADCO3456P', 'Orbit Brands AG', 'CH', 'Royalty', 2650000, 265000, '618847260828', '26045678BKCEQT9918', 6000, 'MA/26/0510', '2026-08-29', ''),
+    C('2026-09-28', 'ABC Industries Ltd', 'AABCA1234C', 'Lion City Capital Pte Ltd', 'SG', 'Interest on ECB', 2514000, 130728, '621045260928', '26045678BKCEZK7730', 5000, 'MA/26/0577', '2026-09-30', ''),
+    C('2026-10-12', 'Orbit Retail Pvt Ltd', 'AADCO3456P', 'Orbit Brands AG', 'CH', 'Royalty', 1800000, 180000, '622310261012', '', 6000, '', '', '', { notes: 'UDIN to be generated on the ICAI portal' }),
+  ];
+  return { firm, rows, sample: true };
+}
+function blankCo(name) { return { id: uid('co_'), sample: false, settings: { name: name || 'New remitter', pan: '', tan: '', constitution: 'Company', address: '', email: '', adBank: '', resp: '', fyStart: '2026-04-01' }, payees: [], rem: [], returns: {}, treatyOv: {} }; }
+
+
+// ================================================================ look & feel — colour combinations, custom colours, mode, density, type
+const PRESETS = [
+  { k: 'society', n: 'Society Desk', d: 'Slate with a sky-blue main colour and amber highlight, as in your Society Desk app.', accent: '#0284C7', accent2: '#D97706', tint: '#64748B' },
+  { k: 'navy', n: 'Ledger navy', d: 'The house style of your TDS desk: navy with a teal second colour.', accent: '#1F3864', accent2: '#0F766E', tint: '#5B6B8C' },
+  { k: 'teal', n: 'Treasury teal', d: 'Calm teal with an amber highlight, for long review sessions.', accent: '#0F5E63', accent2: '#A16207', tint: '#4F7F80' },
+  { k: 'maroon', n: 'Rupee maroon', d: 'Deep maroon with a green highlight, like a stamp-paper office.', accent: '#7A1F3D', accent2: '#1D6B5F', tint: '#8A6170' },
+  { k: 'forest', n: 'Audit green', d: 'Ledger green with a brass highlight.', accent: '#23563A', accent2: '#8A5A14', tint: '#5E7A66' },
+  { k: 'indigo', n: 'Indigo slate', d: 'Indigo with a cyan highlight, crisp on large screens.', accent: '#3730A3', accent2: '#0E7490', tint: '#5D6283' },
+  { k: 'saffron', n: 'Saffron ink', d: 'Warm saffron-brown with a navy highlight.', accent: '#8F3F06', accent2: '#1F3864', tint: '#8A7360' },
+  { k: 'graphite', n: 'Graphite', d: 'Near-neutral grey with a blue highlight, low colour.', accent: '#2F3542', accent2: '#2563EB', tint: '#6B7280' },
+];
+const FONTS = {
+  jakarta: { n: 'Plus Jakarta Sans (default)', d: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', b: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', m: '"JetBrains Mono", ui-monospace, Consolas, monospace', url: '' },
+  plex: { n: 'IBM Plex', d: '"IBM Plex Serif", Georgia, serif', b: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', m: '"IBM Plex Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap' },
+  source: { n: 'Source Serif + Sans', d: '"Source Serif 4", Georgia, serif', b: '"Source Sans 3", "Segoe UI", Arial, sans-serif', m: '"Source Code Pro", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap' },
+  public: { n: 'Public Sans + Literata', d: '"Literata", Georgia, serif', b: '"Public Sans", "Segoe UI", Arial, sans-serif', m: '"JetBrains Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Literata:wght@500;600&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap' },
+};
+const LOOK_DEF = { preset: 'society', custom: { accent: '#0284C7', accent2: '#D97706', tint: '#64748B' }, mode: 'system', density: 'comfortable', corners: 'rounded', font: 'jakarta', saved: [], v: 2 };
+let look = JSON.parse(JSON.stringify(LOOK_DEF));
+try { const l = JSON.parse(localStorage.getItem('remitdesk-look') || 'null'); if (l) look = { ...look, ...l }; } catch {}
+function migrateLook() { if ((look.v || 1) < 2) { if (look.preset === 'navy') look.preset = 'society'; if (look.font === 'plex') look.font = 'jakarta'; if (look.corners === 'rounded' || !look.corners) look.corners = 'rounded'; look.v = 2; } }
+migrateLook();
+const hexRgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+const rgbHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+function hexHsl(h) { let [r, g, b] = hexRgb(h).map(v => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let hh = 0, ss = 0;
+  if (mx !== mn) { const d = mx - mn; ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh *= 60; }
+  return [hh, ss * 100, l * 100]; }
+function hslHex(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return rgbHex([f(0) * 255, f(8) * 255, f(4) * 255]); }
+const lum = h => { const c = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+function fit(hex, bgHex, min, dir) { let [h, s, l] = hexHsl(hex), out = hex, n = 0; while (contrast(out, bgHex) < min && n++ < 40) { l = Math.max(0, Math.min(100, l + dir * 2)); out = hslHex(h, s, l); } return out; }
+function palette(combo, dark) {
+  const [ah, as] = hexHsl(combo.accent), [th, ts0] = hexHsl(combo.tint || combo.accent), ts = Math.min(ts0, 40);
+  if (!dark) {
+    const surface = '#FFFFFF', bg = hslHex(th, ts * .5, 97), accent = fit(combo.accent, surface, 4.6, -1);
+    return { '--bg': bg, '--surface': surface, '--sunk': hslHex(th, ts * .55, 94), '--line': hslHex(th, ts * .45, 86), '--fg': hslHex(th, Math.min(ts, 35), 13), '--muted': hslHex(th, ts * .4, 38),
+      '--navy': accent, '--navy-ink': contrast(accent, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111', '--teal': fit(combo.accent2, surface, 4, -1), '--focus': hslHex(ah, Math.max(as, 70), 48), '--hero-a': hslHex(th, Math.min(ts0, 47), 11), '--hero-b': hslHex(ah, Math.min(as, 85), 24), '--hero-eyebrow': hslHex(ah, Math.min(as, 90), 68), _scheme: 'light' };
+  }
+  const surface = hslHex(th, ts * .6, 12), bg = hslHex(th, ts * .7, 8);
+  const accent = fit(hslHex(ah, Math.min(as, 70), Math.max(hexHsl(combo.accent)[2], 66)), surface, 5, 1);
+  return { '--bg': bg, '--surface': surface, '--sunk': hslHex(th, ts * .55, 16), '--line': hslHex(th, ts * .45, 25), '--fg': hslHex(th, ts * .3, 91), '--muted': hslHex(th, ts * .3, 66),
+    '--navy': accent, '--navy-ink': bg, '--teal': fit(hslHex(hexHsl(combo.accent2)[0], Math.min(hexHsl(combo.accent2)[1], 70), 60), surface, 4.5, 1), '--focus': hslHex(ah, 90, 72), '--hero-a': hslHex(th, Math.min(ts0, 47), 8), '--hero-b': hslHex(ah, Math.min(as, 75), 20), '--hero-eyebrow': hslHex(ah, Math.min(as, 90), 75), _scheme: 'dark' };
+}
+const comboOf = () => look.preset === 'custom' ? look.custom : (PRESETS.find(p => p.k === look.preset) || PRESETS[0]);
+let ownTheme = false;
+function isDark() { const t = document.documentElement.getAttribute('data-theme'); if (t) return t === 'dark'; return matchMedia('(prefers-color-scheme: dark)').matches; }
+function applyLook() {
+  const root = document.documentElement;
+  if (look.mode === 'light' || look.mode === 'dark') { root.setAttribute('data-theme', look.mode); ownTheme = true; }
+  else if (ownTheme) { root.removeAttribute('data-theme'); ownTheme = false; }
+  const pal = palette(comboOf(), isDark());
+  Object.entries(pal).forEach(([k, v]) => { if (k[0] === '-') root.style.setProperty(k, v); });
+  root.style.setProperty('color-scheme', pal._scheme);
+  const R = { rounded: [10, 12, 16], soft: [14, 18, 22], square: [3, 4, 6] }[look.corners] || [10, 12, 16];
+  root.style.setProperty('--r-sm', R[0] + 'px'); root.style.setProperty('--r-md', R[1] + 'px'); root.style.setProperty('--r-lg', R[2] + 'px');
+  root.style.setProperty('--cell-y', look.density === 'compact' ? '5px' : '9px');
+  root.style.fontSize = '';
+  document.body.style.fontSize = look.density === 'compact' ? '13.5px' : '';
+  const F = FONTS[look.font] || FONTS.plex;
+  if (F.url && !document.querySelector(`link[data-font="${look.font}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = F.url; l.dataset.font = look.font; document.head.appendChild(l); }
+  root.style.setProperty('--f-display', F.d); root.style.setProperty('--f-body', F.b); root.style.setProperty('--f-num', F.m);
+}
+let lookTimer;
+function saveLook() {
+  try { localStorage.setItem('remitdesk-look', JSON.stringify(look)); } catch {}
+  clearTimeout(lookTimer); lookTimer = setTimeout(() => { if (mode === 'account' && col) col.doc('look').set({ kind: 'look', ...JSON.parse(JSON.stringify(look)) }).catch(() => {}); }, 700);
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyLook);
+new MutationObserver(() => { if (!ownTheme || look.mode === 'system') applyLook(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+function vLook() {
+  const c = comboOf(), cu = look.custom;
+  const card = (k, n, d, cb) => { const L = palette(cb, false), D = palette(cb, true);
+    return `<button type="button" class="sw" data-act="look-preset" data-k="${k}" aria-pressed="${look.preset === k}"><span class="bar">${[L['--navy'], L['--teal'], L['--sunk'], D['--navy'], D['--surface']].map(x => `<span style="background:${x}"></span>`).join('')}</span><span class="nm">${esc(n)}</span><span class="ds">${esc(d)}</span></button>`; };
+  const L = palette(c, false), D = palette(c, true);
+  const ck = (a, b, min, lbl) => { const r = contrast(a, b); return `<span class="chip ${r >= min ? 'teal' : 'bad'}">${esc(lbl)} ${r.toFixed(1)}:1 ${r >= min ? '✓' : '— too low'}</span>`; };
+  const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button type="button" class="sm" data-act="look-set" data-key="${key}" data-v="${v}" aria-pressed="${look[key] === v}">${esc(l)}</button>`).join('')}</div>`;
+  const pv = (P, label) => `<div class="pv" style="${Object.entries(P).filter(([k]) => k[0] === '-').map(([k, v]) => `${k}:${v}`).join(';')};color-scheme:${P._scheme}">
+      <span class="k">${label}</span><span class="pvh">Foreign Remittance Desk</span>
+      <div class="pvt"><div><span class="k">Remitted</span>₹${fmt(R.T.inr)}</div><div><span class="k">Forms pending</span>${R.T.open146 + R.T.open145}</div></div>
+      <div class="actions"><button type="button" class="sm primary" style="background:var(--navy);color:var(--navy-ink);border-color:var(--navy)">New remittance</button><button type="button" class="sm" style="background:var(--surface);color:var(--fg)">Download Excel</button></div>
+      <div class="actions"><span class="pill ok">Remitted</span><span class="pill warn">146 pending</span><span class="chip teal">Part A</span><span class="chip navy" style="background:var(--navy);color:var(--navy-ink)">Part C + 146</span></div>
+      <span class="small" style="color:var(--muted)">Muted text for notes and references · <span style="color:var(--teal);font-weight:600">highlight colour</span></span></div>`;
+  return `<section class="panel"><div class="panel-head"><h2>Colour combination</h2><span class="sub">Applies at once to every tab; your choice is remembered${mode === 'account' ? ' on your account' : ' in this browser'}</span></div>
+      <div class="swatches">${PRESETS.map(p => card(p.k, p.n, p.d, p)).join('')}${card('custom', 'My colours', 'Your own accent, highlight and page tint — set below.', cu)}</div></section>
+    <div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Custom combination</h2><button type="button" class="sm" data-act="look-from-preset">Start from current</button></div>
+      <div class="lookrow">
+        <label for="lk-a">Main colour (buttons, headings, tabs)<input id="lk-a" type="color" data-lookc="accent" value="${cu.accent}"></label>
+        <label for="lk-b">Highlight colour (chips, labels)<input id="lk-b" type="color" data-lookc="accent2" value="${cu.accent2}"></label>
+        <label for="lk-c">Page tint (backgrounds, lines)<input id="lk-c" type="color" data-lookc="tint" value="${cu.tint}"></label>
+      </div>
+      <div class="contrast">${ck(L['--navy'], L['--surface'], 4.5, 'Main on light')}${ck(L['--navy-ink'], L['--navy'], 4.5, 'Button text')}${ck(D['--navy'], D['--surface'], 4.5, 'Main on dark')}${ck(L['--teal'], L['--surface'], 4.5, 'Highlight on light')}</div>
+      <p class="note" style="padding-top:0">Pick any colours: the desk darkens or lightens them just enough to stay readable, and builds a matching dark version. Light and dark previews are on the right.</p>
+      <div class="lookrow"><label for="lk-name">Name this combination<input id="lk-name" type="text" maxlength="30" placeholder="e.g. Firm colours"></label><button type="button" class="primary" data-act="look-save">Save combination</button></div>
+      ${look.saved.length ? `<div class="saved">${look.saved.map((x, i) => `<span class="it"><span class="dotc" style="background:${x.accent}"></span><span class="dotc" style="background:${x.accent2}"></span><button type="button" class="link" data-act="look-use" data-i="${i}">${esc(x.name)}</button><button type="button" class="sm" data-act="look-del" data-i="${i}" aria-label="Remove ${esc(x.name)}">✕</button></span>`).join('')}</div>` : ''}
+    </section>
+    <section class="panel"><div class="panel-head"><h2>Preview</h2><span class="sub">${esc(look.preset === 'custom' ? 'My colours' : (PRESETS.find(p => p.k === look.preset) || {}).n || '')}</span></div>
+      <div class="previews">${pv(L, 'Light')}${pv(D, 'Dark')}</div></section></div>
+    <section class="panel"><div class="panel-head"><h2>Display</h2><button type="button" class="sm" data-act="look-reset">Back to default look</button></div>
+      <div class="lookrow">
+        <label>Light or dark${seg('mode', [['system', 'Follow device'], ['light', 'Light'], ['dark', 'Dark']])}</label>
+        <label>Table spacing${seg('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</label>
+        <label>Corners${seg('corners', [['square', 'Square'], ['rounded', 'Rounded'], ['soft', 'Soft']])}</label>
+        <label for="lk-font">Type<select id="lk-font" data-lookf="1">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${look.font === k ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label>
+      </div>
+      <div class="lookrow"><label for="lk-code">Look code of this desk<input id="lk-code" type="text" readonly value="${esc(btoa(unescape(encodeURIComponent(JSON.stringify({ p: look.preset, c: look.custom, m: look.mode, d: look.density, f: look.font })))))}"></label><button type="button" data-act="look-copy">Copy look code</button>
+        <label for="lk-paste">Paste a look code from another tool<input id="lk-paste" type="text" placeholder="Paste here"></label><button type="button" data-act="look-paste">Apply code</button></div>
+      <p class="note">Status colours stay fixed whatever the combination — green done, amber check, red act now — so a warning always looks like a warning. Look settings belong to you, not to a remitter, and do not change what other people see.</p></section>`;
+}
+
+// ================================================================ state and storage
+let companies = [], cur = null, ca = null, caOwn = null, tab = 'desk', R = null;
+let db = null, col = null, assets = null, mode = 'example', saveTimers = {};
+const sessionFiles = {};   // files added where the asset store is not available: key → {name, blob}
+const ui = { remQ: '', remPart: '', retQ: 0, caF: 'all', wiz: {}, wizRem: '', docSel: '' };
+try { const t = localStorage.getItem('remitdesk-tab'); if (t) tab = t; } catch {}
+function setSaveState(kind, text) { $('save-state').innerHTML = `<span class="dot ${kind}"></span><span>${esc(text)}</span>`; }
+function saveDoc(id, data) {
+  if (mode === 'account' && col) return col.doc(id).set(data).then(() => setSaveState('ok', 'Saved to your account')).catch(() => setSaveState('warn', 'Not saved — check your connection'));
+  try { const all = JSON.parse(localStorage.getItem('remitdesk-v1') || '{}'); all[id] = data; localStorage.setItem('remitdesk-v1', JSON.stringify(all)); setSaveState('ok', 'Saved in this browser'); } catch { setSaveState('warn', 'Not saved — storage unavailable here'); }
+}
+function dropDoc(id) {
+  if (mode === 'account' && col) { col.doc(id).delete().catch(() => {}); return; }
+  try { const all = JSON.parse(localStorage.getItem('remitdesk-v1') || '{}'); delete all[id]; localStorage.setItem('remitdesk-v1', JSON.stringify(all)); } catch {}
+}
+function persist(what = 'co') {
+  if (what === 'ca') { if (ca.sample) { setSaveState('warn', 'Example register — save a copy to keep edits'); return; } clearTimeout(saveTimers.ca); setSaveState('warn', 'Saving…'); saveTimers.ca = setTimeout(() => saveDoc('ca146', { kind: 'ca', ...JSON.parse(JSON.stringify(ca)) }), 600); return; }
+  if (!cur || cur.sample) { setSaveState('warn', 'Example — edits reset when you reload'); return; }
+  const c = cur; clearTimeout(saveTimers[c.id]); setSaveState('warn', 'Saving…');
+  saveTimers[c.id] = setTimeout(() => saveDoc(c.id, { kind: 'co', ...JSON.parse(JSON.stringify(c)) }), 600);
+}
+function changed(what) { persist(what); render(); }
+
+async function boot() {
+  const EX = companies.filter(c => c.sample), exCA = ca;
+  render();
+  const use = window.claude && window.claude.use;
+  let user = null, uidv = null;
+  if (use) { try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch {} }
+  if (user) { try { uidv = await user.id(); } catch {} }
+  let own = [], ownCA = null;
+  if (db && uidv) {
+    try { col = db.collection('data/users/' + uidv); const snap = await col.get(); mode = 'account';
+      snap.docs.forEach(d => { const v = d.data(); if (!v) return; if (v.kind === 'co') { delete v.kind; own.push(v); } if (v.kind === 'ca') { delete v.kind; ownCA = v; } if (v.kind === 'look') { delete v.kind; look = { ...look, ...v }; migrateLook(); } }); }
+    catch { col = null; }
+  }
+  if (!col) { try { const all = JSON.parse(localStorage.getItem('remitdesk-v1') || '{}'); Object.values(all).forEach(v => { if (v.kind === 'co') { delete v.kind; own.push(v); } if (v.kind === 'ca') { delete v.kind; ownCA = v; } }); mode = 'browser'; } catch { mode = 'example'; } }
+  companies = [...own.filter(c => c && c.settings), ...EX];
+  if (!companies.includes(cur)) cur = own[0] || EX[0];
+  ca = ownCA || exCA;
+  try { assets = use ? await window.claude.use('assets') : null; } catch { assets = null; }
+  try { window.__downloads = use ? await window.claude.use('downloads') : null; } catch { window.__downloads = null; }
+  setSaveState(cur.sample ? 'warn' : 'ok', cur.sample ? 'Example — edits reset when you reload' : mode === 'account' ? 'Saved to your account' : 'Saved in this browser');
+  applyLook(); render();
+}
+
+// ================================================================ render shell
+function render() {
+  R = compute(cur);
+  const s = cur.settings, T = R.T, L = LAW[R.law];
+  const opt = c => `<option value="${esc(c.id)}"${c === cur ? ' selected' : ''}>${esc(c.settings.name)}</option>`;
+  const mine = companies.filter(c => !c.sample), exs = companies.filter(c => c.sample);
+  $('company').innerHTML = (mine.length ? `<optgroup label="My remitters">${mine.map(opt).join('')}</optgroup>` : '') + `<optgroup label="Example for study">${exs.map(opt).join('')}</optgroup>`;
+  $('sample-banner').hidden = !cur.sample;
+  if (cur.sample) $('sample-banner').innerHTML = `<span><strong>Example for study.</strong> A listed company paying US, Dutch, German, Singapore, UAE, UK and Japanese parties, with its CA firm's Form 146 register. Edits here are not saved.</span>
+    <div class="actions"><button type="button" data-act="copy-example">Save a copy as my remitter</button><button type="button" class="primary" data-act="new-company">Create my remitter</button></div>`;
+  $('law-bar').innerHTML = `<span class="chip teal">${esc(L.name)}</span><span>${yearLabel(R.Y)} · ${R.law === '2025' ? 'remittances from 1 April 2026 use Form 145 / 146, Form 41 and Form 144 under rule 220 of the Income-tax Rules, 2026' : 'remittances up to 31 March 2026 use Form 15CA / 15CB, Form 10F and Form 27Q'}</span><span class="muted">TDS under ${esc(L.sec)} · each remittance follows the law of its own date</span>`;
+  $('s-fy').innerHTML = [2025, 2026, 2027].map(y => `<option value="${y}"${R.Y === y ? ' selected' : ''}>${yearLabel(y)} · ${y >= 2026 ? '2025 Act' : '1961 Act'}</option>`).join('');
+  $('totals').innerHTML = `
+    <div class="tot lead"><span class="ic">${ICON.bank}</span><span class="k">Remitted · ${yearLabel(R.Y)}</span><span class="v">₹${fmt(T.inr)}</span><span class="n">${T.n} remittances · TDS ₹${fmt(T.tax)}</span></div>
+    <div class="tot ${T.open146 + T.open145 ? 'warn' : 'good'}"><span class="ic">${ICON.ret}</span><span class="k">Forms pending</span><span class="v">${T.open146 + T.open145}</span><span class="n">${both(R.law, 'f146')} ${T.open146} · ${L.f145} ${T.open145}</span></div>
+    <div class="tot ${T.docsMissing ? 'warn' : 'good'}"><span class="ic">${ICON.docs}</span><span class="k">Documents missing</span><span class="v">${T.docsMissing}</span><span class="n">across all remittance folders</span></div>
+    <div class="tot ${T.bad ? 'bad' : 'good'}"><span class="ic">${ICON.alert}</span><span class="k">Exceptions · interest</span><span class="v">${T.bad} · ₹${fmt(T.int)}</span><span class="n">${T.lost ? `Extra TDS from missing treaty papers ₹${fmt(T.lost)}` : 'No treaty benefit lost'}</span></div>`;
+  const badge = { rem: T.bad, payees: cur.payees.filter(p => p.trcTo && daysTo(p.trcTo) < 30 && cur.rem.some(r => r.payee === p.code && r.date >= TODAY.slice(0, 4) + '-01-01')).length, ca: (ca.rows || []).filter(x => !UDIN_RE.test(x.udin || '')).length };
+  document.querySelectorAll('.tab').forEach(t => { t.setAttribute('aria-selected', t.dataset.tab === tab); const b = badge[t.dataset.tab]; const base = t.dataset.base || (t.dataset.base = t.textContent.trim()); t.innerHTML = (ICON[t.dataset.tab] || '') + `<span class="l">${esc(base)}</span>` + (b ? `<span class="cnt">${b}</span>` : ''); });
+  const V = { desk: vDesk, rem: vRem, wiz: vWiz, payees: vPayees, dtaa: vDtaa, docs: vDocs, ret: vRet, ca: vCA, look: vLook };
+  $('hero-slot').innerHTML = tab === 'desk' ? heroHtml() : '';
+  $('view').innerHTML = (V[tab] || vDesk)();
+}
+const partPill = o => o.part === 'none' ? '<span class="chip">No form</span>' : o.part === 'D' ? '<span class="chip teal">Part D</span>' : o.part === 'A' ? '<span class="chip teal">Part A</span>' : o.part === 'B' ? '<span class="chip warn">Part B</span>' : o.part === 'C' ? '<span class="chip navy">Part C + 146</span>' : '<span class="chip bad">?</span>';
+const STAGE = { draft: ['idle', 'Draft'], f146: ['warn', '146 issued — file 145'], ready: ['warn', 'Ready to remit'], remitted: ['bad', 'Remitted — TDS to deposit'], closed: ['ok', 'Remitted'] };
+const stagePill = o => pill(...STAGE[o.stage]);
+const issueChips = o => o.issues.map(i => `<span class="chip ${i[0]}">${esc(i[1])}</span>`).join('');
+
+
+const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  desk: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
+  rem: ic('<path d="M4 7h13l-3-3M20 17H7l3 3"/>'),
+  wiz: ic('<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M8 5h4a4 4 0 0 1 4 4v1M8 19h4a4 4 0 0 0 4-4v-1"/>'),
+  payees: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>'),
+  dtaa: ic('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
+  docs: ic('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  ret: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
+  ca: ic('<circle cx="12" cy="9" r="5"/><path d="M8.5 13 7 21l5-2.5 5 2.5-1.5-8"/>'),
+  look: ic('<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.2-1.8-.5-1 .2-2.2 1.3-2.2H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7.2" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>'),
+  bank: ic('<path d="M3 10h18L12 4zM5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>'),
+  file: ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'),
+  alert: ic('<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17.5v.5"/>'),
+};
+function setMenu(open) { $('rail').classList.toggle('open', open); $('scrim').classList.toggle('open', open); $('menu-btn').setAttribute('aria-expanded', open); }
+// ================================================================ views
+function heroHtml() {
+  const T = R.T, L = LAW[R.law], next = R.rows.find(o => o.stage === 'draft' || o.stage === 'f146' || o.stage === 'ready');
+  return `<section class="hero"><div><span class="eyebrow">Foreign remittance desk · ${esc(yearLabel(R.Y))}</span><h1>${esc(cur.settings.name)}</h1>
+    <p>${T.n} payments abroad worth <b>₹${fmt(T.inr)}</b> this year, TDS <b>₹${fmt(T.tax)}</b>. ${T.open146 + T.open145 ? `<b>${T.open146 + T.open145} forms pending</b> (${L.f146} ${T.open146}, ${L.f145} ${T.open145}).` : 'No forms pending.'} ${next ? `Next: ${esc(next.p ? next.p.name : '')}, ${fdate(next.r.date)} — ${esc(nextStep(next).charAt(0).toLowerCase() + nextStep(next).slice(1))}.` : ''}</p></div>
+    <div class="acts"><button type="button" class="hero-primary" data-act="add-rem">New remittance</button><button type="button" class="hero-ghost" data-act="go-tab" data-tab="wiz">Which Form 145 part?</button></div></section>`;
+}
+function vDesk() {
+  const att = [];
+  R.rows.forEach(o => o.issues.forEach(i => att.push({ o, sev: i[0], txt: i[1] })));
+  cur.payees.forEach(p => { if (p.trcTo && daysTo(p.trcTo) <= 45 && cur.rem.some(r => r.payee === p.code && r.date >= R.start)) att.push({ p, sev: daysTo(p.trcTo) < 0 ? 'bad' : 'warn', txt: daysTo(p.trcTo) < 0 ? `TRC expired ${fdate(p.trcTo)} — ask for a new one` : `TRC expires ${fdate(p.trcTo)}` }); });
+  att.sort((a, b) => (a.sev === 'bad' ? 0 : 1) - (b.sev === 'bad' ? 0 : 1));
+  const st = k => R.rows.filter(o => o.stage === k).length;
+  const parts = ['A', 'B', 'C', 'D', 'none'].map(k => { const rs = R.rows.filter(o => o.part === k); return `<tr><td>${k === 'none' ? `No ${LAW[R.law].f145} (specified list)` : `Part ${k}`}</td><td class="num">${rs.length}</td><td class="num">${fmt(rs.reduce((t, o) => t + o.inr, 0))}</td><td class="num">${fmt(rs.reduce((t, o) => t + o.tax, 0))}</td></tr>`; }).join('');
+  const up = R.rows.filter(o => o.stage === 'draft' || o.stage === 'f146' || o.stage === 'ready');
+  return `<div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Needs attention</h2><span class="sub">${att.length} items</span></div>
+      ${att.length ? `<ul class="todo">${att.slice(0, 12).map(x => `<li><span class="d">${x.o ? fdate(x.o.r.date) : fdate(x.p.trcTo)}</span><span>${x.o ? `<button type="button" class="link" data-act="edit-rem" data-id="${x.o.r.id}">${esc(x.o.p ? x.o.p.name : x.o.r.payee)} · ${esc(x.o.r.inv)}</button>` : `<button type="button" class="link" data-act="edit-payee" data-code="${esc(x.p.code)}">${esc(x.p.name)}</button>`}<br><span class="small muted">${esc(x.txt)}</span></span>${pill(x.sev, x.sev === 'bad' ? 'Act now' : 'Check')}</li>`).join('')}</ul>` : '<div class="empty">Nothing needs attention this year.</div>'}
+    </section>
+    <section class="panel"><div class="panel-head"><h2>Pipeline</h2><button type="button" class="sm primary" data-act="add-rem">New remittance</button></div>
+      <div class="pipeline">${[['draft', 'Draft'], ['f146', '146 issued'], ['ready', '145 filed — ready'], ['remitted', 'Remitted, TDS due'], ['closed', 'Remitted and closed']].map(([k, l]) => `<div class="stage"><span class="v">${st(k)}</span><span class="k">${l}</span></div>`).join('')}</div>
+      <div class="scroll"><table><thead><tr><th>Form ${R.law === '2025' ? '145' : '15CA'} part</th><th class="num">Count</th><th class="num">Amount</th><th class="num">TDS</th></tr></thead><tbody>${parts}</tbody></table></div>
+    </section></div>
+    <section class="panel"><div class="panel-head"><h2>Upcoming remittances</h2><span class="sub">Order of work: ${both(R.law, 'f146')} (Part C) → TDS worked out → ${LAW[R.law].f145} → bank (Form A2) → SWIFT → challan by the 7th</span></div>
+      ${up.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Payee</th><th>Nature</th><th class="num">₹</th><th class="num">TDS</th><th>Form</th><th>Stage</th><th>Next step</th></tr></thead><tbody>${up.map(o => `<tr tabindex="0" data-act="edit-rem" data-id="${o.r.id}"><td class="mono">${fdate(o.r.date)}</td><td>${esc(o.p ? o.p.name : '')}<span class="ref">${esc(o.p ? o.p.country : '')}</span></td><td class="small">${esc(o.N.l)}</td><td class="num">${fmt(o.inr)}</td><td class="num">${fmt(o.tax)}</td><td>${partPill(o)}</td><td>${stagePill(o)}</td><td class="small">${esc(nextStep(o))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No remittances waiting.</div>'}
+    </section>`;
+}
+function nextStep(o) {
+  const L = o.L;
+  if (o.part === 'none') return o.r.swiftRef ? 'Done' : 'Remit through the bank with Form A2';
+  if (o.part === 'C' && !o.r.f146Ack) return `Assign ${L.f146} to the CA on the e-filing portal`;
+  if (!o.r.f145Ack) return `File ${L.f145} Part ${o.part}`;
+  if (!o.r.swiftRef) return 'Give the bank Form A2 and the acknowledgement';
+  if (o.tax > 0 && !o.r.chDate) return `Deposit TDS by ${fdate(o.due)}`;
+  return 'Done';
+}
+function vRem() {
+  let rows = R.rows;
+  if (ui.remPart) rows = rows.filter(o => o.part === ui.remPart);
+  if (ui.remQ) { const q = ui.remQ.toLowerCase(); rows = rows.filter(o => [o.r.inv, o.p && o.p.name, o.p && o.p.country, o.N.l].join(' ').toLowerCase().includes(q)); }
+  const body = rows.map(o => `<tr tabindex="0" data-act="edit-rem" data-id="${o.r.id}"><td class="mono">${fdate(o.r.date)}</td><td>${esc(o.p ? o.p.name : o.r.payee)}<span class="ref">${esc([o.p && o.p.country, o.r.inv].filter(Boolean).join(' · '))}</span></td><td class="small">${esc(o.N.l)}</td>
+    <td class="num">${esc(o.r.ccy)} ${nf2.format(+o.r.fx || 0)}<span class="ref">@ ${esc(o.r.xr)}</span></td><td class="num">${fmt(o.inr)}</td><td class="small">${esc(o.basis || '–')}${o.r.grossUp ? '<span class="ref">grossed up</span>' : ''}</td><td class="num">${o.rate ? pct(o.rate) : '–'}</td><td class="num"><strong>${fmt(o.tax)}</strong></td>
+    <td>${partPill(o)}</td><td class="num">${o.need ? `${o.docsDone}/${o.need.length}` : '–'}</td><td>${stagePill(o)}${issueChips(o) ? `<div style="margin-top:4px">${issueChips(o)}</div>` : ''}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Remittances · ${yearLabel(R.Y)}</h2><div class="actions"><button type="button" data-act="template">Import template</button><button type="button" data-act="import">Import Excel</button><input id="imp-file" type="file" accept=".xlsx,.xls,.csv" hidden><button type="button" class="primary" data-act="add-rem">New remittance</button></div></div>
+    <div class="filters">
+      <label for="f-part">Form part<select id="f-part" data-ui="remPart"><option value="">All</option>${[['A', 'Part A'], ['B', 'Part B'], ['C', 'Part C'], ['D', 'Part D'], ['none', 'No form']].map(([k, l]) => `<option value="${k}"${ui.remPart === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label for="f-q">Search<input id="f-q" type="search" value="${esc(ui.remQ)}" placeholder="Payee, invoice, country"></label></div>
+    ${rows.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Payee</th><th>Nature</th><th class="num">Foreign currency</th><th class="num">₹</th><th>Basis</th><th class="num">Rate</th><th class="num">TDS</th><th>Form</th><th class="num">Docs</th><th>Stage / exceptions</th></tr></thead>
+      <tbody>${body}</tbody><tfoot><tr><td colspan="4">${rows.length} remittances</td><td class="num">${fmt(rows.reduce((t, o) => t + o.inr, 0))}</td><td colspan="2"></td><td class="num">${fmt(rows.reduce((t, o) => t + o.tax, 0))}</td><td colspan="3"></td></tr></tfoot></table></div>`
+      : `<div class="empty"><h3>No remittances${ui.remPart || ui.remQ ? ' match' : ' yet'}</h3><span>Add a payee first, then a remittance. The desk decides the form part, the rate and the documents needed.</span></div>`}
+    <p class="note">Convert at the State Bank of India telegraphic-transfer buying rate on the date TDS is deductible (old rule 26). Rate shown is the effective rate: Act rates include surcharge and 4% cess; treaty rates do not. Payments to the same payee are added up for the ₹5 lakh test in date order.</p></section>`;
+}
+function vWiz() {
+  const w = ui.wiz, L = LAW[R.law];
+  const Qs = [
+    ['lrs', 'Is the remitter an individual paying under LRS, with no RBI approval needed?', 'Individuals remitting under the Liberalised Remittance Scheme file no Form 145 / 15CA (proviso to the rule).'],
+    ['spec', `Is the payment on the specified list (import of goods, travel, education, gifts and similar)?`, `The list in ${L.rule} — about 33 purposes with RBI purpose codes. Those need no ${L.f145}.`],
+    ['charge', 'Is the payment chargeable to tax in India — under the Act, or after treaty relief?', 'Royalty, FTS, interest and dividend usually are. Software or SaaS purchases, services rendered abroad with no PE, and reimbursements usually are not. Treaty relief needs TRC, Form 41 and no PE.'],
+    ['over', 'Do taxable remittances to this payee in the tax year, including this one, exceed ₹5 lakh?', 'The limit is on the total to the same payee in the year, not per payment.'],
+    ['ao', 'Has the Assessing Officer issued a lower or nil deduction certificate (or order) for this payee?', `${L.ao}.`],
+  ];
+  let stop = null, res = null;
+  const seq = [];
+  for (const [k] of Qs) {
+    seq.push(k);
+    const v = w[k]; if (v == null) { stop = 'open'; break; }
+    if (k === 'lrs' && v) { res = { t: `No ${L.f145} needed`, d: ['Individual remitting under LRS without RBI approval.', 'The bank still collects TCS where it applies (overseas tour, investment, education above the limit).'], ok: true }; break; }
+    if (k === 'spec' && v) { res = { t: `No ${L.f145} needed`, d: ['The purpose is on the specified list; quote the RBI purpose code on Form A2.', 'Keep the invoice and bank papers in the remittance folder.'], ok: true }; break; }
+    if (k === 'charge' && !v) { res = { t: `${L.f145} Part D`, d: ['Payment not chargeable to tax in India.', 'No TDS and no Form 146 needed, any amount.', 'Keep the reason on file: CA note, no-PE declaration, and TRC / Form 41 if you rely on the treaty.'] }; break; }
+    if (k === 'over' && !v) { res = { t: `${L.f145} Part A`, d: ['Taxable, ₹5 lakh or less to this payee in the year.', 'Deduct TDS at the Act or treaty rate (TRC and Form 41 for treaty).', `No ${L.f146} needed.`] }; break; }
+    if (k === 'ao') { res = v ? { t: `${L.f145} Part B`, d: ['Taxable, above ₹5 lakh, with an AO certificate or order.', 'Deduct TDS at the rate in the certificate; quote its number and date.', `No ${L.f146} needed.`] }
+      : { t: `${both(R.law, 'f146')} first, then ${L.f145} Part C`, d: ['Taxable, above ₹5 lakh, no AO certificate.', `A chartered accountant certifies the nature, the rate (Act or treaty) and the TDS in ${L.f146} with a UDIN.`, `Then file ${L.f145} Part C quoting the ${L.f146} acknowledgement number.`] }; break; }
+  }
+  const qHtml = Qs.map(([k, t, h], i) => `<div class="q${seq.includes(k) ? '' : ' off'}"><span class="qt">${i + 1}. ${esc(t)}</span><span class="qh">${esc(h)}</span>
+    <div class="seg">${[[true, 'Yes'], [false, 'No']].map(([v, l]) => `<button type="button" class="sm" data-act="wiz" data-k="${k}" data-v="${v}" aria-pressed="${w[k] === v}"${seq.includes(k) ? '' : ' disabled'}>${l}</button>`).join('')}</div></div>`).join('');
+  const rem = ui.wizRem ? R.rows.find(o => o.r.id === ui.wizRem) : null;
+  const sel = `<label for="wiz-rem">Remittance<select id="wiz-rem" data-ui="wizRem"><option value="">— Choose —</option>${R.rows.map(o => `<option value="${o.r.id}"${ui.wizRem === o.r.id ? ' selected' : ''}>${fdate(o.r.date)} · ${esc(o.p ? o.p.name : '')} · ₹${fmt(o.inr)}</option>`).join('')}</select></label>`;
+  return `<div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Which part of ${L.f145}?</h2><button type="button" class="sm" data-act="wiz-reset">Start again</button></div>
+      <div class="wiz">${qHtml}
+        ${res ? `<div class="result"><span class="big">${esc(res.t)}</span><ul>${res.d.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '<p class="small muted">Answer the questions in order. Later ones open as they apply.</p>'}</div></section>
+    <section class="panel"><div class="panel-head"><h2>Decision for a remittance</h2></div>
+      <div class="filters">${sel}</div>
+      ${rem ? `<div style="padding:0 16px 16px"><ol class="trace">${rem.trace.map((s, i) => `<li class="${s.stop ? 'stop' : ''}"><span class="n">${i + 1}</span><span>${esc(s.q)}<span class="a">${esc(s.a)}</span></span></li>`).join('')}</ol>
+        <div class="result" style="margin-top:12px"><span class="big">${esc(rem.partLabel || '')}${rem.part === 'C' ? ` + ${rem.L.f146}` : ''}</span><ul><li>TDS ₹${fmt(rem.tax)} at ${pct(rem.rate)} (${esc(rem.basis || '—')})</li><li>Documents: ${rem.need.map(k => esc(DOCN[k].split(' (')[0])).join(', ')}</li></ul></div></div>`
+        : '<div class="empty">Pick a remittance to see each step of its decision.</div>'}</section></div>
+    <section class="panel"><div class="panel-head"><h2>The four parts at a glance</h2></div>
+      <div class="scroll"><table><thead><tr><th>Part</th><th>When</th><th>CA certificate</th><th>Key details asked</th></tr></thead><tbody>
+        <tr><td><strong>A</strong></td><td>Taxable, up to ₹5 lakh to the payee in the year</td><td>No</td><td>Remitter and payee, amount, nature, TDS deducted and date</td></tr>
+        <tr><td><strong>B</strong></td><td>Taxable, above ₹5 lakh, AO certificate or order obtained</td><td>No</td><td>Certificate section, number, date; rate and TDS</td></tr>
+        <tr><td><strong>C</strong></td><td>Taxable, above ₹5 lakh, no AO certificate</td><td>Yes — ${both(R.law, 'f146')}</td><td>${L.f146} acknowledgement number and date, accountant details</td></tr>
+        <tr><td><strong>D</strong></td><td>Not chargeable to tax in India</td><td>No</td><td>Nature and reason not chargeable; payee country</td></tr></tbody></table></div>
+      <div class="note"><p>Form 145 is filed online before the money leaves, and the acknowledgement goes to the authorised dealer bank with Form A2. Banks report what they remit in ${L.ccForm}, so the two are matched. Not filing, or filing wrong details, can cost ${L.pen}.</p><p>Section and rule numbers under the 2025 Act are from secondary sources — confirm them against the official text and the e-filing portal before relying on them.</p></div></section>`;
+}
+function vPayees() {
+  const body = cur.payees.map(p => { const T = treatyOf(cur, p.country), pd = payeeDocs(p, TODAY), used = cur.rem.filter(r => r.payee === p.code).length;
+    const trc = !p.trcTo ? pill('bad', 'No TRC') : daysTo(p.trcTo) < 0 ? pill('bad', `Expired ${fdate(p.trcTo)}`) : daysTo(p.trcTo) < 60 ? pill('warn', `To ${fdate(p.trcTo)}`) : pill('ok', `To ${fdate(p.trcTo)}`);
+    return `<tr tabindex="0" data-act="edit-payee" data-code="${esc(p.code)}"><td class="mono">${esc(p.code)}</td><td>${esc(p.name)}<span class="ref">${esc(p.status)}${p.pan ? ' · PAN ' + esc(p.pan) : ''}</span></td><td>${esc(T ? T.c : p.country)}${T ? '' : ' <span class="chip warn">No treaty in library</span>'}</td><td class="mono small">${esc(p.tin || '—')}</td>
+      <td>${trc}<span class="ref">${esc(p.trcNo || '')}</span></td><td>${p.f41On ? pill('ok', fdate(p.f41On)) : pill('bad', 'Not received')}</td><td>${p.npeOn ? pill('ok', fdate(p.npeOn)) : pill('idle', '—')}</td><td>${p.pe === 'Has PE in India' ? pill('bad', 'Has PE') : pill('ok', 'No PE')}</td><td class="num">${used}</td></tr>`; }).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Non-resident payees and treaty papers</h2><button type="button" class="primary" data-act="add-payee">Add payee</button></div>
+    ${body ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Name</th><th>Country</th><th>TIN</th><th>TRC</th><th>Form 41 (10F)</th><th>No-PE / BO declaration</th><th>PE</th><th class="num">Remittances</th></tr></thead><tbody>${body}</tbody></table></div>` : '<div class="empty"><h3>No payees yet</h3><span>Add each foreign party with its country and treaty papers.</span></div>'}
+    <div class="note"><p><strong>Treaty relief needs three papers, each valid on the date of payment:</strong> a Tax Residency Certificate from the payee's tax authority (usually for one calendar or tax year), Form 41 (old Form 10F) filed online by the payee on the e-filing portal with its TIN and address, and a declaration that it has no permanent establishment in India and is the beneficial owner. Without them the desk uses the Act rate with surcharge and cess.</p>
+    <p>A non-resident with no PAN avoids the higher rate (${LAW['2025'].noPan}) only if it gives its name, email, phone, address, TIN and TRC. Treaties changed by the MLI also carry a principal purpose test: keep a note of the commercial reason for the arrangement.</p></div></section>`;
+}
+function vDtaa() {
+  const body = TREATY.map(t => t.cc).concat(Object.keys(cur.treatyOv || {}).filter(cc => !TREATY.some(t => t.cc === cc))).map(cc => { const t = treatyOf(cur, cc), ed = (cur.treatyOv || {})[cc];
+    const r = v => v == null ? '<span class="chip">No article</span>' : `${v}%`;
+    return `<tr tabindex="0" data-act="edit-treaty" data-cc="${cc}"><td><strong>${esc(t.c)}</strong> <span class="mono small muted">${cc}</span>${ed ? ' <span class="chip warn">Edited</span>' : ''}</td><td class="num">${r(t.div)}${t.divQ !== t.div ? ` / ${t.divQ}%` : ''}</td><td class="num">${r(t.int)}</td><td class="num">${r(t.roy)}</td><td class="num">${r(t.fts)}</td><td>${t.ma ? '<span class="chip teal">Make available</span>' : ''}</td><td class="small">${esc(t.note || '')}</td></tr>`; }).join('');
+  const act = NAT.filter(n => !n.spec).map(n => `<tr><td>${esc(n.l)}</td><td class="num">${n.charge ? pct(n.rate) : '–'}${n.rateNC != null ? ` / ${pct(n.rateNC)}` : ''}</td><td class="num">${n.charge ? pct(n.rate * 1.04) : '–'}</td><td class="num">${n.charge ? pct(n.rate * 1.02 * 1.04) : '–'}</td><td class="num">${n.charge ? pct(n.rate * 1.05 * 1.04) : '–'}</td><td class="small">${n.art ? 'Compared with ' + { fts: 'FTS', roy: 'royalty', int: 'interest', div: 'dividend' }[n.art] + ' article' : n.charge ? 'Act rate' : 'Not chargeable'}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>DTAA rate library</h2><div class="actions"><span class="sub">Select a row to edit</span><button type="button" class="sm" data-act="add-treaty">Add country</button></div></div>
+    <div class="scroll"><table><thead><tr><th>Country</th><th class="num">Dividend (portfolio / qualifying)</th><th class="num">Interest</th><th class="num">Royalty</th><th class="num">FTS</th><th>FTS test</th><th>Notes</th></tr></thead><tbody>${body}</tbody></table></div>
+    <p class="note">Headline rates on gross amount, without surcharge or cess. They are a working library, not the treaty: read the article, the protocol, the MLI position and any notification before relying on a rate, and edit the row. Lower bank-interest rates and holding thresholds for the qualifying dividend rate differ by treaty.</p></section>
+    <section class="panel"><div class="panel-head"><h2>Act rates for non-residents</h2><span class="sub">Compared with the treaty rate; the lower applies when treaty papers are on file</span></div>
+      <div class="scroll"><table><thead><tr><th>Nature</th><th class="num">Base (company / other)</th><th class="num">+ cess</th><th class="num">+ 2% surcharge</th><th class="num">+ 5% surcharge</th><th>Treaty comparison</th></tr></thead><tbody>${act}</tbody></table></div>
+      <p class="note">Foreign company surcharge: 2% when income exceeds ₹1 crore, 5% above ₹10 crore (the desk uses payments to the payee in the year as the measure). For non-company payees, set the surcharge in the payee master. Long-term capital gains on listed shares and other special cases are not computed here.</p></section>`;
+}
+function vDocs() {
+  const rows = R.rows.filter(o => o.need);
+  const body = rows.map(o => `<tr tabindex="0" data-act="docs" data-id="${o.r.id}"><td class="mono">${fdate(o.r.date)}</td><td>${esc(o.p ? o.p.name : '')}<span class="ref">${esc(o.r.inv)}</span></td><td>${partPill(o)}</td>
+    <td>${o.need.map(k => `<span class="chip ${o.has[k] ? 'teal' : 'warn'}" title="${esc(DOCN[k])}">${o.has[k] ? '✓' : '○'} ${esc(DOCN[k].split(' (')[0].replace(' acknowledgement with UDIN', '').replace(' acknowledgement', ''))}</span>`).join('')}</td>
+    <td class="num">${o.docsDone}/${o.need.length}</td><td>${o.docsDone === o.need.length ? pill('ok', 'Complete') : pill(o.r.swiftRef ? 'bad' : 'warn', `${o.need.length - o.docsDone} missing`)}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Remittance folders · ${yearLabel(R.Y)}</h2><span class="sub">${assets ? 'Files are stored with this desk' : 'Files you add stay in this tab only — the register is saved'}</span></div>
+    ${body ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Payee / invoice</th><th>Form</th><th>Documents</th><th class="num">Have</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div>` : '<div class="empty">No remittances this year.</div>'}
+    <div class="note"><p>One folder per payment. The list of papers follows the decision: treaty papers only where the treaty is relied on, the AO certificate for Part B, ${both(R.law, 'f146')} with UDIN for Part C, the challan where TDS was deducted. Acknowledgement numbers, UDIN, challan and SWIFT references entered on the remittance count as on file; TRC, Form 41 and the declaration count from the payee master while valid.</p>
+    <p>Select a folder to add references or files, and download the whole folder as a ZIP for the auditor or the bank. Uploaded files can be opened by anyone this desk is shared with, so share it only within the team.</p></div></section>`;
+}
+function vRet() {
+  const q = ui.retQ || qOf(TODAY < R.end && TODAY > R.start ? TODAY : R.end), L = LAW[R.law];
+  const rows = R.rows.filter(o => o.q === q && ['A', 'B', 'C'].includes(o.part));
+  const rec = (cur.returns || {})[`${R.Y}|${q}`] || {}, due = retDue(R.Y, q);
+  const chk = o => [!o.r.f145Ack && 'Form 145 / 15CA ack no.', o.tax > 0 && !(o.r.chBsr && o.r.chDate && o.r.chSerial) && 'Challan', !(o.p.pan || o.p.tin) && 'PAN or TIN', !o.p.address && 'Address', !o.p.email && 'Email'].filter(Boolean);
+  const body = rows.map(o => { const m = chk(o); return `<tr tabindex="0" data-act="edit-rem" data-id="${o.r.id}"><td class="mono">${fdate(o.dedOn)}</td><td>${esc(o.p.name)}<span class="ref">${esc(o.p.pan || 'PANNOTAVBL')} · TIN ${esc(o.p.tin || '—')}</span></td><td>${esc(o.T ? o.T.c : o.p.country)}</td><td class="small">${esc(o.N.l)}</td>
+    <td class="num">${fmt(o.base)}</td><td class="num">${pct(o.rate)}</td><td class="num">${fmt(o.tax)}</td><td class="small">${esc(o.basis)}</td><td class="mono small">${esc(o.r.f145Ack || '')}</td><td class="mono small">${o.r.chBsr ? esc(`${o.r.chBsr} · ${fdate(o.r.chDate)} · ${o.r.chSerial}`) : ''}</td><td>${m.length ? m.map(x => `<span class="chip bad">${esc(x)} missing</span>`).join('') : pill('ok', 'Ready')}</td></tr>`; }).join('');
+  const ready = rows.filter(o => !chk(o).length).length;
+  return `<section class="panel"><div class="panel-head"><h2>${L.ret} — non-resident TDS return · Q${q} · ${yearLabel(R.Y)}</h2>
+      <div class="actions"><button type="button" class="sm" data-act="ret-file" data-q="${q}">${rec.filedOn ? 'Edit filing' : 'Mark filed'}</button><button type="button" class="sm" data-act="ret-export" data-q="${q}">Return data (Excel)</button><button type="button" class="sm primary" data-act="tds-export" data-q="${q}">Export for TDS desk</button></div></div>
+    <div class="filters"><label for="r-q">Quarter<select id="r-q" data-ui="retQ">${[1, 2, 3, 4].map(n => `<option value="${n}"${q === n ? ' selected' : ''}>Q${n} · ${['Apr–Jun', 'Jul–Sep', 'Oct–Dec', 'Jan–Mar'][n - 1]}</option>`).join('')}</select></label>
+      <span class="small muted" style="align-self:center">Due ${fdate(due)} · ${rows.length} deductee rows · ${ready} ready · ${rec.filedOn ? `filed ${fdate(rec.filedOn)}, token ${esc(rec.token || '')}` : TODAY > due ? 'not filed — overdue' : 'not filed yet'}</span></div>
+    ${body ? `<div class="scroll"><table><thead><tr><th>Deducted on</th><th>Deductee</th><th>Country</th><th>Nature</th><th class="num">Amount</th><th class="num">Rate</th><th class="num">TDS</th><th>Basis</th><th>145 / 15CA ack</th><th>Challan</th><th>Check</th></tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td colspan="4">${rows.length} rows</td><td class="num">${fmt(rows.reduce((t, o) => t + o.base, 0))}</td><td></td><td class="num">${fmt(rows.reduce((t, o) => t + o.tax, 0))}</td><td colspan="4"></td></tr></tfoot></table></div>` : '<div class="empty">No taxable remittances in this quarter. Part D and specified-list payments are not reported in the return.</div>'}
+    <div class="note"><p>Every taxable remittance must also appear in the quarterly non-resident TDS return (${both(R.law, 'ret')}), with the payee's country, the rate and whether it is the Act or treaty rate, the ${L.f145} acknowledgement number, and the challan that paid the TDS. Lower-deduction certificates are reported with reason code A and their number; the higher rate for no PAN with code C.</p>
+    <p><strong>Export for TDS desk</strong> writes the Parties, Transactions and Challans sheets in the import format of your TDS &amp; TCS Compliance Desk (section 195, non-resident, treaty rate as NR rate), so the same payments flow into its Form 144 return, challans and audit without retyping.</p></div></section>`;
+}
+function vCA() {
+  const rows = (ca.rows || []).slice().sort((a, b) => a.certDate < b.certDate ? 1 : -1), f = ui.caF, F = ca.firm || {};
+  const list = rows.filter(x => f === 'all' ? true : f === 'udin' ? !UDIN_RE.test(x.udin || '') : f === 'unbilled' ? !x.invNo : f === 'unpaid' ? x.invNo && !x.paidOn : true);
+  const tot = x => Math.round((+x.fee || 0) * (1 + (+x.gst || 0) / 100));
+  const billed = rows.filter(x => x.invNo), recd = billed.filter(x => x.paidOn);
+  const body = list.map(x => `<tr tabindex="0" data-act="edit-ca" data-id="${x.id}"><td class="mono">${fdate(x.certDate)}</td><td>${esc(x.client)}<span class="ref">${esc(x.clientPan || '')}</span></td><td>${esc(x.beneficiary)}<span class="ref">${esc(x.country || '')} · ${esc(x.nature || '')}</span></td>
+    <td class="num">${fmt(x.inr)}<span class="ref">TDS ${fmt(x.tds)}</span></td><td class="mono small">${esc(x.ack || '')}</td><td class="mono small">${UDIN_RE.test(x.udin || '') ? esc(x.udin) : '<span class="chip bad">UDIN pending</span>'}</td>
+    <td class="num">${fmt(tot(x))}<span class="ref">fee ${fmt(x.fee)} + GST</span></td><td>${x.invNo ? `<span class="mono small">${esc(x.invNo)}</span><span class="ref">${fdate(x.invDate)}</span>` : '<span class="chip warn">Not billed</span>'}</td><td>${x.paidOn ? pill('ok', `Paid ${fdate(x.paidOn)}`) : x.invNo ? pill(daysTo(x.invDate) < -30 ? 'bad' : 'warn', `Due ${-daysTo(x.invDate)} days`) : ''}</td></tr>`).join('');
+  return `<section class="totals" aria-label="Register summary">
+    <div class="tot lead"><span class="k">Form 146 / 15CB issued</span><span class="v">${rows.length}</span><span class="n">${esc(F.name || 'Firm not set')}${F.frn ? ' · FRN ' + esc(F.frn) : ''}</span></div>
+    <div class="tot ${rows.some(x => !UDIN_RE.test(x.udin || '')) ? 'bad' : 'good'}"><span class="k">UDIN pending</span><span class="v">${rows.filter(x => !UDIN_RE.test(x.udin || '')).length}</span><span class="n">Generate on the ICAI UDIN portal</span></div>
+    <div class="tot"><span class="k">Billed (incl. GST)</span><span class="v">₹${fmt(billed.reduce((t, x) => t + tot(x), 0))}</span><span class="n">${rows.length - billed.length} certificates not billed</span></div>
+    <div class="tot ${billed.length - recd.length ? 'warn' : 'good'}"><span class="k">Outstanding</span><span class="v">₹${fmt(billed.filter(x => !x.paidOn).reduce((t, x) => t + tot(x), 0))}</span><span class="n">${billed.length - recd.length} invoices unpaid</span></div></section>
+    <section class="panel"><div class="panel-head"><h2>CA firm register · Form 146 (old 15CB)</h2><div class="actions">${ca.sample ? '<button type="button" class="sm" data-act="ca-copy">Save a copy as my register</button>' : ''}<button type="button" class="sm" data-act="ca-firm">Firm details</button><button type="button" class="sm" data-act="ca-from-rem">Add from remittances</button><button type="button" class="sm primary" data-act="add-ca">Add certificate</button></div></div>
+      <div class="filters"><label for="ca-f">Show<select id="ca-f" data-ui="caF">${[['all', 'All certificates'], ['udin', 'UDIN pending'], ['unbilled', 'Not billed'], ['unpaid', 'Billed, unpaid']].map(([k, l]) => `<option value="${k}"${f === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
+      ${body ? `<div class="scroll"><table><thead><tr><th>Certified on</th><th>Client (remitter)</th><th>Beneficiary</th><th class="num">Amount / TDS</th><th>146 ack no.</th><th>UDIN</th><th class="num">Fee + GST</th><th>Invoice</th><th>Payment</th></tr></thead><tbody>${body}</tbody></table></div>` : '<div class="empty">Nothing in this view.</div>'}
+      <div class="note"><p>For CA firms issuing many certificates. The client assigns ${both('2025', 'f146')} to the CA on the e-filing portal; the CA files it with a DSC and the acknowledgement number goes into the client's Part C. Every certificate needs a UDIN from the ICAI portal, generated within the time ICAI allows after signing — the register flags any without one.</p>
+      <p>Select a row to record the UDIN, raise the fee invoice (fee plus GST at 18% under SAC ${esc(F.sac || '998221')}), copy an invoice text, and mark payment. ${ca.sample ? 'This is the example register; save a copy to keep your own.' : 'The register is saved to your account, separate from any one remitter.'}</p></div></section>`;
+}
+
+// ================================================================ dialog
+let dlgSave = null, dlgDelete = null;
+function openDlg({ title, fields = [], values = {}, onSave, onDelete, top = '', extra = '', saveLabel = 'Save', noSave = false, what }) {
+  $('dlg')._what = what;
+  $('dlg-title').textContent = title; $('dlg-top').innerHTML = top; $('dlg-extra').innerHTML = extra; $('dlg-err').textContent = '';
+  $('dlg-body').innerHTML = fields.map(f => {
+    if (f.t === 'head') return `<h3 class="full">${esc(f.l)}</h3>`;
+    const id = 'd-' + f.k, v = values[f.k] ?? '', cls = f.full ? ' class="full"' : '', hint = f.hint ? ` <span class="hint">${esc(f.hint)}</span>` : '';
+    if (f.t === 'check') return `<label class="check${f.full ? ' full' : ''}" for="${id}"><input id="${id}" type="checkbox"${v ? ' checked' : ''}> ${esc(f.l)}${hint}</label>`;
+    if (f.t === 'textarea') return `<label for="${id}" class="full">${esc(f.l)}${hint}<textarea id="${id}" rows="${f.rows || 4}">${esc(v)}</textarea></label>`;
+    if (f.t === 'select') return `<label for="${id}"${cls}>${esc(f.l)}${hint}<select id="${id}">${f.o.map(o => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(ov)}"${String(ov) === String(v) ? ' selected' : ''}>${esc(ol)}</option>`; }).join('')}</select></label>`;
+    return `<label for="${id}"${cls}>${esc(f.l)}${hint}<input id="${id}" type="${f.t || 'text'}"${f.step ? ` step="${f.step}"` : ''}${f.t === 'number' ? ' min="0"' : ''} value="${esc(v)}"${f.max ? ` maxlength="${f.max}"` : ''}></label>`;
+  }).join('');
+  dlgSave = onSave; dlgDelete = onDelete;
+  $('dlg-save').hidden = noSave; $('dlg-save').textContent = saveLabel; $('dlg-cancel').textContent = noSave ? 'Close' : 'Cancel';
+  $('dlg-del').hidden = !onDelete; $('dlg-del2').hidden = true;
+  $('dlg')._fields = fields;
+  if (!$('dlg').open) $('dlg').showModal();
+  const first = $('dlg-body').querySelector('input:not([type=checkbox]), select'); if (first) first.focus();
+}
+function dlgValues() { const o = {}; ($('dlg')._fields || []).forEach(f => { if (f.t === 'head') return; const el = $('d-' + f.k); o[f.k] = f.t === 'check' ? el.checked : f.t === 'number' ? (el.value === '' ? '' : +el.value) : el.value.trim(); }); return o; }
+$('dlg-form').addEventListener('submit', e => { e.preventDefault(); if (!dlgSave) return; const err = dlgSave(dlgValues()); if (err) { $('dlg-err').textContent = err; return; } $('dlg').close(); changed($('dlg')._what); });
+$('dlg-cancel').addEventListener('click', () => $('dlg').close());
+$('dlg-del').addEventListener('click', () => { $('dlg-del').hidden = true; $('dlg-del2').hidden = false; });
+$('dlg-del2').addEventListener('click', () => { if (dlgDelete) dlgDelete(); $('dlg').close(); changed($('dlg')._what); });
+
+// ================================================================ editors
+const natOpts = () => NAT.map(n => [n.k, (n.spec ? 'Specified list · ' : n.charge ? '' : 'Usually not chargeable · ') + n.l]);
+function editRem(id) {
+  if (!cur.payees.length) { toast('Add a payee first.'); setTab('payees'); return; }
+  const r = id ? cur.rem.find(x => x.id === id) : { date: TODAY, payee: cur.payees[0].code, nature: 'fts', ccy: 'USD', fx: '', xr: '', basisPref: 'auto', chargeOv: '' };
+  const o = id ? R.rows.find(x => x.r.id === id) || compute(cur, fyYOf(r.date)).rows.find(x => x.r.id === id) : null, L = LAW[lawOfD(r.date)];
+  const top = o ? `<div class="result" style="border-width:1px"><span class="big">${esc(o.partLabel || '')}${o.part === 'C' ? ` + ${o.L.f146}` : ''} · TDS ₹${fmt(o.tax)}${o.rate ? ` at ${pct(o.rate)}` : ''}</span>
+      <ol class="trace">${o.trace.map((s, i) => `<li class="${s.stop ? 'stop' : ''}"><span class="n">${i + 1}</span><span>${esc(s.q)}<span class="a">${esc(s.a)}</span></span></li>`).join('')}</ol>
+      ${o.issues.length ? `<div>${issueChips(o)}</div>` : ''}<div class="actions"><button type="button" class="sm" data-act="docs" data-id="${r.id}">Open folder (${o.docsDone}/${o.need ? o.need.length : 0})</button>${o.part === 'C' && !(ca.rows || []).some(x => x.remId === r.id || (x.ack && x.ack === r.f146Ack)) ? `<button type="button" class="sm" data-act="ca-add-rem" data-id="${r.id}">Add to Form 146 register</button>` : ''}</div></div>` : '';
+  openDlg({ title: id ? `Remittance — ${(cur.payees.find(p => p.code === r.payee) || {}).name || ''}` : 'New remittance', values: r, top,
+    fields: [{ t: 'head', l: 'Payment' }, { k: 'date', l: 'Date of payment or credit (earlier)', t: 'date' }, { k: 'payee', l: 'Payee', t: 'select', o: cur.payees.map(p => [p.code, `${p.code} — ${p.name} (${p.country})`]) },
+      { k: 'nature', l: 'Nature of remittance', t: 'select', o: natOpts(), full: true }, { k: 'inv', l: 'Invoice no.' }, { k: 'purpose', l: 'RBI purpose code', hint: 'e.g. S1006' },
+      { k: 'ccy', l: 'Currency', max: 3 }, { k: 'fx', l: 'Foreign currency amount', t: 'number', step: '0.01' }, { k: 'xr', l: 'Exchange rate (SBI TT buying)', t: 'number', step: '0.0001' }, { k: 'inrOv', l: 'Amount in ₹ (blank = worked out)', t: 'number' },
+      { t: 'head', l: 'Tax position' }, { k: 'basisPref', l: 'Rate', t: 'select', o: [['auto', 'Lower of Act and treaty'], ['act', 'Act rate only']] }, { k: 'grossUp', l: 'Tax borne by us (gross up)', t: 'check' },
+      { k: 'maNotMet', l: 'FTS does not "make available" technical knowledge', t: 'check', full: true },
+      { k: 'chargeOv', l: 'Chargeable to tax', t: 'select', o: [['', 'As worked out'], ['yes', 'Yes — per CA opinion'], ['no', 'No — per CA opinion']] }, { k: 'ovNote', l: 'Reason (for the override)' },
+      { k: 'ldcNo', l: 'AO certificate / order no.', hint: 'Part B' }, { k: 'ldcRate', l: 'Certificate rate %', t: 'number', step: '0.001' },
+      { t: 'head', l: `${L.f146} and ${L.f145}` }, { k: 'caName', l: 'Chartered accountant' }, { k: 'f146Ack', l: `${L.f146} ack no.` }, { k: 'udin', l: 'UDIN', max: 18 }, { k: 'f146Date', l: `${L.f146} date`, t: 'date' },
+      { k: 'f145Ack', l: `${L.f145} ack no.` }, { k: 'f145Date', l: `${L.f145} filed on`, t: 'date' },
+      { t: 'head', l: 'Bank and TDS' }, { k: 'a2Ref', l: 'Form A2 reference' }, { k: 'swiftRef', l: 'SWIFT / UTR reference' }, { k: 'swiftDate', l: 'Remitted on', t: 'date' },
+      { k: 'dedOn', l: 'TDS deducted on (if different)', t: 'date' }, { k: 'tdsBooked', l: 'TDS as per books (₹)', t: 'number', hint: 'for a check' },
+      { k: 'chBsr', l: 'Challan BSR code', max: 7 }, { k: 'chDate', l: 'Challan date', t: 'date' }, { k: 'chSerial', l: 'Challan serial', max: 5 }, { k: 'notes', l: 'Notes', full: true }],
+    onSave: v => {
+      if (!v.date) return 'Enter the date.'; if (!(+v.fx > 0) && !(+v.inrOv > 0)) return 'Enter the foreign currency amount and rate, or the ₹ amount.';
+      if (+v.fx > 0 && !(+v.xr > 0) && !(+v.inrOv > 0)) return 'Enter the exchange rate.';
+      v.udin = v.udin.toUpperCase(); v.ccy = v.ccy.toUpperCase();
+      if (v.udin && !UDIN_RE.test(v.udin)) return 'UDIN is 18 characters: 2-digit year, 6-digit membership no., then 10 letters or digits.';
+      if (v.ldcNo && v.ldcRate === '') return 'Enter the rate in the AO certificate.';
+      if (v.chBsr && !/^\d{7}$/.test(v.chBsr)) return 'BSR code is 7 digits.';
+      if (id) Object.assign(r, v); else cur.rem.push({ id: uid('r_'), docs: {}, ...v });
+      if (fyYOf(v.date) !== R.Y) setTimeout(() => toast(`Saved under ${yearLabel(fyYOf(v.date))} — switch the year to see it`), 50);
+      toast(id ? 'Remittance updated' : 'Remittance added');
+    },
+    onDelete: id ? () => { cur.rem = cur.rem.filter(x => x !== r); toast('Remittance deleted'); } : null });
+}
+function editPayee(code) {
+  const p = code ? cur.payees.find(x => x.code === code) : { code: 'NR' + String(cur.payees.length + 1).padStart(2, '0'), status: 'Company', pe: 'No PE in India', country: 'US', sc: 0 };
+  const cc = [...COUNTRIES(), ...Object.keys(cur.treatyOv || {}).filter(c => !TREATY.some(t => t.cc === c)).map(c => [c, treatyOf(cur, c).c])];
+  if (p.country && !cc.some(x => x[0] === p.country)) cc.push([p.country, p.country]);
+  openDlg({ title: code ? `Payee — ${p.name}` : 'Add payee', values: p,
+    fields: [{ k: 'code', l: 'Code' }, { k: 'name', l: 'Name' }, { k: 'country', l: 'Country of residence', t: 'select', o: cc }, { k: 'status', l: 'Status', t: 'select', o: ['Company', 'Firm / LLP', 'Individual', 'Other'] },
+      { k: 'address', l: 'Address abroad', full: true }, { k: 'email', l: 'Email' }, { k: 'tin', l: 'Tax identification no. (TIN)' }, { k: 'pan', l: 'PAN in India (if any)', max: 10 }, { k: 'sc', l: 'Surcharge % (non-company)', t: 'number', step: '0.01' },
+      { t: 'head', l: 'Treaty papers' }, { k: 'trcNo', l: 'TRC reference' }, { k: 'trcFrom', l: 'TRC valid from', t: 'date' }, { k: 'trcTo', l: 'TRC valid to', t: 'date' },
+      { k: 'f41On', l: 'Form 41 (old 10F) received on', t: 'date' }, { k: 'npeOn', l: 'No-PE / beneficial owner declaration on', t: 'date' }, { k: 'pe', l: 'Permanent establishment', t: 'select', o: ['No PE in India', 'Has PE in India'] },
+      { k: 'qual', l: 'Holds enough shares for the lower (qualifying) dividend rate', t: 'check', full: true }, { k: 'notes', l: 'Notes', full: true }],
+    onSave: v => { v.code = v.code.toUpperCase(); v.pan = v.pan.toUpperCase();
+      if (!v.code || !v.name) return 'Enter a code and name.'; if (v.pan && !PAN_RE.test(v.pan)) return 'PAN should be 5 letters, 4 digits, 1 letter.';
+      if (cur.payees.some(x => x.code === v.code && x !== p)) return 'That code is already used.';
+      if (v.trcFrom && v.trcTo && v.trcTo < v.trcFrom) return 'TRC end date is before its start date.';
+      if (code) { if (p.code !== v.code) cur.rem.forEach(r => { if (r.payee === p.code) r.payee = v.code; }); Object.assign(p, v); } else cur.payees.push(v);
+      toast(code ? 'Payee updated' : 'Payee added'); },
+    onDelete: code ? () => { if (cur.rem.some(r => r.payee === p.code)) { toast('This payee has remittances — delete those first.'); return; } cur.payees = cur.payees.filter(x => x !== p); toast('Payee deleted'); } : null });
+}
+function editTreaty(cc) {
+  const isNew = !cc, t = cc ? treatyOf(cur, cc) : { cc: '', c: '', div: 10, divQ: 10, int: 10, roy: 10, fts: 10, ma: false, note: '' };
+  openDlg({ title: isNew ? 'Add treaty country' : `DTAA — ${t.c}`, values: { ...t, fts: t.fts == null ? '' : t.fts },
+    fields: [...(isNew ? [{ k: 'cc', l: 'Country code (2 letters)', max: 2 }, { k: 'c', l: 'Country name' }] : []), { k: 'div', l: 'Dividend — portfolio %', t: 'number', step: '0.01' }, { k: 'divQ', l: 'Dividend — qualifying holding %', t: 'number', step: '0.01' },
+      { k: 'int', l: 'Interest %', t: 'number', step: '0.01' }, { k: 'roy', l: 'Royalty %', t: 'number', step: '0.01' }, { k: 'fts', l: 'FTS % (blank = no article)', t: 'number', step: '0.01' },
+      { k: 'ma', l: 'FTS taxed only if it makes available technical knowledge', t: 'check', full: true }, { k: 'note', l: 'Notes', full: true }],
+    onSave: v => { const k = isNew ? v.cc.toUpperCase() : cc; if (isNew && (!/^[A-Z]{2}$/.test(k) || !v.c)) return 'Enter a 2-letter code and the name.'; if (isNew && treatyOf(cur, k)) return 'That country is already in the library.';
+      cur.treatyOv = cur.treatyOv || {}; cur.treatyOv[k] = { ...(isNew ? { cc: k, c: v.c } : {}), div: +v.div, divQ: +v.divQ, int: +v.int, roy: +v.roy, fts: v.fts === '' ? null : +v.fts, ma: v.ma, note: v.note }; toast('Treaty rates saved'); },
+    onDelete: !isNew && (cur.treatyOv || {})[cc] ? () => { delete cur.treatyOv[cc]; toast(TREATY.some(x => x.cc === cc) ? 'Back to the library rates' : 'Country removed'); } : null });
+  if (!isNew && (cur.treatyOv || {})[cc] && TREATY.some(x => x.cc === cc)) $('dlg-del').textContent = 'Reset to library';
+}
+function editCompany(isNew) {
+  const s = isNew ? { constitution: 'Company', fyStart: '2026-04-01' } : cur.settings;
+  openDlg({ title: isNew ? 'New remitter' : `Remitter — ${s.name}`, values: s,
+    fields: [{ k: 'name', l: 'Legal name', full: true }, { k: 'constitution', l: 'Status', t: 'select', o: ['Company', 'Firm / LLP', 'Individual', 'Trust / society', 'Other'] }, { k: 'pan', l: 'PAN', max: 10 }, { k: 'tan', l: 'TAN', max: 10 },
+      { k: 'address', l: 'Address', full: true }, { k: 'email', l: 'Email' }, { k: 'resp', l: 'Person responsible (name, designation)' }, { k: 'adBank', l: 'Authorised dealer bank and branch', full: true }],
+    onSave: v => { v.pan = v.pan.toUpperCase(); v.tan = v.tan.toUpperCase();
+      if (!v.name) return 'Enter the name.'; if (v.pan && !PAN_RE.test(v.pan)) return 'PAN should be 5 letters, 4 digits, 1 letter.'; if (v.tan && !TAN_RE.test(v.tan)) return 'TAN should be 4 letters, 5 digits, 1 letter.';
+      if (isNew) { const c = blankCo(v.name); Object.assign(c.settings, v); companies.unshift(c); cur = c; tab = 'payees'; setTimeout(() => toast(`${v.name} created — add its payees next`), 50); }
+      else { Object.assign(cur.settings, v); toast('Saved'); } },
+    onDelete: !isNew && !cur.sample ? () => { const c = cur; companies = companies.filter(x => x !== c); dropDoc(c.id); cur = companies.find(x => !x.sample) || companies[0]; toast(`Deleted ${c.settings.name}`); } : null });
+}
+
+// ---------------------------------------------------------------- documents
+function docsDialog(id) {
+  const o = R.rows.find(x => x.r.id === id) || compute(cur, fyYOf(cur.rem.find(x => x.id === id).date)).rows.find(x => x.r.id === id); if (!o) return;
+  const r = o.r, docs = r.docs || (r.docs = {});
+  const refOf = k => ({ f146: r.f146Ack ? `${r.f146Ack} · UDIN ${r.udin || '—'}` : '', f145: r.f145Ack, ch: r.chBsr ? `${r.chBsr} · ${fdate(r.chDate)} · ${r.chSerial}` : '', a2: r.a2Ref, swift: r.swiftRef, ao: r.ldcNo,
+    trc: o.p && o.p.trcNo ? `${o.p.trcNo} (${fdate(o.p.trcFrom)} to ${fdate(o.p.trcTo)})` : '', f41: o.p && o.p.f41On ? `Received ${fdate(o.p.f41On)}` : '', npe: o.p && o.p.npeOn ? `Signed ${fdate(o.p.npeOn)}` : '' })[k] || '';
+  const auto = ['f146', 'f145', 'ch', 'a2', 'swift', 'ao', 'trc', 'f41', 'npe'];
+  const rowsHtml = o.need.map(k => { const d = docs[k] || {}, sf = sessionFiles[`${id}|${k}`], file = d.url ? `<a class="btn" href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.file)}</a>` : sf ? `<button type="button" class="sm" data-act="doc-dl" data-k="${k}" data-id="${id}">${esc(sf.name)}</button>` : d.file ? `<span class="chip" title="Added in an earlier session">${esc(d.file)}</span>` : '';
+    return `<div class="docrow"><span class="dn">${esc(DOCN[k])}${auto.includes(k) && refOf(k) ? `<span class="ref">From the record: ${esc(refOf(k))}</span>` : ''}</span>${o.has[k] ? pill('ok', 'On file') : pill('warn', 'Missing')}
+      <input type="text" data-docref="${k}" data-id="${id}" value="${esc(d.ref || '')}" placeholder="Reference or note" aria-label="Reference for ${esc(DOCN[k])}">
+      <span class="actions">${file}<button type="button" class="sm" data-act="doc-up" data-k="${k}" data-id="${id}">${d.file || sf ? 'Replace' : 'Add file'}</button></span></div>`; }).join('');
+  openDlg({ title: `Folder — ${o.p ? o.p.name : ''} · ${r.inv} · ${fdate(r.date)}`, noSave: true,
+    top: `<p class="small muted">${esc(o.partLabel || '')} · ${o.docsDone} of ${o.need.length} on file · ${assets ? 'files are stored with this desk' : 'files stay in this tab only'}</p><div class="docgrid">${rowsHtml}</div>
+      <div class="actions" style="margin-top:10px"><button type="button" class="sm primary" data-act="doc-zip" data-id="${id}">Download folder (ZIP)</button><button type="button" class="sm" data-act="edit-rem" data-id="${id}">Edit remittance</button></div>` });
+  $('dlg')._docId = id;
+}
+let upTarget = null;
+async function uploadDoc(file) {
+  const { id, k } = upTarget, r = cur.rem.find(x => x.id === id); if (!r) return;
+  r.docs = r.docs || {};
+  const rec = { ...(r.docs[k] || {}), file: file.name, size: file.size, on: TODAY };
+  if (assets && !cur.sample) {
+    try { toast('Uploading…'); const a = await assets.upload(file); rec.assetId = a.id; rec.url = a.url; }
+    catch (e) { sessionFiles[`${id}|${k}`] = { name: file.name, blob: file }; toast(e && e.code === 'unsupported_type' ? 'That file type cannot be stored — kept in this tab only' : 'Could not store the file — kept in this tab only'); }
+  } else sessionFiles[`${id}|${k}`] = { name: file.name, blob: file };
+  r.docs[k] = rec; persist(); render(); docsDialog(id);
+}
+async function zipFolder(id) {
+  if (!window.JSZip) { toast('The ZIP library did not load. Reload and try again.'); return; }
+  const o = R.rows.find(x => x.r.id === id) || compute(cur, fyYOf(cur.rem.find(x => x.id === id).date)).rows.find(x => x.r.id === id), r = o.r, z = new JSZip();
+  const lines = [['Document', 'Status', 'Reference', 'File']];
+  for (const k of o.need) { const d = (r.docs || {})[k] || {}, sf = sessionFiles[`${id}|${k}`]; let name = '';
+    try { if (sf) { name = `${k}-${sf.name}`; z.file(name, sf.blob); } else if (d.url) { const b = await (await fetch(d.url)).blob(); name = `${k}-${d.file}`; z.file(name, b); } } catch { name = ''; }
+    lines.push([DOCN[k], o.has[k] ? 'On file' : 'Missing', d.ref || '', name]); }
+  const sum = [`Remittance folder`, `Remitter: ${cur.settings.name} (PAN ${cur.settings.pan})`, `Payee: ${o.p.name}, ${o.p.country}, TIN ${o.p.tin || '-'}`, `Invoice: ${r.inv}  Date: ${r.date}`, `Amount: ${r.ccy} ${r.fx} @ ${r.xr} = INR ${o.inr}`,
+    `Decision: ${o.partLabel}  Basis: ${o.basis}  Rate: ${pct(o.rate)}  TDS: INR ${o.tax}`, `Form 146 / 15CB: ${r.f146Ack || '-'}  UDIN: ${r.udin || '-'}`, `Form 145 / 15CA: ${r.f145Ack || '-'} on ${r.f145Date || '-'}`, `Challan: ${r.chBsr || '-'} ${r.chDate || ''} ${r.chSerial || ''}`, `Bank A2: ${r.a2Ref || '-'}  SWIFT: ${r.swiftRef || '-'} on ${r.swiftDate || '-'}`, '', 'Decision steps:', ...o.trace.map((s, i) => `${i + 1}. ${s.q} ${s.a}`)].join('\r\n');
+  z.file('00 summary.txt', sum); z.file('00 checklist.csv', lines.map(l => l.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\r\n'));
+  const data = await z.generateAsync({ type: 'uint8array' });
+  saveFile(`${r.date} ${o.p.name.replace(/[^\w&\- ]+/g, '')} ${String(r.inv).replace(/[^\w\-]+/g, '-')}.zip`, data, 'application/zip');
+}
+
+// ---------------------------------------------------------------- returns / TDS desk link
+function editReturnRec(q) {
+  const key = `${R.Y}|${q}`, rec = (cur.returns || {})[key] || {};
+  openDlg({ title: `Q${q} ${LAW[R.law].ret} · ${yearLabel(R.Y)}`, values: rec, fields: [{ k: 'filedOn', l: 'Filed on', t: 'date' }, { k: 'token', l: 'Token no.' }, { k: 'remarks', l: 'Remarks', full: true }],
+    onSave: v => { cur.returns = cur.returns || {}; cur.returns[key] = v; toast(v.filedOn ? 'Return marked filed' : 'Saved'); }, onDelete: rec.filedOn ? () => { delete cur.returns[key]; toast('Filing record removed'); } : null });
+}
+const retRows = q => R.rows.filter(o => o.q === q && ['A', 'B', 'C'].includes(o.part));
+function exportReturn(q) {
+  if (!window.XLSX) { toast('The spreadsheet library did not load.'); return; }
+  const rows = retRows(q), s = cur.settings, L = LAW[R.law], wb = XLSX.utils.book_new();
+  sheet(wb, 'Summary', [[`${s.name} — ${both(R.law, 'ret')}, Q${q}, ${yearLabel(R.Y)}`], ['TAN', s.tan], ['PAN', s.pan], ['Deductee rows', rows.length], ['Amount', rows.reduce((t, o) => t + o.base, 0)], ['TDS', rows.reduce((t, o) => t + o.tax, 0)], ['Due date', retDue(R.Y, q)]], [28, 50]);
+  sheet(wb, 'Deductees', [['Sl', 'Deductee code', 'PAN', 'Name', 'Section', 'Nature of remittance', 'Date of payment / credit', 'Amount paid / credited', 'TDS', 'Rate %', 'Rate as per (Act / DTAA)', 'Reason code', 'Certificate no.', 'Grossed up', 'Form 145 / 15CA ack no.', 'Country of residence', 'TIN', 'Email', 'Address', 'BSR', 'Challan date', 'Challan serial']]
+    .concat(rows.map((o, i) => [i + 1, o.p.status === 'Company' ? '01' : '02', o.p.pan || 'PANNOTAVBL', o.p.name, o.law === '2025' ? '393 (old 195)' : '195', o.N.l, fdate(o.dedOn), o.base, o.tax, +(o.rate * 100).toFixed(3), o.basis.startsWith('DTAA') ? 'DTAA' : 'Act',
+      o.r.ldcNo ? 'A' : o.basis.includes('no PAN') ? 'C' : '', o.r.ldcNo || '', o.r.grossUp ? 'Y' : 'N', o.r.f145Ack || '', o.T ? o.T.c : o.p.country, o.p.tin || '', o.p.email || '', o.p.address || '', o.r.chBsr || '', o.r.chDate ? fdate(o.r.chDate) : '', o.r.chSerial || ''])), [5, 8, 12, 30, 12, 34, 12, 14, 10, 7, 10, 8, 22, 8, 16, 16, 16, 24, 40, 9, 12, 9]);
+  saveBook(wb, `${coFile()} - ${L.ret} Q${q} ${R.Y}-${String(R.Y + 1).slice(2)}.xlsx`);
+}
+function exportTdsDesk(q) {
+  if (!window.XLSX) { toast('The spreadsheet library did not load.'); return; }
+  const rows = retRows(q), wb = XLSX.utils.book_new(), codes = [...new Set(rows.map(o => o.p.code))];
+  sheet(wb, 'Parties', [['Party code', 'Name', 'PAN', 'PAN status', 'Type', 'Residential status', 'Role', 'TAN', 'Email', 'GSTIN', 'Usual section', 'Transporter declaration (Y/N)', 'Form 121 received (Y/N)', 'NR rate %']]
+    .concat(codes.map(c => { const o = rows.find(x => x.p.code === c), p = o.p; return [p.code, p.name, p.pan || '', p.pan ? 'Operative' : 'Not available', p.status === 'Company' ? 'Company' : 'Other', 'Non-resident', 'Vendor', '', p.email || '', '', '195', 'N', 'N', +(o.rate * 100).toFixed(3)]; })), [10, 30, 12, 12, 10, 14, 8, 6, 24, 6, 10, 10, 10, 10]);
+  sheet(wb, 'Transactions', [['Date', 'Party code', 'PAN', 'Party name', 'Ledger / expense head', 'Section', 'Flow (Pay / Receive)', 'Invoice no', 'Amount (excl. GST)', 'GST', 'TDS / TCS as per books', 'Section used in books', 'Deducted on', 'Remarks']]
+    .concat(rows.map(o => [fdate(o.r.date), o.p.code, o.p.pan || '', o.p.name, `Foreign remittance - ${o.N.l.split(' (')[0]}`, '195', 'Pay', o.r.inv, o.base, 0, o.tax, '195', o.r.dedOn ? fdate(o.r.dedOn) : '', `${o.partLabel}; ${o.basis}; ack ${o.r.f145Ack || '-'}`])), [11, 9, 12, 30, 34, 8, 8, 18, 14, 6, 12, 10, 12, 50]);
+  const ch = {}; rows.filter(o => o.r.chBsr && o.tax > 0).forEach(o => { const k = `${o.r.chBsr}|${o.r.chDate}|${o.r.chSerial}`; const g = ch[k] || (ch[k] = { o, tax: 0 }); g.tax += o.tax; });
+  sheet(wb, 'Challans', [['Section', 'Deduction month', 'Tax', 'Interest', 'Date of deposit', 'BSR code', 'Challan serial', 'Major head']].concat(Object.values(ch).map(g => ['195', `${MON[+g.o.dedOn.slice(5, 7) - 1]}-${g.o.dedOn.slice(0, 4)}`, g.tax, 0, fdate(g.o.r.chDate), g.o.r.chBsr, g.o.r.chSerial, g.o.p.status === 'Company' ? '0020' : '0021'])), [10, 14, 12, 10, 14, 10, 12, 10]);
+  saveBook(wb, `${coFile()} - foreign remittances for TDS desk Q${q} ${R.Y}-${String(R.Y + 1).slice(2)}.xlsx`);
+  toast('Import this file in the TDS desk with "Import Excel / CSV"');
+}
+
+// ---------------------------------------------------------------- CA register
+function editCA(id, init) {
+  const x = id ? ca.rows.find(y => y.id === id) : { certDate: TODAY, gst: 18, fee: '', ...(init || {}) }, F = ca.firm || {};
+  const tot = Math.round((+x.fee || 0) * (1 + (+x.gst || 0) / 100));
+  const inv = id && x.invNo ? [`TAX INVOICE  ${x.invNo}  dated ${fdate(x.invDate)}`, `${F.name || ''}, Chartered Accountants (FRN ${F.frn || ''})  GSTIN ${F.gstin || ''}`, ``, `To: ${x.client}  PAN ${x.clientPan || ''}`, ``,
+    `Professional fees for certificate in ${lawOfD(x.certDate) === '2025' ? 'Form 146 (old 15CB)' : 'Form 15CB'} dated ${fdate(x.certDate)}`, `for remittance to ${x.beneficiary} (${x.country}), ${x.nature}, ₹${fmt(x.inr)}`, `Acknowledgement ${x.ack || '-'} · UDIN ${x.udin || '-'}`, ``,
+    `SAC ${F.sac || '998221'}          Fee           ${fmt(x.fee).padStart(10)}`, `GST @ ${x.gst}%                       ${fmt(Math.round((+x.fee || 0) * (+x.gst || 0) / 100)).padStart(10)}`, `Total                              ${fmt(tot).padStart(10)}`, ``, `${F.partner || ''}${F.mno ? ', M.No. ' + F.mno : ''}`].join('\n') : '';
+  openDlg({ what: 'ca', title: id ? `Form 146 — ${x.client} → ${x.beneficiary}` : 'Add certificate to the register', values: x,
+    top: inv ? `<pre class="sheet" id="inv-sheet">${esc(inv)}</pre><div class="actions" style="margin-top:8px"><button type="button" class="sm" data-act="copy" data-src="inv-sheet">Copy invoice text</button></div>` : '',
+    fields: [{ k: 'certDate', l: 'Certified on', t: 'date' }, { k: 'client', l: 'Client (remitter)' }, { k: 'clientPan', l: 'Client PAN', max: 10 }, { k: 'beneficiary', l: 'Beneficiary' }, { k: 'country', l: 'Country' }, { k: 'nature', l: 'Nature' },
+      { k: 'inr', l: 'Amount (₹)', t: 'number' }, { k: 'tds', l: 'TDS certified (₹)', t: 'number' }, { k: 'ack', l: 'Form 146 ack no.' }, { k: 'udin', l: 'UDIN', max: 18 }, { k: 'udinOn', l: 'UDIN generated on', t: 'date' },
+      { t: 'head', l: 'Billing' }, { k: 'fee', l: 'Fee (₹)', t: 'number' }, { k: 'gst', l: 'GST %', t: 'number' }, { k: 'invNo', l: 'Invoice no.', hint: 'blank = not billed' }, { k: 'invDate', l: 'Invoice date', t: 'date' }, { k: 'paidOn', l: 'Payment received on', t: 'date' }, { k: 'notes', l: 'Notes', full: true }],
+    onSave: v => { v.udin = v.udin.toUpperCase(); v.clientPan = v.clientPan.toUpperCase();
+      if (!v.client || !v.certDate) return 'Enter the client and date.'; if (v.udin && !UDIN_RE.test(v.udin)) return 'UDIN is 18 characters: 2-digit year, 6-digit membership no., then 10 letters or digits.';
+      if (v.invNo && !v.invDate) return 'Enter the invoice date.'; if (v.paidOn && !v.invNo) return 'Record the invoice before the payment.';
+      if (v.udin && (ca.rows || []).some(y => y.udin === v.udin && y !== x)) return 'This UDIN is already used on another certificate.';
+      if (!v.invNo && +v.fee > 0 && id == null) { /* fine: billed later */ }
+      if (id) Object.assign(x, v); else { ca.rows = ca.rows || []; ca.rows.push({ id: uid('c_'), remId: (init || {}).remId || '', ...v }); }
+      toast(id ? 'Register updated' : 'Added to the register'); },
+    onDelete: id ? () => { ca.rows = ca.rows.filter(y => y !== x); toast('Removed from the register'); } : null });
+  if (!id) { const b = $('d-invNo'); if (b && !b.value) { const n = (ca.rows || []).filter(y => y.invNo).length + 1; b.placeholder = `e.g. ${(F.name || 'CA').split(' ')[0].slice(0, 2).toUpperCase()}/${TODAY.slice(2, 4)}/${String(n).padStart(4, '0')}`; } }
+}
+function caFromRem(remId) {
+  const o = R.rows.find(x => x.r.id === remId); if (!o) return;
+  editCA(null, { client: cur.settings.name, clientPan: cur.settings.pan, beneficiary: o.p.name, country: o.p.country, nature: o.N.l.split(' (')[0], inr: o.inr, tds: o.tax, ack: o.r.f146Ack, udin: o.r.udin, udinOn: o.r.f146Date, certDate: o.r.f146Date || TODAY, remId, fee: 5000 });
+}
+function caFirm() {
+  openDlg({ what: 'ca', title: 'CA firm details', values: ca.firm || {}, fields: [{ k: 'name', l: 'Firm name', full: true }, { k: 'frn', l: 'Firm registration no. (FRN)' }, { k: 'partner', l: 'Signing partner' }, { k: 'mno', l: 'Membership no.', max: 6 }, { k: 'gstin', l: 'GSTIN', max: 15 }, { k: 'sac', l: 'SAC for invoices' }, { k: 'email', l: 'Email' }],
+    onSave: v => { if (v.mno && !/^\d{6}$/.test(v.mno)) return 'Membership number is 6 digits.'; ca.firm = v; toast('Firm details saved'); } });
+}
+function caPick() {
+  const cand = R.rows.filter(o => o.part === 'C' && !(ca.rows || []).some(x => x.remId === o.r.id || (x.ack && x.ack === o.r.f146Ack)));
+  if (!cand.length) { toast('Every Part C remittance this year is already in the register.'); return; }
+  openDlg({ title: 'Add from remittances', noSave: true, top: `<p class="small muted">Part C remittances of ${esc(cur.settings.name)} not yet in the register:</p><div class="docgrid">${cand.map(o => `<div class="docrow" style="grid-template-columns:1fr auto"><span class="dn">${fdate(o.r.date)} · ${esc(o.p.name)} · ₹${fmt(o.inr)}<span class="ref">${o.r.f146Ack ? 'Ack ' + esc(o.r.f146Ack) : 'Form 146 not yet filed'}</span></span><button type="button" class="sm" data-act="ca-add-rem" data-id="${o.r.id}">Add</button></div>`).join('')}</div>` });
+}
+
+// ================================================================ events
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'go-tab') { setTab(b.dataset.tab); return; }
+  if (a === 'look-preset') { look.preset = b.dataset.k; applyLook(); saveLook(); render(); return; }
+  if (a === 'look-set') { look[b.dataset.key] = b.dataset.v; applyLook(); saveLook(); render(); return; }
+  if (a === 'look-from-preset') { const c = comboOf(); look.custom = { accent: c.accent, accent2: c.accent2, tint: c.tint }; look.preset = 'custom'; applyLook(); saveLook(); render(); toast('Copied into My colours — adjust from here'); return; }
+  if (a === 'look-save') { const nm = ($('lk-name').value || '').trim(); if (!nm) { toast('Give the combination a name first.'); $('lk-name').focus(); return; } look.saved = [...look.saved.filter(x => x.name !== nm), { name: nm, ...look.custom }].slice(-8); saveLook(); render(); toast(`Saved "${nm}"`); return; }
+  if (a === 'look-use') { const x = look.saved[+b.dataset.i]; look.custom = { accent: x.accent, accent2: x.accent2, tint: x.tint }; look.preset = 'custom'; applyLook(); saveLook(); render(); return; }
+  if (a === 'look-copy') { const el = $('lk-code'); try { navigator.clipboard.writeText(el.value).then(() => toast('Look code copied — paste it in Look & feel of another tool'), () => { el.select(); toast('Selected — press Ctrl+C'); }); } catch { el.select(); } return; }
+  if (a === 'look-paste') { try { const v = JSON.parse(decodeURIComponent(escape(atob($('lk-paste').value.trim())))); look = { ...look, preset: !v.p || v.p === 'own' ? 'navy' : v.p, custom: v.c || look.custom, mode: v.m || look.mode, density: v.d || look.density, font: !v.f || v.f === 'own' ? 'plex' : v.f }; applyLook(); saveLook(); render(); toast('Look applied'); } catch { toast('That is not a look code — copy it again from the other tool.'); } return; }
+  if (a === 'look-del') { look.saved.splice(+b.dataset.i, 1); saveLook(); render(); return; }
+  if (a === 'look-reset') { const keep = look.saved; look = { ...JSON.parse(JSON.stringify(LOOK_DEF)), saved: keep }; applyLook(); saveLook(); render(); toast('Default look restored'); return; }
+  if (a === 'add-rem') return editRem(null);
+  if (a === 'edit-rem') return editRem(b.dataset.id);
+  if (a === 'add-payee') return editPayee(null);
+  if (a === 'edit-payee') return editPayee(b.dataset.code);
+  if (a === 'edit-treaty') return editTreaty(b.dataset.cc);
+  if (a === 'add-treaty') return editTreaty(null);
+  if (a === 'new-company') return editCompany(true);
+  if (a === 'docs') return docsDialog(b.dataset.id);
+  if (a === 'doc-up') { if (!(R.rows.find(o => o.r.id === b.dataset.id))) return; upTarget = { id: b.dataset.id, k: b.dataset.k }; $('doc-file').click(); return; }
+  if (a === 'doc-dl') { const f = sessionFiles[`${b.dataset.id}|${b.dataset.k}`]; if (f) f.blob.arrayBuffer().then(buf => saveFile(f.name, new Uint8Array(buf), f.blob.type || 'application/octet-stream')); return; }
+  if (a === 'doc-zip') { zipFolder(b.dataset.id); return; }
+  if (a === 'wiz') { const k = b.dataset.k, v = b.dataset.v === 'true', order = ['lrs', 'spec', 'charge', 'over', 'ao']; ui.wiz[k] = v; order.slice(order.indexOf(k) + 1).forEach(x => delete ui.wiz[x]); render(); return; }
+  if (a === 'wiz-reset') { ui.wiz = {}; render(); return; }
+  if (a === 'ret-file') return editReturnRec(+b.dataset.q);
+  if (a === 'ret-export') return exportReturn(+b.dataset.q);
+  if (a === 'tds-export') return exportTdsDesk(+b.dataset.q);
+  if (a === 'add-ca') return editCA(null);
+  if (a === 'edit-ca') return editCA(b.dataset.id);
+  if (a === 'ca-firm') return caFirm();
+  if (a === 'ca-from-rem') return caPick();
+  if (a === 'ca-add-rem') { $('dlg').close(); return caFromRem(b.dataset.id); }
+  if (a === 'ca-copy') { ca = { ...JSON.parse(JSON.stringify(ca)), sample: false }; changed('ca'); toast('Register copied — it is now yours and saved'); return; }
+  if (a === 'copy-example') { const c = JSON.parse(JSON.stringify(cur)); c.id = uid('co_'); c.sample = false; c.settings.name += ' (my copy)'; companies.unshift(c); cur = c; persist(); render(); toast('Copy saved under My remitters'); return; }
+  if (a === 'template') return exportTemplate();
+  if (a === 'import') { $('imp-file').click(); return; }
+  if (a === 'copy') { const el = $(b.dataset.src); try { navigator.clipboard.writeText(el.textContent).then(() => toast('Copied'), () => toast('Select the text and press Ctrl+C')); } catch { toast('Select the text and press Ctrl+C'); } return; }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('tr[data-act]')) e.target.click(); });
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.lookc) { look.custom[el.dataset.lookc] = el.value.toUpperCase(); look.preset = 'custom'; applyLook(); saveLook(); render(); return; }
+  if (el.dataset.lookf) { look.font = el.value; applyLook(); saveLook(); render(); return; }
+  if (el.dataset.ui) { ui[el.dataset.ui] = el.dataset.ui === 'retQ' ? +el.value : el.value; render(); return; }
+  if (el.dataset.docref) { const r = cur.rem.find(x => x.id === el.dataset.id); if (!r) return; r.docs = r.docs || {}; r.docs[el.dataset.docref] = { ...(r.docs[el.dataset.docref] || {}), ref: el.value.trim(), on: TODAY }; persist(); render(); docsDialog(r.id); return; }
+  if (el.id === 'doc-file') { const f = el.files[0]; el.value = ''; if (f && upTarget) uploadDoc(f); return; }
+  if (el.id === 'imp-file') { const f = el.files[0]; el.value = ''; if (f) importFile(f); return; }
+});
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.lookc) { look.custom[e.target.dataset.lookc] = e.target.value.toUpperCase(); look.preset = 'custom'; applyLook(); return; } if (e.target.id === 'f-q') { ui.remQ = e.target.value; clearTimeout(window.__qt); window.__qt = setTimeout(() => { render(); const q = $('f-q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }, 250); } });
+function setTab(t) { setMenu(false); tab = t; try { localStorage.setItem('remitdesk-tab', t); } catch {} render(); window.scrollTo({ top: 0 }); }
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+$('menu-btn').addEventListener('click', () => setMenu(!$('rail').classList.contains('open')));
+$('scrim').addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('rail').classList.contains('open')) setMenu(false); });
+$('s-fy').addEventListener('change', e => { cur.settings.fyStart = `${e.target.value}-04-01`; ui.retQ = 0; ui.wizRem = ''; persist(); render(); });
+$('company').addEventListener('change', e => { cur = companies.find(c => c.id === e.target.value) || cur; ui.wizRem = ''; setSaveState(cur.sample ? 'warn' : 'ok', cur.sample ? 'Example — edits reset when you reload' : mode === 'account' ? 'Saved to your account' : 'Saved in this browser'); render(); });
+$('new-company').addEventListener('click', () => editCompany(true));
+$('edit-company').addEventListener('click', () => editCompany(false));
+
+// ================================================================ import / export
+const norm = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function isoDate(v) { if (!v && v !== 0) return ''; if (v instanceof Date) return new Date(v.getTime() - v.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  if (typeof v === 'number') return new Date(Date.UTC(1899, 11, 30) + v * 864e5).toISOString().slice(0, 10);
+  const s = String(v).trim(); let m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/); if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  m = s.match(/^(\d{1,2})[-\s]([A-Za-z]{3})[-\s](\d{2,4})$/); if (m) { const mi = MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()); const y = m[3].length === 2 ? '20' + m[3] : m[3]; if (mi >= 0) return `${y}-${pad(mi + 1)}-${m[1].padStart(2, '0')}`; }
+  return s.slice(0, 10); }
+function exportTemplate() {
+  if (!window.XLSX) { toast('The spreadsheet library did not load.'); return; }
+  const wb = XLSX.utils.book_new();
+  sheet(wb, 'Payees', [['Code', 'Name', 'Country code', 'Status', 'Address', 'Email', 'TIN', 'PAN', 'TRC reference', 'TRC valid from', 'TRC valid to', 'Form 41 received on', 'No-PE declaration on'],
+    ['NR10', 'Example GmbH', 'DE', 'Company', 'Street 1, Berlin', 'ap@example.com', 'DE123456789', '', 'DE-TRC-2026-1', '01-01-2026', '31-12-2026', '15-04-2026', '15-04-2026']], [8, 26, 10, 10, 30, 22, 16, 12, 16, 12, 12, 14, 14]);
+  sheet(wb, 'Remittances', [['Date', 'Payee code', 'Nature code', 'Invoice no', 'Currency', 'Foreign amount', 'Exchange rate', 'RBI purpose code', 'Gross up (Y/N)', 'AO certificate no', 'AO certificate rate %'],
+    ['20-10-2026', 'NR10', 'fts', 'EG-2026-14', 'EUR', 5000, 91.2, 'S1006', 'N', '', '']], [12, 10, 10, 14, 8, 14, 12, 14, 10, 18, 12]);
+  sheet(wb, 'Nature codes', [['Code', 'Nature']].concat(NAT.map(n => [n.k, n.l])), [8, 70]);
+  saveBook(wb, 'Foreign remittance import template.xlsx');
+}
+async function importFile(file) {
+  if (!window.XLSX) { toast('The spreadsheet library did not load.'); return; }
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true }); let np = 0, nr = 0, skip = 0;
+    for (const name of wb.SheetNames) {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }); if (!aoa.length) continue;
+      const h = aoa[0].map(norm), c = (...ks) => { for (const k of ks) { const i = h.indexOf(k); if (i >= 0) return i; } return h.findIndex(x => ks.some(k => x.startsWith(k))); }, g = (r, i) => i >= 0 ? String(r[i] ?? '').trim() : '';
+      const body = aoa.slice(1).filter(r => r.some(x => String(x).trim() !== ''));
+      if (h.includes('countrycode')) body.forEach(r => { const code = g(r, c('code')).toUpperCase(); if (!code) { skip++; return; }
+        const p = { code, name: g(r, c('name')), country: g(r, c('countrycode')).toUpperCase(), status: g(r, c('status')) || 'Company', address: g(r, c('address')), email: g(r, c('email')), tin: g(r, c('tin')), pan: g(r, c('pan')).toUpperCase(), trcNo: g(r, c('trcreference')),
+          trcFrom: isoDate(r[c('trcvalidfrom')]), trcTo: isoDate(r[c('trcvalidto')]), f41On: isoDate(r[c('form41')]), npeOn: isoDate(r[c('nope')]), pe: 'No PE in India', qual: false, sc: 0, notes: '' };
+        const ix = cur.payees.findIndex(x => x.code === code); if (ix >= 0) cur.payees[ix] = { ...cur.payees[ix], ...p }; else cur.payees.push(p); np++; });
+      else if (h.includes('payeecode')) body.forEach(r => { const payee = g(r, c('payeecode')).toUpperCase(), nature = g(r, c('naturecode')).toLowerCase(), date = isoDate(r[c('date')]);
+        if (!cur.payees.some(p => p.code === payee) || !NM[nature] || !date) { skip++; return; }
+        cur.rem.push({ id: uid('r_'), date, payee, nature, inv: g(r, c('invoice')), ccy: g(r, c('currency')).toUpperCase(), fx: +g(r, c('foreignamount')) || 0, xr: +g(r, c('exchangerate')) || 0, inrOv: '', purpose: g(r, c('rbipurpose')), grossUp: /^y/i.test(g(r, c('grossup'))),
+          chargeOv: '', ovNote: '', maNotMet: false, basisPref: 'auto', ldcNo: g(r, c('aocertificateno')), ldcRate: g(r, c('aocertificaterate')), dedOn: '', f146Ack: '', udin: '', f146Date: '', caName: '', f145Ack: '', f145Date: '', chBsr: '', chDate: '', chSerial: '', a2Ref: '', swiftRef: '', swiftDate: '', tdsBooked: '', notes: '', docs: {} }); nr++; });
+    }
+    if (!np && !nr) { toast('No Payees or Remittances sheet found — download the template for the column names.'); return; }
+    changed(); toast(`Imported ${np} payees and ${nr} remittances${skip ? ` · ${skip} rows skipped` : ''}`);
+  } catch { toast('That file could not be read. Save it as .xlsx and try again.'); }
+}
+async function saveFile(name, data, type) {
+  const dl = window.__downloads;
+  if (dl) { try { await dl.save({ filename: name, data }); toast('File saved'); } catch (e) { if (e && e.code !== 'declined') toast('The download could not start here.'); } return; }
+  try { const url = URL.createObjectURL(new Blob([data], { type })); const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('File downloaded'); }
+  catch { toast('Downloading is not available in this view.'); }
+}
+function saveBook(wb, name) { saveFile(name, new Uint8Array(XLSX.write(wb, { bookType: 'xlsx', type: 'array' })), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); }
+const coFile = () => (cur.settings.name.replace(/[^\w\- ]+/g, '').trim() || 'Remitter');
+function sheet(wb, name, aoa, widths) { const ws = XLSX.utils.aoa_to_sheet(aoa); if (widths) ws['!cols'] = widths.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name); }
+$('export').addEventListener('click', () => {
+  if (!window.XLSX) { toast('The spreadsheet library did not load.'); return; }
+  const wb = XLSX.utils.book_new(), s = cur.settings;
+  sheet(wb, 'Remitter', [['Name', s.name], ['PAN', s.pan], ['TAN', s.tan], ['Address', s.address], ['AD bank', s.adBank], ['Year', yearLabel(R.Y)], ['Law', LAW[R.law].name]], [16, 60]);
+  sheet(wb, 'Remittances', [['Date', 'Payee', 'Country', 'Nature', 'Invoice', 'Currency', 'Foreign amount', 'Rate', 'Amount ₹', 'Chargeable', 'Basis', 'Tax rate', 'TDS', 'Grossed up', 'Form part', 'Form 146 ack', 'UDIN', 'Form 145 ack', 'Form 145 date', 'A2', 'SWIFT', 'Remitted on', 'Challan BSR', 'Challan date', 'Serial', 'Interest', 'Docs on file', 'Exceptions']]
+    .concat(R.rows.map(o => [o.r.date, o.p ? o.p.name : o.r.payee, o.p ? o.p.country : '', o.N.l, o.r.inv, o.r.ccy, +o.r.fx || 0, +o.r.xr || 0, o.inr, o.part === 'none' ? 'Specified list' : o.charge ? 'Yes' : 'No', o.basis, o.rate, o.tax, o.r.grossUp ? 'Y' : 'N', o.partLabel || '', o.r.f146Ack, o.r.udin, o.r.f145Ack, o.r.f145Date, o.r.a2Ref, o.r.swiftRef, o.r.swiftDate, o.r.chBsr, o.r.chDate, o.r.chSerial, o.int || 0, o.need ? `${o.docsDone}/${o.need.length}` : '', o.issues.map(i => i[1]).join('; ')])), [11, 26, 8, 34, 16, 6, 12, 8, 12, 10, 16, 8, 10, 6, 18, 14, 20, 14, 11, 16, 18, 11, 9, 11, 7, 9, 8, 50]);
+  sheet(wb, 'Decisions', [['Date', 'Payee', 'Step', 'Question', 'Answer']].concat(R.rows.flatMap(o => o.trace.map((t, i) => [o.r.date, o.p ? o.p.name : '', i + 1, t.q, t.a]))), [11, 26, 5, 60, 90]);
+  sheet(wb, 'Documents', [['Date', 'Payee', 'Invoice', 'Document', 'On file', 'Reference', 'File']].concat(R.rows.flatMap(o => (o.need || []).map(k => [o.r.date, o.p ? o.p.name : '', o.r.inv, DOCN[k], o.has[k] ? 'Yes' : 'No', ((o.r.docs || {})[k] || {}).ref || '', ((o.r.docs || {})[k] || {}).file || '']))), [11, 26, 16, 44, 7, 30, 30]);
+  sheet(wb, 'Payees', [['Code', 'Name', 'Country', 'Status', 'TIN', 'PAN', 'TRC ref', 'TRC from', 'TRC to', 'Form 41 on', 'No-PE decl. on', 'PE', 'Address', 'Email']].concat(cur.payees.map(p => [p.code, p.name, p.country, p.status, p.tin, p.pan, p.trcNo, p.trcFrom, p.trcTo, p.f41On, p.npeOn, p.pe, p.address, p.email])));
+  sheet(wb, 'DTAA rates', [['Country', 'Code', 'Dividend %', 'Dividend qualifying %', 'Interest %', 'Royalty %', 'FTS %', 'Make available', 'Notes']].concat(TREATY.map(t => treatyOf(cur, t.cc)).map(t => [t.c, t.cc, t.div, t.divQ, t.int, t.roy, t.fts == null ? 'No article' : t.fts, t.ma ? 'Y' : 'N', t.note])), [20, 6, 10, 12, 10, 10, 10, 8, 60]);
+  sheet(wb, 'Form 146 register', [['Certified on', 'Client', 'Client PAN', 'Beneficiary', 'Country', 'Nature', 'Amount', 'TDS', 'Ack no', 'UDIN', 'Fee', 'GST %', 'Total', 'Invoice', 'Invoice date', 'Paid on']].concat((ca.rows || []).map(x => [x.certDate, x.client, x.clientPan, x.beneficiary, x.country, x.nature, +x.inr || 0, +x.tds || 0, x.ack, x.udin, +x.fee || 0, +x.gst || 0, Math.round((+x.fee || 0) * (1 + (+x.gst || 0) / 100)), x.invNo, x.invDate, x.paidOn])), [11, 24, 12, 24, 8, 22, 12, 10, 14, 20, 8, 6, 9, 12, 11, 11]);
+  saveBook(wb, `${coFile()} - foreign remittances ${R.Y}-${String(R.Y + 1).slice(2)}.xlsx`);
+});
+
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3400); }
+
+companies = [exampleABC()]; cur = companies[0]; ca = exampleCA();
+applyLook();
+boot();
+</script>
+
+</body></html>

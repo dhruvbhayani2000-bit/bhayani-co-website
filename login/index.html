@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Sign in · Bhayani &amp; Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/portal/portal.css">
+<script src="/portal/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/core.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(async () => {
+  const P = window.Portal, esc = P.esc, $ = P.$;
+  const params = new URLSearchParams(location.search);
+  const next = params.get('next');
+  const safeNext = next && /^\/[a-z0-9-]+\/?$/.test(next) ? next : '';
+  const reason = params.get('why');
+
+  await P.gate($('#app'), 'user', async (me) => {
+    const admin = P.isAdmin(me);
+    const acc = admin ? P.tools.map(t => ({ tool: t.slug, level: 'admin', sections: null })) : await P.myAccess(me.id);
+    const allowed = new Map(acc.map(a => [a.tool, a]));
+    if (safeNext && allowed.has(safeNext.replace(/\//g, ''))) { location.replace(safeNext); return; }
+    const firm = await P.firm();
+    const groups = [...new Set(P.tools.map(t => t.group))];
+    const tile = (t) => {
+      const a = allowed.get(t.slug), n = a.sections ? a.sections.length : Object.keys(t.sections).length;
+      return `<a class="p-tool" href="/${t.slug}/"><span class="ic" aria-hidden="true">${esc(t.name.trim()[0])}</span>
+        <span class="t">${esc(t.name)}</span><span class="d">${esc(t.blurb)}</span>
+        <span class="m"><span class="p-chip ${a.level === 'view' ? 'idle' : ''}">${esc(window.PORTAL.levels[a.level])}</span><span class="p-chip idle">${n} of ${Object.keys(t.sections).length} sections</span></span></a>`;
+    };
+    const list = groups.map(g => {
+      const ts = P.tools.filter(t => t.group === g && allowed.has(t.slug));
+      return ts.length ? `<section class="p-panel"><div class="p-panel-h"><h2>${esc(g)}</h2><span class="muted small">${ts.length} tool${ts.length > 1 ? 's' : ''}</span></div><div class="p-panel-b"><div class="p-tools">${ts.map(tile).join('')}</div></div></section>` : '';
+    }).join('');
+    $('#app').innerHTML = `
+      <header class="p-top">
+        <div class="p-brand"><div class="p-mark" aria-hidden="true">${esc((firm.name || 'B')[0])}</div><div style="min-width:0"><div class="p-brand-name">${esc(firm.name || 'Bhayani & Co.')}</div><div class="p-brand-sub">${esc(firm.tagline || '')}</div></div></div>
+        <div class="p-who"><span class="p-chip hide-m">${esc([me.name || me.email, P.roleLabel(me.role)].filter((v, i, a) => a.indexOf(v) === i).join(' · '))}</span>
+          ${admin ? '<a class="p-btn sm dark" href="/admin/">Admin portal</a>' : ''}
+          <button class="p-btn sm" id="cp">Change password</button><button class="p-btn sm" id="out">Sign out</button></div>
+      </header>
+      <main class="p-main" style="margin:0 auto">
+        <section class="p-hero"><div><div class="eyebrow">Welcome</div><h1>Hello, ${esc((me.name || me.email).split(' ')[0])}</h1><p>Open a tool to start. Work you save is kept in the firm's online database, so it is there from any computer you sign in on.</p></div></section>
+        ${reason === 'noaccess' ? '<div class="p-note warn">You do not have access to that tool. Ask the administrator if you need it.</div>' : ''}
+        ${list || '<div class="p-panel"><div class="p-empty">No tools are given to you yet. The administrator can switch them on for you.</div></div>'}
+      </main>`;
+    $('#out').onclick = async () => { await P.signOut(); location.reload(); };
+    $('#cp').onclick = () => P.changePasswordDialog();
+  });
+})();
+</script>
+</body>
+</html>

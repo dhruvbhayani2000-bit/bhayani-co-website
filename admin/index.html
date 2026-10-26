@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Admin portal · Bhayani &amp; Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/portal/portal.css">
+<script src="/portal/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/core.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(async () => {
+const P = window.Portal, sb = P.sb, esc = P.esc, $ = P.$, CFG = window.PORTAL;
+const fmtDT = s => s ? new Date(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+const LOGIN_URL = location.origin + '/login/';
+let accUser = '', me = null, view = 'dash', users = [], access = [], clients = [], mail = {}, firm = {};
+
+
+async function loadAll() {
+  const [u, a, c, m, f] = await Promise.all([
+    sb.from('profiles').select('*').order('created_at'),
+    sb.from('access').select('*'),
+    sb.from('clients').select('*').order('name'),
+    sb.from('settings').select('value').eq('key', 'mail').maybeSingle(),
+    sb.from('settings').select('value').eq('key', 'public.firm').maybeSingle(),
+  ]);
+  users = u.data || []; access = a.data || []; clients = c.data || []; mail = (m.data && m.data.value) || {}; firm = (f.data && f.data.value) || { name: 'Bhayani & Co.' };
+}
+const isSuper = () => me.role === 'superadmin';
+const userName = id => { const u = users.find(x => x.id === id); return u ? (u.name || u.email) : 'Unknown'; };
+const NAV = [['Overview', [['dash', 'Dashboard']]], ['People', [['users', 'Users'], ['access', 'Tool access']]], ['Masters', [['clients', 'Clients master'], ['tools', 'Tools']]], ['Settings', [['mail', 'Mail configuration'], ['firm', 'Firm & my account'], ['log', 'Activity log']]]];
+
+function shell() {
+  $('#app').innerHTML = `
+  <header class="p-top">
+    <div class="p-brand"><div class="p-mark" aria-hidden="true">${esc((firm.name || 'B')[0])}</div><div style="min-width:0"><div class="p-brand-name">${esc(firm.name || 'Bhayani & Co.')}</div><div class="p-brand-sub">Admin portal</div></div></div>
+    <div class="p-who"><span class="p-chip hide-m">${esc([me.name || me.email, P.roleLabel(me.role)].filter((v, i, a) => a.indexOf(v) === i).join(' · '))}</span><a class="p-btn sm" href="/login/">My tools</a><button class="p-btn sm" id="out">Sign out</button></div>
+  </header>
+  <div class="p-shell"><nav class="p-side" id="side" aria-label="Admin sections"></nav><main class="p-main" id="view"></main></div>`;
+  $('#out').onclick = async () => { await P.signOut(); location.reload(); };
+  render();
+}
+function render() {
+  $('#side').innerHTML = NAV.map(([g, items]) => `<div class="lab">${esc(g)}</div>${items.map(([k, l]) => `<button type="button" data-nav="${k}"${view === k ? ' aria-current="page"' : ''}>${esc(l)}</button>`).join('')}`).join('');
+  $('#side').querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { view = b.dataset.nav; render(); window.scrollTo(0, 0); });
+  ({ dash, users: usersView, access: accessView, clients: clientsView, tools: toolsView, mail: mailView, firm: firmView, log: logView })[view]();
+}
+const head = (t, sub, actions = '') => `<div class="p-head"><div><h1>${esc(t)}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="p-row">${actions}</div></div>`;
+
+/* ---------------------------------------------------------------- dashboard */
+async function dash() {
+  const { data: act } = await sb.from('activity').select('*').order('at', { ascending: false }).limit(8);
+  const active = users.filter(u => u.active), never = users.filter(u => !u.last_login), pending = users.filter(u => u.must_change_pw);
+  $('#view').innerHTML = `
+  <section class="p-hero"><div><div class="eyebrow">Admin portal</div><h1>Welcome, ${esc((me.name || 'Admin').split(' ')[0])}</h1><p>Add people, choose which tools and which parts of each tool they can use, and keep the masters and mail settings in one place.</p></div>
+    <div class="p-row"><button class="p-btn primary" id="q-add">Add a user</button><button class="p-btn" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25)" id="q-acc">Set tool access</button></div></section>
+  <div class="p-tiles">
+    <div class="p-tile"><span class="k">Users</span><span class="v">${users.length}</span><span class="muted small">${active.length} active</span></div>
+    <div class="p-tile"><span class="k">Admins</span><span class="v">${users.filter(u => P.isAdmin(u)).length}</span><span class="muted small">full access to every tool</span></div>
+    <div class="p-tile"><span class="k">Never signed in</span><span class="v">${never.length}</span><span class="muted small">${pending.length} still on first-time password</span></div>
+    <div class="p-tile"><span class="k">Tools live</span><span class="v">${CFG.tools.length}</span><span class="muted small">${clients.length} clients in master</span></div>
+  </div>
+  <section class="p-panel"><div class="p-panel-h"><h2>Recent activity</h2><button class="p-btn sm" id="q-log">See all</button></div>
+    ${(act || []).length ? `<div class="p-scroll"><table class="p-table"><tbody>${act.map(r => `<tr><td class="mono small">${fmtDT(r.at)}</td><td>${esc(r.email || '')}</td><td>${esc(actLabel(r.action))}</td><td class="muted small">${esc(r.detail || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="p-empty">Nothing yet.</div>'}
+  </section>`;
+  $('#q-add').onclick = () => userDialog(); $('#q-acc').onclick = () => { view = 'access'; render(); }; $('#q-log').onclick = () => { view = 'log'; render(); };
+}
+const actLabel = a => ({ login: 'Signed in', 'password.change': 'Changed password', 'user.create': 'Added a user', 'user.update': 'Changed a user', 'user.reset_password': 'Reset a password', 'user.delete': 'Deleted a user', 'access.update': 'Changed tool access', 'tool.open': 'Opened a tool', 'clients.update': 'Changed clients master', 'settings.update': 'Changed settings' })[a] || a;
+const log = (action, detail) => sb.from('activity').insert({ user_id: me.id, email: me.email, action, detail }).then(() => {});
+
+/* ---------------------------------------------------------------- users */
+function usersView() {
+  const rows = users.map(u => {
+    const n = P.isAdmin(u) ? 'All' : access.filter(a => a.user_id === u.id).length;
+    const status = !u.active ? '<span class="p-chip bad">Switched off</span>' : u.must_change_pw ? '<span class="p-chip warn">First-time password</span>' : '<span class="p-chip good">Active</span>';
+    const canTouch = u.role === 'user' || isSuper();
+    return `<tr><td><b>${esc(u.name || '—')}</b><div class="muted small">${esc(u.login_id || u.email)}</div></td><td>${esc(P.roleLabel(u.role))}</td><td>${status}</td><td>${n}</td><td class="mono small">${fmtDT(u.last_login)}</td>
+      <td class="act">${canTouch ? `<button class="p-btn sm" data-edit="${u.id}">Edit</button> ${u.role === 'user' ? `<button class="p-btn sm" data-acc="${u.id}">Access</button> ` : ''}<button class="p-btn sm" data-mail="${u.id}">Email login</button> ${u.id !== me.id ? `<button class="p-btn sm" data-reset="${u.id}">Reset password</button>` : ''}` : '<span class="muted small">Super Admin only</span>'}</td></tr>`;
+  }).join('');
+  $('#view').innerHTML = head('Users', `Everyone who can sign in. New users start with the password <b class="mono">${esc(CFG.defaultPassword)}</b> and must set their own at first sign-in. Login ID is their email address.`, '<button class="p-btn primary" id="add">Add a user</button>') +
+    `<section class="p-panel"><div class="p-scroll"><table class="p-table"><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Tools</th><th>Last sign-in</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  $('#add').onclick = () => userDialog();
+  $('#view').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => userDialog(users.find(u => u.id === b.dataset.edit)));
+  $('#view').querySelectorAll('[data-acc]').forEach(b => b.onclick = () => { accUser = b.dataset.acc; view = 'access'; render(); });
+  $('#view').querySelectorAll('[data-mail]').forEach(b => b.onclick = () => mailUser(users.find(u => u.id === b.dataset.mail), 'welcome'));
+  $('#view').querySelectorAll('[data-reset]').forEach(b => b.onclick = () => resetPw(users.find(u => u.id === b.dataset.reset)));
+}
+function dialog(html) {
+  const d = document.createElement('dialog'); d.className = 'p-dialog'; d.innerHTML = html; document.body.appendChild(d); d.showModal();
+  d.addEventListener('close', () => d.remove()); return d;
+}
+function userDialog(u) {
+  const isNew = !u;
+  const roleOpts = isSuper() ? (u && u.role === 'superadmin' ? [['superadmin', 'Super Admin']] : [['user', 'User'], ['admin', 'Admin (full access, manages users)']]) : [['user', 'User']];
+  const d = dialog(`<form class="p-form" novalidate><h2>${isNew ? 'Add a user' : 'Edit user'}</h2>
+    <div class="p-grid2">
+      <label>Full name<input name="name" type="text" value="${esc(u ? u.name || '' : '')}" required></label>
+      <label>Email (login ID)<input name="email" type="email" value="${esc(u ? u.email : '')}" ${isNew ? '' : 'disabled'} required></label>
+      <label>Role<select name="role">${roleOpts.map(([v, l]) => `<option value="${v}"${u && u.role === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${isNew ? '' : `<label>Status<select name="active" ${u.role === 'superadmin' ? 'disabled' : ''}><option value="1"${u.active ? ' selected' : ''}>Active — can sign in</option><option value="0"${!u.active ? ' selected' : ''}>Switched off — cannot sign in</option></select></label>`}
+    </div>
+    ${isNew ? `<p class="p-note">The user signs in at <b>${esc(LOGIN_URL)}</b> with their email and <b class="mono">${esc(CFG.defaultPassword)}</b>, then sets their own password. Next you choose which tools they get.</p>` : ''}
+    <div class="p-err" role="alert"></div>
+    <div class="p-row end">${!isNew && u.role !== 'superadmin' && u.id !== me.id ? '<button type="button" class="p-btn danger" id="del" style="margin-right:auto">Delete user</button>' : ''}<button type="button" class="p-btn ghost" id="cancel">Cancel</button><button type="submit" class="p-btn primary">${isNew ? 'Add user' : 'Save'}</button></div></form>`);
+  const f = $('form', d), err = $('.p-err', d);
+  $('#cancel', d).onclick = () => d.close();
+  if ($('#del', d)) $('#del', d).onclick = async () => {
+    if ($('#del', d).dataset.sure !== '1') { $('#del', d).dataset.sure = '1'; $('#del', d).textContent = 'Click again to delete for good'; return; }
+    const { error } = await sb.rpc('admin_delete_user', { p_user: u.id });
+    if (error) { err.textContent = P.errText(error); return; }
+    d.close(); await loadAll(); render(); P.toast('User deleted');
+  };
+  f.onsubmit = async (ev) => {
+    ev.preventDefault(); err.textContent = '';
+    const name = f.name.value.trim(), role = f.role.value;
+    if (!name) { err.textContent = 'Enter the name.'; return; }
+    if (isNew) {
+      const email = f.email.value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter a valid email address.'; return; }
+      const { data, error } = await sb.rpc('admin_create_user', { p_email: email, p_name: name, p_role: role });
+      if (error) { err.textContent = P.errText(error); return; }
+      d.close(); await loadAll();
+      const nu = users.find(x => x.id === data);
+      if (role === 'user') { accUser = data; view = 'access'; } render();
+      createdDialog(nu);
+    } else {
+      const active = f.active ? f.active.value === '1' : true;
+      const { error } = await sb.rpc('admin_update_user', { p_user: u.id, p_name: name, p_role: role, p_active: active });
+      if (error) { err.textContent = P.errText(error); return; }
+      d.close(); await loadAll(); render(); P.toast('Saved');
+    }
+  };
+}
+function createdDialog(u) {
+  if (!u) return;
+  const text = `Login page: ${LOGIN_URL}\nLogin ID: ${u.email}\nFirst-time password: ${CFG.defaultPassword}`;
+  const d = dialog(`<div class="p-form"><h2>${esc(u.name || u.email)} is added</h2><p class="p-sub">Share these sign-in details. They will be asked to set their own password.</p>
+    <pre class="p-note mono" style="white-space:pre-wrap;margin:0">${esc(text)}</pre>
+    <div class="p-row end"><button class="p-btn" id="copy">Copy</button><button class="p-btn" id="mail">Email login details</button><button class="p-btn primary" id="ok">${u.role === 'user' ? 'Now choose their tools' : 'Done'}</button></div></div>`);
+  $('#copy', d).onclick = async () => { try { await navigator.clipboard.writeText(text); P.toast('Copied'); } catch { P.toast('Copy is blocked here — select the text instead', true); } };
+  $('#mail', d).onclick = () => mailUser(u, 'welcome');
+  $('#ok', d).onclick = () => d.close();
+}
+async function resetPw(u) {
+  const d = dialog(`<div class="p-form"><h2>Reset password?</h2><p class="p-sub">${esc(u.name || u.email)}'s password goes back to <b class="mono">${esc(CFG.defaultPassword)}</b>, and they must set a new one at next sign-in.</p><div class="p-err"></div>
+    <div class="p-row end"><button class="p-btn ghost" id="c">Cancel</button><button class="p-btn primary" id="go">Reset password</button></div></div>`);
+  $('#c', d).onclick = () => d.close();
+  $('#go', d).onclick = async () => {
+    const { error } = await sb.rpc('admin_reset_password', { p_user: u.id });
+    if (error) { $('.p-err', d).textContent = P.errText(error); return; }
+    d.close(); await loadAll(); render(); P.toast('Password reset');
+    mailOffer(u, 'reset');
+  };
+}
+function mailOffer(u, kind) {
+  const d = dialog(`<div class="p-form"><h2>Tell ${esc(u.name || u.email)}?</h2><p class="p-sub">Open an email with the new sign-in details, ready to send from your mail app.</p><div class="p-row end"><button class="p-btn ghost" id="n">Not now</button><button class="p-btn primary" id="y">Open email</button></div></div>`);
+  $('#n', d).onclick = () => d.close(); $('#y', d).onclick = () => { mailUser(u, kind); d.close(); };
+}
+function fill(tpl, u) {
+  return String(tpl || '').replace(/\{name\}/g, u.name || '').replace(/\{email\}/g, u.email).replace(/\{login_url\}/g, LOGIN_URL).replace(/\{password\}/g, CFG.defaultPassword).replace(/\{signature\}/g, mail.signature || '').replace(/\{firm\}/g, firm.name || '');
+}
+function mailUser(u, kind) {
+  const subj = fill(kind === 'reset' ? mail.resetSubject : mail.welcomeSubject, u), body = fill(kind === 'reset' ? mail.resetBody : mail.welcomeBody, u);
+  const q = [`subject=${encodeURIComponent(subj)}`, `body=${encodeURIComponent(body)}`]; if (mail.cc) q.push(`cc=${encodeURIComponent(mail.cc)}`);
+  location.href = `mailto:${encodeURIComponent(u.email)}?${q.join('&')}`;
+}
+
+/* ---------------------------------------------------------------- tool access */
+function accessView() {
+  const plain = users.filter(u => u.role === 'user');
+  if (!accUser || !plain.some(u => u.id === accUser)) accUser = (plain[0] || {}).id || '';
+  const u = plain.find(x => x.id === accUser);
+  const mine = Object.fromEntries(access.filter(a => a.user_id === accUser).map(a => [a.tool, a]));
+  const rows = !u ? '' : CFG.tools.map(t => {
+    const a = mine[t.slug], lvl = a ? a.level : '', secs = Object.entries(t.sections), on = a && a.sections ? new Set(a.sections) : null;
+    return `<div class="p-acc ${a ? '' : 'off'}" data-tool="${t.slug}"><div class="p-acc-h"><div><b>${esc(t.name)}</b><div class="muted small">${esc(t.group)} · ${esc(t.blurb)}</div></div>
+      <select data-lvl aria-label="Access to ${esc(t.name)}"><option value="">No access</option>${Object.entries(CFG.levels).map(([k, l]) => `<option value="${k}"${lvl === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div data-secwrap ${a ? '' : 'hidden'}><label class="p-secs" style="margin-bottom:8px"><span style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" data-all ${!on ? 'checked' : ''}> All sections (including ones added later)</span></label>
+      <div class="p-secs" data-secs ${!on ? 'hidden' : ''}>${secs.map(([k, l]) => `<label><input type="checkbox" value="${k}" ${!on || on.has(k) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div></div></div>`;
+  }).join('');
+  $('#view').innerHTML = head('Tool access', 'Choose which tools each user gets, how much they can do, and — if you want — only some sections of a tool. Admins always have every tool in full.', '') +
+    (plain.length ? `<section class="p-panel"><div class="p-panel-h"><label class="p-f" style="min-width:min(100%,320px)">User<select id="acc-user">${plain.map(x => `<option value="${x.id}"${x.id === accUser ? ' selected' : ''}>${esc(x.name || x.email)} — ${esc(x.email)}${x.active ? '' : ' (switched off)'}</option>`).join('')}</select></label>
+      <div class="p-row"><button class="p-btn" id="acc-none">Remove all</button><button class="p-btn" id="acc-allv">All tools, view only</button><button class="p-btn primary" id="acc-save">Save access</button></div></div>
+      <div class="p-panel-b"><p class="muted small" style="margin:0 0 10px">View only: can look but not change. Use: can enter and edit data. Full control: everything in that tool, including its masters and deleting.</p><div class="p-access">${rows}</div></div></section>`
+      : `<div class="p-panel"><div class="p-empty">No users yet (admins already see everything). <button class="p-btn primary sm" id="acc-add">Add a user</button></div></div>`);
+  if (!plain.length) { $('#acc-add').onclick = () => userDialog(); return; }
+  $('#acc-user').onchange = e => { accUser = e.target.value; accessView(); };
+  $('#view').querySelectorAll('.p-acc').forEach(box => {
+    const lvl = $('[data-lvl]', box), all = $('[data-all]', box);
+    lvl.onchange = () => { box.classList.toggle('off', !lvl.value); $('[data-secwrap]', box).hidden = !lvl.value; };
+    all.onchange = () => { $('[data-secs]', box).hidden = all.checked; if (!all.checked) $('[data-secs]', box).querySelectorAll('input').forEach(i => i.checked = true); };
+  });
+  $('#acc-none').onclick = () => $('#view').querySelectorAll('[data-lvl]').forEach(s => { s.value = ''; s.onchange(); });
+  $('#acc-allv').onclick = () => $('#view').querySelectorAll('[data-lvl]').forEach(s => { s.value = 'view'; s.onchange(); });
+  $('#acc-save').onclick = async () => {
+    const rows = [];
+    for (const box of $('#view').querySelectorAll('.p-acc')) {
+      const lvl = $('[data-lvl]', box).value; if (!lvl) continue;
+      const all = $('[data-all]', box).checked, secs = [...box.querySelectorAll('[data-secs] input:checked')].map(i => i.value);
+      if (!all && !secs.length) { P.toast(`Tick at least one section of ${CFG.tools.find(t => t.slug === box.dataset.tool).name}, or set it to No access`, true); return; }
+      rows.push({ user_id: accUser, tool: box.dataset.tool, level: lvl, sections: all ? null : secs });
+    }
+    const keep = rows.map(r => r.tool);
+    const del = access.filter(a => a.user_id === accUser && !keep.includes(a.tool)).map(a => a.tool);
+    if (del.length) { const { error } = await sb.from('access').delete().eq('user_id', accUser).in('tool', del); if (error) { P.toast(P.errText(error), true); return; } }
+    if (rows.length) { const { error } = await sb.from('access').upsert(rows); if (error) { P.toast(P.errText(error), true); return; } }
+    log('access.update', `${userName(accUser)}: ${rows.map(r => `${r.tool}=${r.level}${r.sections ? '(' + r.sections.length + ')' : ''}`).join(', ') || 'none'}`);
+    await loadAll(); accessView(); P.toast('Access saved — it applies the next time they open a tool');
+  };
+}
+
+/* ---------------------------------------------------------------- clients master */
+function clientsView() {
+  $('#view').innerHTML = head('Clients master', 'One list of the firm\'s clients with PAN, GSTIN and contacts. Assign staff so they can see the client here; the tools keep their own detailed client files.', '<button class="p-btn primary" id="add">Add client</button>') +
+    `<section class="p-panel"><div class="p-panel-h"><input type="search" id="q" placeholder="Search name, PAN, GSTIN" style="max-width:340px"><span class="muted small">${clients.length} clients</span></div>
+    ${clients.length ? `<div class="p-scroll"><table class="p-table"><thead><tr><th>Client</th><th>PAN</th><th>GSTIN</th><th>Contact</th><th>Assigned</th><th></th></tr></thead><tbody id="ct"></tbody></table></div>` : '<div class="p-empty">No clients yet.</div>'}</section>`;
+  const draw = () => {
+    const q = ($('#q').value || '').toLowerCase();
+    const L = clients.filter(c => !q || [c.name, c.pan, c.gstin, c.email].some(v => (v || '').toLowerCase().includes(q)));
+    if ($('#ct')) $('#ct').innerHTML = L.map(c => `<tr><td><b>${esc(c.name)}</b><div class="muted small">${esc(c.address || '')}</div></td><td class="mono">${esc(c.pan || '')}</td><td class="mono">${esc(c.gstin || '')}</td><td>${esc(c.contact || '')}<div class="muted small">${esc([c.email, c.phone].filter(Boolean).join(' · '))}</div></td><td class="small">${(c.assigned || []).map(userName).map(esc).join(', ') || '<span class="muted">—</span>'}</td><td class="act"><button class="p-btn sm" data-edit="${c.id}">Edit</button></td></tr>`).join('');
+    $('#view').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => clientDialog(clients.find(c => c.id === b.dataset.edit)));
+  };
+  $('#q').oninput = draw; draw();
+  $('#add').onclick = () => clientDialog();
+}
+function clientDialog(c) {
+  const isNew = !c; c = c || { assigned: [] };
+  const F = [['name', 'Client name'], ['pan', 'PAN'], ['gstin', 'GSTIN'], ['tan', 'TAN'], ['contact', 'Contact person'], ['email', 'Email'], ['phone', 'Phone'], ['address', 'Address']];
+  const d = dialog(`<form class="p-form" novalidate><h2>${isNew ? 'Add client' : 'Edit client'}</h2><div class="p-grid2">
+    ${F.map(([k, l]) => `<label class="${k === 'address' ? 'full' : ''}">${l}<input name="${k}" type="text" value="${esc(c[k] || '')}"></label>`).join('')}
+    <label class="full">Notes<textarea name="notes">${esc(c.notes || '')}</textarea></label></div>
+    <fieldset style="border:1px solid var(--line);border-radius:12px;padding:10px 12px"><legend class="small muted">Staff assigned</legend><div class="p-secs">${users.filter(u => u.role === 'user').map(u => `<label><input type="checkbox" value="${u.id}" ${(c.assigned || []).includes(u.id) ? 'checked' : ''}> ${esc(u.name || u.email)}</label>`).join('') || '<span class="muted small">No staff users yet</span>'}</div></fieldset>
+    <div class="p-err"></div>
+    <div class="p-row end">${isNew ? '' : '<button type="button" class="p-btn danger" id="del" style="margin-right:auto">Delete</button>'}<button type="button" class="p-btn ghost" id="cancel">Cancel</button><button type="submit" class="p-btn primary">Save</button></div></form>`);
+  const f = $('form', d); $('#cancel', d).onclick = () => d.close();
+  if ($('#del', d)) $('#del', d).onclick = async () => {
+    if ($('#del', d).dataset.sure !== '1') { $('#del', d).dataset.sure = '1'; $('#del', d).textContent = 'Click again to delete'; return; }
+    await sb.from('clients').delete().eq('id', c.id); log('clients.update', 'deleted ' + c.name); d.close(); await loadAll(); clientsView();
+  };
+  f.onsubmit = async ev => {
+    ev.preventDefault();
+    const row = Object.fromEntries(F.map(([k]) => [k, f[k].value.trim()])); row.notes = f.notes.value.trim();
+    row.pan = row.pan.toUpperCase(); row.gstin = row.gstin.toUpperCase(); row.tan = row.tan.toUpperCase();
+    if (!row.name) { $('.p-err', d).textContent = 'Enter the client name.'; return; }
+    if (row.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(row.pan)) { $('.p-err', d).textContent = 'PAN should look like ABCDE1234F.'; return; }
+    if (row.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(row.gstin)) { $('.p-err', d).textContent = 'GSTIN format is not right (15 characters).'; return; }
+    row.assigned = [...d.querySelectorAll('fieldset input:checked')].map(i => i.value);
+    const { error } = isNew ? await sb.from('clients').insert(row) : await sb.from('clients').update(row).eq('id', c.id);
+    if (error) { $('.p-err', d).textContent = P.errText(error); return; }
+    log('clients.update', (isNew ? 'added ' : 'changed ') + row.name); d.close(); await loadAll(); clientsView(); P.toast('Client saved');
+  };
+}
+
+/* ---------------------------------------------------------------- tools */
+function toolsView() {
+  $('#view').innerHTML = head('Tools', 'Every tool on the portal. As an admin you open each one with full control — use this to manage the masters inside each tool (vendor, customer, HSN, rate masters and so on).') +
+    `<section class="p-panel"><div class="p-scroll"><table class="p-table"><thead><tr><th>Tool</th><th>Project</th><th>Sections</th><th>Users with access</th><th></th></tr></thead><tbody>${CFG.tools.map(t => {
+      const n = access.filter(a => a.tool === t.slug).length;
+      return `<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.blurb)}</div></td><td>${esc(t.group)}</td><td>${Object.keys(t.sections).length}</td><td>${n}</td><td class="act"><a class="p-btn sm primary" href="/${t.slug}/">Open</a></td></tr>`;
+    }).join('')}</tbody></table></div></section>`;
+}
+
+/* ---------------------------------------------------------------- mail configuration */
+function mailView() {
+  const F = (k, l, type = 'text', full) => `<label class="${full ? 'full' : ''}">${l}${type === 'area' ? `<textarea name="${k}" rows="7">${esc(mail[k] || '')}</textarea>` : `<input name="${k}" type="${type}" value="${esc(mail[k] || '')}">`}</label>`;
+  $('#view').innerHTML = head('Mail configuration', 'The sender details and the messages used when you send people their sign-in details. Placeholders: {name}, {email}, {login_url}, {password}, {signature}, {firm}.') +
+    `<form id="mf" class="p-form" novalidate>
+    <section class="p-panel"><div class="p-panel-h"><h2>Sender</h2></div><div class="p-panel-b"><div class="p-grid2">${F('fromName', 'From name')}${F('fromEmail', 'From email', 'email')}${F('replyTo', 'Reply-to email', 'email')}${F('cc', 'Always copy (CC)', 'email')}${F('signature', 'Signature', 'area', true)}</div></div></section>
+    <section class="p-panel"><div class="p-panel-h"><h2>Outgoing mail server (SMTP)</h2></div><div class="p-panel-b"><div class="p-grid2">${F('smtpHost', 'SMTP server', 'text')}${F('smtpPort', 'Port', 'text')}${F('smtpUser', 'SMTP username')}<label>Security<select name="smtpSecure">${['STARTTLS', 'SSL/TLS', 'None'].map(o => `<option${mail.smtpSecure === o ? ' selected' : ''}>${o}</option>`).join('')}</select></label></div>
+      <p class="p-note" style="margin:12px 0 0">Today, "Email login details" opens a ready-made email in your own mail app, so nothing is sent without you. These server details are kept for switching on automatic sending later; the SMTP password is not stored here.</p></div></section>
+    <section class="p-panel"><div class="p-panel-h"><h2>New user email</h2><button type="button" class="p-btn sm" data-try="welcome">Preview in my mail app</button></div><div class="p-panel-b"><div class="p-grid2">${F('welcomeSubject', 'Subject', 'text', true)}${F('welcomeBody', 'Message', 'area', true)}</div></div></section>
+    <section class="p-panel"><div class="p-panel-h"><h2>Password reset email</h2><button type="button" class="p-btn sm" data-try="reset">Preview in my mail app</button></div><div class="p-panel-b"><div class="p-grid2">${F('resetSubject', 'Subject', 'text', true)}${F('resetBody', 'Message', 'area', true)}</div></div></section>
+    <div class="p-row end"><button class="p-btn primary" type="submit">Save mail settings</button></div></form>`;
+  const f = $('#mf');
+  const read = () => { const o = { ...mail }; f.querySelectorAll('[name]').forEach(i => { o[i.name] = i.value; }); return o; };
+  f.querySelectorAll('[data-try]').forEach(b => b.onclick = () => { mail = read(); mailUser(me, b.dataset.try); });
+  f.onsubmit = async ev => {
+    ev.preventDefault(); const v = read();
+    const { error } = await sb.from('settings').upsert({ key: 'mail', value: v, updated_at: new Date().toISOString() });
+    if (error) { P.toast(P.errText(error), true); return; }
+    mail = v; log('settings.update', 'mail'); P.toast('Mail settings saved');
+  };
+}
+
+/* ---------------------------------------------------------------- firm and my account */
+function firmView() {
+  $('#view').innerHTML = head('Firm & my account', '') + `
+  <form id="ff" class="p-panel p-form" novalidate><div class="p-panel-h"><h2>Firm details</h2></div><div class="p-panel-b p-form"><div class="p-grid2">
+    <label>Firm name<input name="name" type="text" value="${esc(firm.name || '')}"></label><label>Line under the name<input name="tagline" type="text" value="${esc(firm.tagline || '')}"></label></div>
+    <p class="muted small" style="margin:0">Shown on the sign-in pages and portal headers.</p><div class="p-row end"><button class="p-btn primary" type="submit">Save</button></div></div></form>
+  <section class="p-panel"><div class="p-panel-h"><h2>My account</h2></div><div class="p-panel-b p-form">
+    <div class="p-grid2"><div><div class="muted small">Name</div><b>${esc(me.name || '—')}</b></div><div><div class="muted small">Login ID</div><b class="mono">${esc(me.login_id || me.email)}</b></div><div><div class="muted small">Role</div><b>${esc(P.roleLabel(me.role))}</b></div></div>
+    <div class="p-row"><button class="p-btn" id="cp">Change my password</button></div></div></section>
+  <section class="p-panel"><div class="p-panel-h"><h2>Pages</h2></div><div class="p-panel-b"><div class="p-grid2">
+    <div><div class="muted small">Staff sign-in</div><a href="/login/">${esc(location.origin)}/login/</a></div><div><div class="muted small">Admin sign-in</div><a href="/admin/">${esc(location.origin)}/admin/</a></div></div></div></section>`;
+  $('#cp').onclick = () => P.changePasswordDialog();
+  $('#ff').onsubmit = async ev => {
+    ev.preventDefault(); const v = { name: ev.target.name.value.trim() || 'Bhayani & Co.', tagline: ev.target.tagline.value.trim() };
+    const { error } = await sb.from('settings').upsert({ key: 'public.firm', value: v, updated_at: new Date().toISOString() });
+    if (error) { P.toast(P.errText(error), true); return; }
+    firm = v; log('settings.update', 'firm'); shell(); P.toast('Saved');
+  };
+}
+
+/* ---------------------------------------------------------------- activity */
+async function logView() {
+  $('#view').innerHTML = head('Activity log', 'Sign-ins, tool use and every change made in this portal — newest first.') + '<section class="p-panel"><div class="p-empty">Loading…</div></section>';
+  const { data } = await sb.from('activity').select('*').order('at', { ascending: false }).limit(300);
+  $('#view').innerHTML = head('Activity log', 'Sign-ins, tool use and every change made in this portal — newest first (last 300).') +
+    `<section class="p-panel">${(data || []).length ? `<div class="p-scroll"><table class="p-table"><thead><tr><th>When</th><th>Who</th><th>What</th><th>Detail</th></tr></thead><tbody>${data.map(r => `<tr><td class="mono small">${fmtDT(r.at)}</td><td>${esc(r.email || '')}</td><td>${esc(actLabel(r.action))}</td><td class="small muted">${esc(r.detail || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="p-empty">Nothing yet.</div>'}</section>`;
+}
+
+await P.gate($('#app'), 'admin', async (profile) => { me = profile; await loadAll(); shell(); });
+})();
+</script>
+</body>
+</html>

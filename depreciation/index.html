@@ -1,0 +1,1415 @@
+<!doctype html><html><head><meta charset=utf8><meta name="robots" content="noindex"><script src="/portal/supabase.js"></script><script src="/portal/config.js"></script><script src="/portal/connect.js" data-tool="depreciation"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Depreciation Workbench</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: Society Desk ERP shell — sticky top bar, left rail of statements, dark hero with the year's actions, KPI tiles, then the statement. */
+:root {
+  --bg: #f8fafc; --surface: #ffffff; --sunk: #f1f5f9; --line: #e2e8f0; --fg: #0f172a; --muted: #64748b;
+  --navy: #0f172a; --navy-ink: #ffffff; --teal: #0284c7; --teal-fg: #ffffff; --teal-soft: #e0f2fe; --focus: #0284c7;
+  --accent: #d97706; --accent-soft: #fffbeb;
+  --good: #059669; --good-bg: #ecfdf5; --warn: #b45309; --warn-bg: #fffbeb; --bad: #dc2626; --bad-bg: #fef2f2;
+  --hero-a: #0f172a; --hero-b: #0c4a6e; --hero-eyebrow: #38bdf8;
+  --s1: #0284c7; --s2: #ea580c; --s3: #059669;
+  --shadow: 0 1px 2px rgba(15,23,42,.05); --r: 16px;
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --f-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; --f-num: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b1120; --surface: #111a2e; --sunk: #0f172a; --line: #1e293b; --fg: #e2e8f0; --muted: #94a3b8;
+  --navy: #e2e8f0; --navy-ink: #0f172a; --teal: #38bdf8; --teal-fg: #082f49; --teal-soft: #0c2a40; --focus: #38bdf8;
+  --accent: #f59e0b; --accent-soft: #2a1f0a;
+  --good: #34d399; --good-bg: #062e22; --warn: #fbbf24; --warn-bg: #2a1f0a; --bad: #f87171; --bad-bg: #3b1212;
+  --hero-a: #0b1222; --hero-b: #0c3a57; --hero-eyebrow: #7dd3fc;
+  --s1: #38bdf8; --s2: #fb923c; --s3: #34d399; --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b1120; --surface: #111a2e; --sunk: #0f172a; --line: #1e293b; --fg: #e2e8f0; --muted: #94a3b8;
+  --navy: #e2e8f0; --navy-ink: #0f172a; --teal: #38bdf8; --teal-fg: #082f49; --teal-soft: #0c2a40; --focus: #38bdf8;
+  --accent: #f59e0b; --accent-soft: #2a1f0a;
+  --good: #34d399; --good-bg: #062e22; --warn: #fbbf24; --warn-bg: #2a1f0a; --bad: #f87171; --bad-bg: #3b1212;
+  --hero-a: #0b1222; --hero-b: #0c3a57; --hero-eyebrow: #7dd3fc;
+  --s1: #38bdf8; --s2: #fb923c; --s3: #34d399; --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; margin: 0; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+h1 { font-weight: 800; font-size: clamp(1.4rem, 2.6vw, 1.9rem); }
+h2 { font-size: 1.05rem; }
+h3 { font-size: .95rem; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+svg.ic { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* buttons and fields */
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+button:hover:not(:disabled) { border-color: var(--teal); }
+button:disabled, input:disabled, select:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); }
+button.primary:hover:not(:disabled) { border-color: var(--navy); filter: brightness(1.15); }
+button.sky { background: var(--teal); color: var(--teal-fg); border-color: var(--teal); }
+button.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); background: var(--bad-bg); }
+button.link { border: 0; background: none; padding: 2px 4px; color: var(--teal); text-decoration: underline; font-weight: 600; }
+button.sm, #lk-open { padding: 6px 11px; font-size: 13px; border-radius: 10px; }
+button:focus-visible, input:focus-visible, select:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+input, select { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; width: 100%; min-width: 0; font-size: 14px; }
+label { display: grid; gap: 5px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+/* shell */
+.app { display: grid; grid-template-columns: 256px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; }
+.topbar { grid-column: 1 / -1; position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); min-height: 64px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; justify-content: space-between;
+  padding: 10px max(20px, env(safe-area-inset-right, 0px)) 10px max(20px, env(safe-area-inset-left, 0px)); }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo-tile { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--hero-a), var(--hero-b)); color: #fff; display: grid; place-items: center; flex: none; }
+.logo-tile svg { width: 22px; height: 22px; }
+.brand-name { font-weight: 800; font-size: 1.02rem; letter-spacing: -.01em; line-height: 1.2; }
+.brand-sub { font-size: 12px; color: var(--muted); }
+.top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.company { display: flex; align-items: center; gap: 8px; }
+.company select { width: auto; max-width: 260px; font-weight: 600; }
+.save-state { font-size: 12px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--sunk); border: 1px solid var(--line); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--good); } .dot.warn { background: var(--warn); }
+.menu-btn { display: none; padding: 8px; border-radius: 10px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.rail { position: sticky; top: 64px; align-self: start; height: calc(100vh - 64px); overflow-y: auto; background: var(--surface); border-right: 1px solid var(--line);
+  padding: 18px 14px; display: flex; flex-direction: column; gap: 6px; }
+.rail-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 6px 12px; }
+.nav { display: grid; gap: 3px; }
+.nav button { justify-content: flex-start; width: 100%; border: 0; background: none; padding: 9px 12px; border-radius: 12px; color: var(--muted); font-weight: 600; text-align: left; }
+.nav button:hover { background: var(--sunk); color: var(--fg); }
+.nav button[aria-selected="true"] { background: var(--teal); color: var(--teal-fg); box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--teal) 70%, transparent); }
+.nav .badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--bad); color: #fff; }
+.nav .badge:empty { display: none; }
+.rail-foot { margin-top: auto; padding: 12px; border-radius: 14px; background: var(--sunk); font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+.rail-foot strong { color: var(--fg); font-size: 13px; }
+
+main.main { padding: 24px 28px 56px; min-width: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.wrap > * { min-width: 0; }
+
+/* hero */
+.hero { border-radius: 24px; padding: 24px 26px; color: #fff; background: linear-gradient(120deg, var(--hero-a) 0%, var(--hero-a) 35%, var(--hero-b) 100%);
+  display: grid; gap: 16px; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -80px; width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(56,189,248,.22), transparent 70%); pointer-events: none; }
+.hero .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--hero-eyebrow); }
+.hero h1 { color: #fff; }
+.hero .lede { color: rgba(255,255,255,.75); font-size: 14px; max-width: 70ch; margin: 4px 0 0; }
+.hero-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: relative; z-index: 1; }
+.hero button { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; }
+.hero button:hover:not(:disabled) { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.14); }
+.hero button.hero-primary { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+.hero button.hero-primary:hover:not(:disabled) { background: #38bdf8; border-color: #38bdf8; }
+.hero .pill.ok { background: rgba(16,185,129,.18); color: #6ee7b7; border-color: rgba(110,231,183,.4); }
+.hero .pill.bad { background: rgba(248,113,113,.18); color: #fecaca; border-color: rgba(254,202,202,.45); }
+.hero .spacer { flex: 1; }
+
+/* banners */
+.banner { border-radius: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; border: 1px solid; }
+.banner.sample { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.banner.sample strong { color: var(--warn); }
+.banner.final { background: var(--good-bg); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.banner.final strong { color: var(--good); }
+
+/* settings */
+.settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 20px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; align-items: end; }
+.settings .panel-h { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-bottom: -2px; }
+.settings .panel-h h2 { font-size: .98rem; }
+.seg { display: inline-flex; gap: 3px; padding: 3px; background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; }
+.seg button { border: 0; border-radius: 9px; padding: 6px 16px; background: none; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--teal); color: var(--teal-fg); }
+
+/* KPI tiles */
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.tot { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 18px; display: grid; gap: 6px; align-content: start; position: relative; }
+.tot .k { font-size: 12px; color: var(--muted); font-weight: 600; padding-right: 40px; }
+.tot .v { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: clamp(1.25rem, 2.1vw, 1.6rem); font-weight: 600; letter-spacing: -.02em; }
+.tot .n { font-size: 12px; color: var(--muted); }
+.tot::after { content: ""; position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 10px; background: var(--teal-soft) center / 18px no-repeat; }
+.tot:nth-child(1)::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18'/%3E%3Cpath d='m7 8 5 5 3-3 5 5'/%3E%3C/svg%3E"); }
+.tot:nth-child(2)::after { background-color: var(--good-bg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='3' width='16' height='18' rx='2'/%3E%3Cpath d='M8 7h8M8 11h8M8 15h5'/%3E%3C/svg%3E"); }
+.tot:nth-child(3)::after { background-color: var(--accent-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 4v16M17 4v16M3 8h8M13 16h8'/%3E%3C/svg%3E"); }
+.tot:nth-child(4)::after { background-color: var(--bad-bg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 4 7v6c0 4 3.5 7 8 8 4.5-1 8-4 8-8V7z'/%3E%3C/svg%3E"); }
+.tot.lead .v { color: var(--fg); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 700; border: 1px solid transparent; }
+.pill.ok { background: var(--good-bg); color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, transparent); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--sunk); color: var(--muted); white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
+.chip.add { color: var(--teal); background: var(--teal-soft); }
+.chip.sold { color: var(--warn); background: var(--warn-bg); }
+.chip.half { color: var(--bad); background: var(--bad-bg); }
+.chip.ov { color: var(--accent); background: var(--accent-soft); }
+.chip button { border: 0; background: none; padding: 0 2px; color: inherit; font-weight: 800; }
+
+/* panels and tables */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); min-width: 0; overflow: hidden; }
+.panel-head { padding: 16px 20px 8px; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+.panel + .panel { margin-top: 20px; }
+.charts > .panel, .mat-grid > .panel { margin-top: 0; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; background: var(--sunk); }
+th:first-child, td:first-child { padding-left: 20px; }
+th.num { text-align: right; }
+th.extra { color: var(--teal); }
+tbody tr[tabindex] { cursor: pointer; }
+tbody tr[tabindex]:hover td { background: color-mix(in srgb, var(--teal-soft) 55%, transparent); }
+tfoot td { font-weight: 700; border-top: 2px solid var(--line); border-bottom: 0; background: var(--sunk); }
+td input { padding: 6px 8px; }
+td input.num { width: 130px; text-align: right; }
+td input.w-life { width: 80px; text-align: right; }
+.empty { margin: 16px 20px; padding: 36px 16px; text-align: center; color: var(--muted); display: grid; gap: 10px; justify-items: center; border: 1.5px dashed var(--line); border-radius: var(--r); }
+.note { padding: 10px 20px 16px; color: var(--muted); font-size: 12.5px; max-width: 85ch; }
+.extras { padding: 4px 20px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.extras input { width: 180px; }
+
+.dt { display: grid; grid-template-columns: 1fr auto; max-width: 640px; }
+.dt div { padding: 10px 20px; border-bottom: 1px solid var(--line); }
+.dt .strong { font-weight: 700; }
+.issues { margin: 0 20px 14px; padding: 10px 14px 10px 32px; color: var(--bad); font-size: 13px; background: var(--bad-bg); border-radius: 12px; }
+
+/* analysis and MAT */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.mat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; align-items: start; }
+.mat-form { padding: 6px 20px 18px; display: grid; gap: 12px; }
+.mat-form .grid2 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.verdict { margin: 0 20px 16px; padding: 14px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--teal) 30%, transparent); background: var(--teal-soft); display: grid; gap: 4px; }
+.verdict .big { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 1.35rem; font-weight: 600; color: var(--fg); }
+.stmt td:first-child { padding-left: 20px; } .stmt td.ind { padding-left: 34px; color: var(--muted); }
+.stmt tr.sum td { font-weight: 700; border-top: 1px solid var(--fg); }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 16px; display: grid; gap: 3px; }
+.kpi .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.kpi .v { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 1.3rem; font-weight: 600; }
+.kpi .n { font-size: 12px; color: var(--muted); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 20px; margin-top: 20px; }
+.chart { padding: 16px 20px 18px; display: grid; gap: 10px; align-content: start; }
+.chart .lede { font-size: 13px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.hb { display: grid; gap: 6px; }
+.hb-row { display: grid; grid-template-columns: minmax(90px, 34%) 1fr minmax(84px, auto); gap: 10px; align-items: center; font-size: 12.5px; padding: 2px 4px; border-radius: 8px; }
+.hb-row:hover { background: var(--sunk); }
+.hb-label { overflow-wrap: anywhere; }
+.hb-track { position: relative; height: 16px; border-left: 1px solid var(--line); }
+.hb-track.two { height: 26px; }
+.hb-bar { position: absolute; top: 1px; height: 14px; border-radius: 0 5px 5px 0; }
+.hb-track.two .hb-bar { height: 11px; }
+.hb-track.two .hb-bar.b2 { top: 14px; }
+.hb-bar.float { border-radius: 5px; }
+.hb-val { font-family: var(--f-num); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 12px; }
+.hb-val .sub { display: block; color: var(--muted); font-size: 11px; }
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--fg); color: var(--bg); font-size: 12px; padding: 7px 10px; border-radius: 10px; max-width: 280px; }
+
+/* dialogs */
+dialog { border: 1px solid var(--line); border-radius: 20px; padding: 0; width: min(780px, calc(100vw - 32px)); background: var(--surface); color: var(--fg); box-shadow: 0 24px 60px -20px rgba(15,23,42,.45); }
+dialog::backdrop { background: rgb(15 23 42 / .5); backdrop-filter: blur(2px); }
+.form { padding: 22px; display: grid; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.form-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.err { color: var(--bad); font-size: 12.5px; min-height: 1em; }
+.subhead { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; border-top: 1px solid var(--line); padding-top: 12px; }
+.list { margin: 0; padding-left: 20px; font-size: 13px; max-height: 180px; overflow: auto; }
+.toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--navy); color: var(--navy-ink); padding: 10px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 600; z-index: 60; box-shadow: 0 12px 30px -12px rgba(15,23,42,.5); max-width: calc(100vw - 32px); }
+
+/* mobile: drawer rail and bottom tab bar */
+.scrim { display: none; }
+.tabbar { display: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .menu-btn { display: inline-flex; }
+  .brand-sub { display: none; }
+  .topbar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .company select { max-width: 52vw; }
+  .topbar { position: relative; }
+  .rail { position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; height: 100dvh; width: min(290px, 84vw); z-index: 45; transform: translateX(-105%); transition: transform .2s; box-shadow: 0 0 40px rgba(15,23,42,.25);
+    padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); }
+  .rail.open { transform: none; }
+  .scrim { position: fixed; inset: 0; background: rgb(15 23 42 / .45); z-index: 44; }
+  .scrim.open { display: block; }
+  main.main { padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(96px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .hero { padding: 20px; border-radius: 20px; }
+  .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; background: var(--surface); border-top: 1px solid var(--line);
+    padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+  .tabbar button { flex-direction: column; gap: 2px; border: 0; background: none; padding: 6px 2px; font-size: 10.5px; color: var(--muted); border-radius: 12px; }
+  .tabbar button[aria-selected="true"] { color: var(--teal); background: var(--teal-soft); }
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: no-preference) { button { transition: border-color .15s, background .15s, color .15s; } .hb-bar { transition: width .3s, left .3s; } }
+@media (prefers-reduced-motion: reduce) { .rail { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+  <symbol id="i-blocks" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 7v6c0 4 3.5 7 8 8 4.5-1 8-4 8-8V7z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/><path d="m8 13 3-3 2 2 3-3"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Open statements menu" aria-controls="rail" aria-expanded="false"><svg class="ic"><use href="#i-menu"/></svg></button>
+      <div class="logo-tile" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></div>
+      <div><div class="brand-name">Depreciation Workbench</div><div class="brand-sub">Companies Act · Income-tax · Deferred tax</div></div>
+    </div>
+    <div class="top-right" id="top-right">
+      <div class="company">
+        <label for="company" class="vh">Company</label><select id="company"></select>
+        <button id="new-company" type="button" class="sm"><svg class="ic"><use href="#i-plus"/></svg>New company</button>
+      </div>
+      <div class="save-state" id="save-state"><span class="dot"></span><span>Loading…</span></div>
+    </div>
+  </header>
+
+  <aside class="rail" id="rail" aria-label="Statements">
+    <div class="rail-label">Statements</div>
+    <nav class="nav" role="tablist" aria-label="Statements">
+      <button class="tab" role="tab" id="t-register" data-tab="register"><svg class="ic"><use href="#i-list"/></svg>Asset register<span class="badge" id="nav-badge"></span></button>
+      <button class="tab" role="tab" id="t-schedule" data-tab="schedule"><svg class="ic"><use href="#i-book"/></svg>Companies Act schedule</button>
+      <button class="tab" role="tab" id="t-it" data-tab="it"><svg class="ic"><use href="#i-blocks"/></svg>Income-tax blocks</button>
+      <button class="tab" role="tab" id="t-dt" data-tab="dt"><svg class="ic"><use href="#i-scale"/></svg>Deferred tax</button>
+      <button class="tab" role="tab" id="t-mat" data-tab="mat"><svg class="ic"><use href="#i-shield"/></svg>MAT / AMT</button>
+    </nav>
+    <div class="rail-label" style="margin-top:10px">Insights and setup</div>
+    <nav class="nav" role="tablist" aria-label="Insights and setup">
+      <button class="tab" role="tab" id="t-analysis" data-tab="analysis"><svg class="ic"><use href="#i-chart"/></svg>Analysis</button>
+      <button class="tab" role="tab" id="t-rates" data-tab="rates"><svg class="ic"><use href="#i-sliders"/></svg>Lives and rates</button>
+    </nav>
+    <div class="rail-foot"><strong>Amounts in ₹</strong><span>Schedule II and block-of-assets WDV, side by side. Income-tax Act 2025 section references.</span></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+  <div class="wrap">
+    <section class="hero" aria-label="Company and year">
+      <div>
+        <div class="eyebrow" id="hero-eyebrow">Depreciation · Financial year</div>
+        <h1 id="hero-co">Depreciation Workbench</h1>
+        <p class="lede">Companies Act Schedule II and income-tax block of assets, side by side — with deferred tax and MAT / AMT.</p>
+      </div>
+      <div class="hero-row">
+        <span id="check-pill"></span>
+        <span class="spacer"></span>
+        <button id="add-asset" type="button" class="hero-primary"><svg class="ic"><use href="#i-plus"/></svg>Add asset</button>
+        <button id="upload-btn" type="button"><svg class="ic"><use href="#i-upload"/></svg>Bulk upload FAR</button>
+        <input id="import-file" type="file" accept=".xlsx,.xls,.csv" hidden>
+        <button id="export" type="button"><svg class="ic"><use href="#i-download"/></svg>Download Excel</button>
+        <button id="finalise" type="button"><svg class="ic"><use href="#i-lock"/></svg>Mark as final</button>
+      </div>
+    </section>
+
+    <div class="banner sample" id="sample-banner" hidden>
+      <span><strong>Example data.</strong> These assets show how the tool works. Edit them, upload your FAR, or start a company of your own.</span>
+      <button id="start-own" type="button" class="primary">Start my own company</button>
+    </div>
+    <div class="banner final" id="final-banner" hidden>
+      <span><strong>Finalised</strong> <span id="final-when"></span>. Figures are locked; downloads and analysis stay available.</span>
+      <span class="actions"><button id="reopen" type="button">Reopen for editing</button><button id="reopen-confirm" type="button" class="danger" hidden>Confirm reopen</button></span>
+    </div>
+
+    <section class="totals" id="totals" aria-label="Year totals"></section>
+
+    <section class="settings" aria-label="Year and method">
+      <div class="panel-h"><h2>Year and method</h2><span class="small muted">Changes recalculate every statement</span></div>
+      <label for="s-name">Company name<input id="s-name" type="text"></label>
+      <label for="s-fys">Financial year start<input id="s-fys" type="date"></label>
+      <label for="s-fye">Financial year end<input id="s-fye" type="date"></label>
+      <div style="display:grid;gap:5px"><span class="small muted" style="font-weight:600">Companies Act method</span>
+        <div class="seg" role="group" aria-label="Companies Act method">
+          <button type="button" id="m-slm" data-m="SLM">SLM</button><button type="button" id="m-wdv" data-m="WDV">WDV</button>
+        </div></div>
+      <label for="s-res">Residual value %<input id="s-res" type="number" step="0.1" min="0" max="100"></label>
+      <label for="s-tax" title="Full effective rate: 25% + 7% surcharge + 4% cess = 27.82% (normal regime); 22% + 10% + 4% = 25.168% (s.200)">Tax rate for deferred tax % (incl. surcharge, cess)<input id="s-tax" type="number" step="0.001" min="0" max="100"></label>
+      <label for="s-mfg">Manufacturing or power business<select id="s-mfg"><option>Yes</option><option>No</option></select></label>
+      <label for="s-reg">Income-tax regime<select id="s-reg"><option value="Normal">Normal</option><option value="Concessional">Concessional (s.199–204 / s.202)</option></select></label>
+    </section>
+
+    <div id="view"></div>
+  </div>
+  </main>
+
+  <nav class="tabbar" aria-label="Statements (mobile)">
+    <button class="tab" type="button" data-tab="register"><svg class="ic"><use href="#i-list"/></svg>Register</button>
+    <button class="tab" type="button" data-tab="schedule"><svg class="ic"><use href="#i-book"/></svg>Books</button>
+    <button class="tab" type="button" data-tab="it"><svg class="ic"><use href="#i-blocks"/></svg>Tax</button>
+    <button class="tab" type="button" data-tab="dt"><svg class="ic"><use href="#i-scale"/></svg>Deferred</button>
+    <button type="button" id="tab-more"><svg class="ic"><use href="#i-more"/></svg>More</button>
+  </nav>
+</div>
+
+<!-- asset form -->
+<dialog id="asset-dialog" aria-labelledby="asset-dialog-title">
+  <form class="form" id="asset-form" novalidate>
+    <h2 id="asset-dialog-title">Add asset</h2>
+    <fieldset id="f-set">
+      <div class="grid2">
+        <label for="f-id">Asset ID<input id="f-id" required></label>
+        <label for="f-desc">Description<input id="f-desc" required></label>
+        <label for="f-cat">Category<select id="f-cat"></select></label>
+        <label for="f-loc">Location<input id="f-loc"></label>
+        <label for="f-pur">Purchase date<input id="f-pur" type="date"></label>
+        <label for="f-put">Put-to-use date<input id="f-put" type="date" required></label>
+        <label for="f-cost">Cost (₹)<input id="f-cost" type="number" min="0" step="1" required></label>
+        <label for="f-oacc">Opening accumulated depreciation (₹)<input id="f-oacc" type="number" min="0" step="1"></label>
+        <label for="f-del">Deletion date (if sold or scrapped)<input id="f-del" type="date"></label>
+        <label for="f-proc">Sale proceeds (₹)<input id="f-proc" type="number" min="0" step="1"></label>
+      </div>
+      <p class="subhead" style="margin:14px 0 10px">Overrides for this asset (leave blank to use the category)</p>
+      <div class="grid2">
+        <label for="f-lifeOv">Useful life override (years)<input id="f-lifeOv" type="number" min="0" step="0.5"></label>
+        <label for="f-resOv">Residual value override %<input id="f-resOv" type="number" min="0" max="100" step="0.1"></label>
+        <label for="f-addl">Additional depreciation (new plant, s.33(8))<select id="f-addl"><option value="">No</option><option value="Yes">Yes</option></select></label>
+      </div>
+      <p class="small muted" style="margin:8px 0 0">Yes only for new plant or machinery first used by you in manufacturing or power. Not for second-hand assets, ships, aircraft, office appliances, road vehicles, or anything installed in an office, residence or guest house.</p>
+      <div id="f-extra-wrap" hidden>
+        <p class="subhead" style="margin:14px 0 10px">Your extra columns</p>
+        <div class="grid2" id="f-extra"></div>
+      </div>
+    </fieldset>
+    <div class="err" id="form-err" role="alert"></div>
+    <div class="form-foot">
+      <div class="actions"><button type="button" id="del-asset" class="danger" hidden>Delete asset</button>
+        <button type="button" id="del-confirm" class="danger" hidden>Confirm delete</button></div>
+      <div class="actions"><button type="button" id="cancel">Close</button><button type="submit" class="primary" id="save-asset">Save asset</button></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- upload / template guide -->
+<dialog id="upload-dialog" aria-labelledby="upload-title">
+  <div class="form">
+    <h2 id="upload-title">Bulk upload a Fixed Asset Register</h2>
+    <p class="small muted" style="margin:0">Fill the template in Excel (or save it as CSV) and upload it. Fixed columns are read by name, in any order. Add any number of extra columns after them (cost centre, vendor, tag number, invoice number) — they are kept with each asset and come back in every download.</p>
+    <div class="scroll"><table id="tpl-cols"></table></div>
+    <div class="form-foot">
+      <div class="actions"><button type="button" id="tpl-xlsx">Download Excel template</button><button type="button" id="tpl-csv">Download CSV template</button></div>
+      <div class="actions"><button type="button" id="upload-close">Close</button><button type="button" class="primary" id="choose-file">Choose file to upload</button></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- import preview -->
+<dialog id="import-dialog" aria-labelledby="import-title">
+  <div class="form">
+    <h2 id="import-title">Check the upload</h2>
+    <div id="import-body"></div>
+    <div class="form-foot">
+      <button type="button" id="imp-cancel">Cancel</button>
+      <div class="actions"><button type="button" id="imp-merge">Add and update by Asset ID</button><button type="button" class="primary" id="imp-replace">Replace the whole register</button></div>
+    </div>
+  </div>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+// ================================================================ reference data
+const DEFAULT_BLOCKS = [
+  { name: 'Not depreciable', rate: 0 }, { name: 'Buildings', rate: 0.10 }, { name: 'Plant and machinery', rate: 0.15 },
+  { name: 'Furniture and fittings', rate: 0.10 }, { name: 'Computers', rate: 0.40 }, { name: 'Intangible assets', rate: 0.25 }];
+const DEFAULT_CATS = [
+  { name: 'Land', life: 0, block: 'Not depreciable' },
+  { name: 'Buildings (non-factory)', life: 60, block: 'Buildings' },
+  { name: 'Factory buildings', life: 30, block: 'Buildings' },
+  { name: 'Plant and machinery (general)', life: 15, block: 'Plant and machinery' },
+  { name: 'Motor cars', life: 8, block: 'Plant and machinery' },
+  { name: 'Office equipment', life: 5, block: 'Plant and machinery' },
+  { name: 'Furniture and fittings', life: 10, block: 'Furniture and fittings' },
+  { name: 'Computers (end-user devices)', life: 3, block: 'Computers' },
+  { name: 'Servers and networks', life: 6, block: 'Computers' },
+  { name: 'Software and other intangibles', life: 5, block: 'Intangible assets' }];
+const OLD_BLOCK = { 'Building @10%': 'Buildings', 'Plant & machinery @15%': 'Plant and machinery', 'Furniture @10%': 'Furniture and fittings', 'Computers @40%': 'Computers', 'Intangibles @25%': 'Intangible assets' };
+const clone = o => JSON.parse(JSON.stringify(o));
+
+// fixed upload columns: key, header, required, note
+const FIXED = [
+  ['id', 'Asset ID', true, 'Unique code, e.g. FA-001'],
+  ['desc', 'Description', true, 'What the asset is'],
+  ['cat', 'Category', true, 'Must match a category in Lives and rates; new names are added for you to set a life'],
+  ['loc', 'Location', false, 'Plant, office or branch'],
+  ['pur', 'Purchase date', false, 'Date of invoice'],
+  ['put', 'Put-to-use date', true, 'Depreciation starts here'],
+  ['cost', 'Cost', true, 'In rupees, including capitalised expenses'],
+  ['oacc', 'Opening accumulated depreciation', false, 'Books, at start of year; 0 for this year\'s additions'],
+  ['del', 'Deletion date', false, 'Only if sold or scrapped this year'],
+  ['proc', 'Sale proceeds', false, '0 if scrapped'],
+  ['lifeOv', 'Useful life override (years)', false, 'Only when technically assessed life differs'],
+  ['resOv', 'Residual % override', false, 'Only when residual differs from the company setting'],
+  ['addl', 'Additional depreciation (Yes/No)', false, 'Yes only for new plant or machinery used in manufacturing or power (s.33(8), Income-tax Act 2025)'],
+];
+const ALIASES = { 'put to use date': 'put', 'put-to-use': 'put', 'cost (rs)': 'cost', 'opening acc dep': 'oacc', 'opening accumulated dep': 'oacc',
+  'useful life override': 'lifeOv', 'residual override': 'resOv', 'residual value override %': 'resOv', 'additional depreciation': 'addl', 'additional depreciation (y/n)': 'addl' };
+// computed columns from our own downloads — ignored on re-upload
+const COMPUTED = ['status', 'days used', 'depreciation for the year', 'closing gross block', 'closing accumulated depreciation', 'closing net block',
+  'profit / (loss) on sale', 'it block', 'tax block', 'it half rate', 'useful life used (years)', 'residual used %', 'additional depreciation this year', 'additional depreciation balance from last year'];
+const norm = h => String(h ?? '').toLowerCase().replace(/\(₹\)|₹|\*/g, '').replace(/\s+/g, ' ').trim();
+const FIXED_BY_NORM = Object.fromEntries(FIXED.map(f => [norm(f[1]), f[0]]));
+
+function newSettings(name) { return { name, fyStart: '2026-04-01', fyEnd: '2027-03-31', method: 'SLM', residual: 0.05, taxRate: 0.25168, halfDays: 180, mfg: 'Yes', regime: 'Normal', addlRate: 0.20 }; }
+function sampleCompany() {
+  return {
+    id: 'sample', sample: true, finalised: false, settings: Object.assign(newSettings('ABC Industries Ltd (example)'), { taxRate: 0.2782 }),
+    mat: Object.assign({}, MAT_DEFAULTS, { pbt: 25000000, otherDisallow: 450000, matCreditBf: 1200000 }), dtOpen: 2150000,
+    cats: clone(DEFAULT_CATS), blocks: clone(DEFAULT_BLOCKS), customCols: ['Cost centre', 'Vendor'],
+    openWdv: { 'Buildings': 33500000, 'Plant and machinery': 14840000, 'Furniture and fittings': 980000, 'Computers': 420000, 'Intangible assets': 2025000 },
+    assets: [
+      ['FA-001', 'Freehold land, Sanand plot', 'Land', 'Sanand', '2018-06-01', '2018-06-01', 25000000, 0, '', null, 'CC-PLANT', 'GIDC'],
+      ['FA-002', 'Factory shed', 'Factory buildings', 'Sanand', '2019-03-10', '2019-04-01', 48000000, 11400000, '', null, 'CC-PLANT', 'Shree Constructions'],
+      ['FA-003', 'CNC machine line 1', 'Plant and machinery (general)', 'Sanand', '2021-08-05', '2021-09-01', 18500000, 5600000, '', null, 'CC-PROD', 'Jyoti CNC'],
+      ['FA-004', 'Injection moulding machine', 'Plant and machinery (general)', 'Sanand', '2026-05-12', '2026-06-01', 7200000, 0, '', null, 'CC-PROD', 'Milacron India'],
+      ['FA-005', 'Toyota Innova (director car)', 'Motor cars', 'Ahmedabad HO', '2023-01-15', '2023-01-20', 2600000, 1180000, '2026-11-30', 1300000, 'CC-ADMIN', 'Toyota dealer'],
+      ['FA-006', 'Office furniture, HO', 'Furniture and fittings', 'Ahmedabad HO', '2022-07-01', '2022-07-01', 1800000, 650000, '', null, 'CC-ADMIN', 'Godrej Interio'],
+      ['FA-007', 'Laptops x 20', 'Computers (end-user devices)', 'Ahmedabad HO', '2024-04-20', '2024-04-20', 1600000, 1010000, '', null, 'CC-IT', 'Dell India'],
+      ['FA-008', 'Laptops x 10 (new joiners)', 'Computers (end-user devices)', 'Ahmedabad HO', '2026-12-10', '2026-12-15', 850000, 0, '', null, 'CC-IT', 'Dell India'],
+      ['FA-009', 'ERP software licence', 'Software and other intangibles', 'Ahmedabad HO', '2025-10-01', '2025-10-01', 3000000, 300000, '', null, 'CC-IT', 'ERP vendor'],
+      ['FA-010', 'Server rack and firewall', 'Servers and networks', 'Sanand', '2026-08-01', '2026-08-20', 1400000, 0, '', null, 'CC-IT', 'Cisco partner'],
+      ['FA-011', 'Paint shop conveyor', 'Plant and machinery (general)', 'Sanand', '2025-12-20', '2026-01-10', 2400000, 33742, '', null, 'CC-PROD', 'Conveyor Systems'],
+    ].map(([id, desc, cat, loc, pur, put, cost, oacc, del, proc, cc, vendor]) =>
+      ({ id, desc, cat, loc, pur, put, cost, oacc, del, proc, lifeOv: '', resOv: '', addl: ['FA-003', 'FA-004', 'FA-011'].includes(id) ? 'Yes' : '', extra: { 'Cost centre': cc, 'Vendor': vendor } })),
+  };
+}
+function blankCompany(name) {
+  const id = 'co_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  return { id, sample: false, finalised: false, settings: newSettings(name || 'New company'), cats: clone(DEFAULT_CATS), blocks: clone(DEFAULT_BLOCKS),
+    mat: Object.assign({}, MAT_DEFAULTS), dtOpen: 0,
+    customCols: [], openWdv: Object.fromEntries(DEFAULT_BLOCKS.filter(b => b.rate > 0).map(b => [b.name, 0])), assets: [] };
+}
+const MAT_DEFAULTS = { entity: 'Company', pbt: 0, otherDisallow: 0, otherDeduct: 0, bfSetoff: 0, addBook: 0, lessBook: 0, chapAdd: 0,
+  normalRate: 0.25, surcharge: 0.07, cess: 0.04, matRate: 0.14, amtRate: 0.185, matCreditBf: 0, amtCreditBf: 0 };
+function migrate(co) {          // companies saved by v1 of this page
+  if (!co.cats) {
+    co.cats = clone(DEFAULT_CATS); co.blocks = clone(DEFAULT_BLOCKS);
+    const w = {}; Object.entries(co.openWdv || {}).forEach(([k, v]) => { w[OLD_BLOCK[k] || k] = v; }); co.openWdv = w;
+  }
+  co.customCols = co.customCols || []; co.finalised = !!co.finalised;
+  co.settings = Object.assign({ halfDays: 180, mfg: 'Yes', regime: 'Normal', addlRate: 0.20 }, co.settings);
+  co.mat = Object.assign({}, MAT_DEFAULTS, co.mat); if (co.dtOpen === undefined) co.dtOpen = 0;
+  co.assets.forEach(a => { a.extra = a.extra || {}; if (a.lifeOv === undefined) a.lifeOv = ''; if (a.resOv === undefined) a.resOv = ''; if (a.addl === undefined) a.addl = ''; });
+  return co;
+}
+
+// ================================================================ calculation (mirrors FAR_Depreciation_Tool.xlsx)
+const day = s => s ? Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5 : null;
+const blank = v => v === '' || v === null || v === undefined;
+function compute(co) {
+  const s = co.settings, FYS = day(s.fyStart), FYE = day(s.fyEnd), issues = [];
+  const addlAllowed = s.mfg === 'Yes' && s.regime === 'Normal', addlRate = +s.addlRate || 0;
+  const blk = Object.fromEntries(co.blocks.map(b => [b.name, b])), catMap = Object.fromEntries(co.cats.map(c => [c.name, c]));
+  co.cats.forEach(c => {
+    if (blank(c.life) || isNaN(+c.life)) issues.push(`Category "${c.name}": set a useful life (0 if it is not depreciated).`);
+    if (!blk[c.block]) issues.push(`Category "${c.name}": choose a tax block.`);
+  });
+  if (s.method === 'WDV' && !(s.residual > 0)) issues.push('WDV method needs a residual value above 0%.');
+  const rows = co.assets.map(a => {
+    const c = catMap[a.cat], cost = +a.cost || 0, oacc = +a.oacc || 0;
+    const life = !blank(a.lifeOv) && +a.lifeOv > 0 ? +a.lifeOv : (c ? +c.life || 0 : 0);
+    const res = !blank(a.resOv) ? Math.min(1, Math.max(0, +a.resOv / 100)) : (+s.residual || 0);
+    const put = day(a.put), del = day(a.del), pur = day(a.pur);
+    if (!c) issues.push(`${a.id}: category "${a.cat}" is not in Lives and rates.`);
+    if (pur != null && put != null && put < pur) issues.push(`${a.id}: put-to-use date is before the purchase date.`);
+    if (oacc > cost) issues.push(`${a.id}: opening accumulated depreciation is more than cost.`);
+    if (del != null && del < FYS) issues.push(`${a.id}: deleted before this year — remove it from this year's register.`);
+    const addition = put != null && put >= FYS;
+    if (addition && oacc > 0) issues.push(`${a.id}: an addition this year should have no opening accumulated depreciation.`);
+    const end = del == null ? FYE : Math.min(del, FYE);
+    const days = put == null ? 0 : Math.max(0, end - Math.max(put, FYS) + 1);
+    const remaining = Math.max(0, cost * (1 - res) - oacc);
+    let dep = 0;
+    if (life > 0) {
+      const annual = s.method === 'WDV' ? (cost - oacc) * (1 - Math.pow(Math.max(res, 1e-6), 1 / life)) : cost * (1 - res) / life;
+      dep = Math.min(remaining, annual * days / 365);
+    }
+    const deleted = del != null && del >= FYS && del <= FYE;
+    if (deleted && blank(a.proc)) issues.push(`${a.id}: enter sale proceeds (0 if scrapped).`);
+    const openGross = addition ? 0 : cost, adds = addition ? cost : 0, dels = deleted ? cost : 0;
+    const closeGross = openGross + adds - dels, closeAcc = deleted ? 0 : oacc + dep, nbv = closeGross - closeAcc;
+    const pl = deleted ? (+a.proc || 0) - (cost - oacc - dep) : 0;
+    const block = c ? c.block : '', rate = blk[block] ? +blk[block].rate || 0 : 0;
+    const itDays = addition ? FYE - put + 1 : null, half = addition && itDays < (+s.halfDays || 180);
+    const addlOk = addlAllowed && /^y/i.test(String(a.addl || ''));
+    const prevStart = Date.UTC(+s.fyStart.slice(0, 4) - 1, +s.fyStart.slice(5, 7) - 1, +s.fyStart.slice(8, 10)) / 864e5;
+    const addlThis = addlOk && addition ? cost * addlRate * (half ? 0.5 : 1) : 0;
+    const addlBal = addlOk && !addition && put != null && put >= prevStart && put < FYS && (FYS - put) < (+s.halfDays || 180) ? cost * addlRate * 0.5 : 0;
+    const age = put != null ? Math.max(0, (FYE - put + 1) / 365) : 0;
+    const remLife = life > 0 ? Math.max(0, life - age) : null;
+    const fully = !deleted && life > 0 && remaining - dep <= 1;
+    const overridden = (!blank(a.lifeOv) && +a.lifeOv > 0) || !blank(a.resOv);
+    return { a, c, life, res, cost, oacc, days, dep, addition, deleted, openGross, adds, dels, closeGross, closeAcc, nbv, pl, block, rate, half, age, remLife, fully, overridden, addlOk, addlThis, addlBal };
+  });
+  const catNames = co.cats.map(c => c.name).concat([...new Set(rows.filter(r => !r.c).map(r => r.a.cat))]);
+  const sched = catNames.map(name => {
+    const r = rows.filter(x => x.a.cat === name), sum = f => r.reduce((t, x) => t + f(x), 0);
+    const o = { cat: name, openGross: sum(x => x.openGross), adds: sum(x => x.adds), dels: sum(x => x.dels),
+      openAcc: sum(x => x.addition ? 0 : x.oacc), dep: sum(x => x.dep), onDel: sum(x => x.deleted ? x.oacc + x.dep : 0) };
+    o.closeGross = o.openGross + o.adds - o.dels; o.closeAcc = o.openAcc + o.dep - o.onDel; o.nbv = o.closeGross - o.closeAcc; o.openNbv = o.openGross - o.openAcc;
+    return o;
+  });
+  const blocks = co.blocks.filter(b => +b.rate > 0).map(b => {
+    const r = rows.filter(x => x.block === b.name), rate = +b.rate;
+    const open = +(co.openWdv[b.name] || 0);
+    const full = r.filter(x => x.addition && !x.half).reduce((t, x) => t + x.cost, 0);
+    const halfAdd = r.filter(x => x.addition && x.half).reduce((t, x) => t + x.cost, 0);
+    const sales = r.filter(x => x.deleted).reduce((t, x) => t + (+x.a.proc || 0), 0);
+    const base = open + full - sales, depFull = Math.max(0, base) * rate, depHalf = Math.max(0, halfAdd + Math.min(0, base)) * rate / 2;
+    const normal = depFull + depHalf, avail = Math.max(0, open + full + halfAdd - sales);
+    const addlThis = r.reduce((t, x) => t + x.addlThis, 0), addlBal = r.reduce((t, x) => t + x.addlBal, 0);
+    const dep = normal + Math.min(addlThis + addlBal, Math.max(0, avail - normal));
+    const close = avail - dep, stcg = Math.max(0, sales - (open + full + halfAdd));
+    const bookDep = r.reduce((t, x) => t + x.dep, 0);
+    return { b: b.name, rate, open, full, halfAdd, sales, base, depFull, depHalf, normal, addlThis, addlBal, dep, close, stcg, bookDep };
+  });
+  const tot = (arr, k) => arr.reduce((t, x) => t + x[k], 0);
+  const taxRate = +s.taxRate || 0;
+  const byBlock = blocks.map(b => ({ b: b.b, book: rows.filter(x => x.block === b.b).reduce((t, x) => t + x.nbv, 0), tax: b.close }));
+  const unmapped = rows.filter(x => !(blk[x.block] && +blk[x.block].rate > 0) && x.life > 0).reduce((t, x) => t + x.nbv, 0);
+  if (Math.abs(unmapped) > 0.5) byBlock.push({ b: 'Assets with no depreciable tax block', book: unmapped, tax: 0 });
+  byBlock.forEach(x => { x.diff = x.book - x.tax; x.dt = x.diff * taxRate; });
+  const bookNbvExLand = tot(byBlock, 'book');
+  const itClose = tot(blocks, 'close'), diff = bookNbvExLand - itClose;
+  const dt = { bookNbvExLand, itClose, diff, rate: taxRate, dtl: diff * taxRate, bookDep: tot(sched, 'dep'), itDep: tot(blocks, 'dep'), byBlock };
+  dt.open = +co.dtOpen || 0; dt.charge = dt.dtl - dt.open;
+  dt.adjust = dt.bookDep - dt.itDep; dt.addl = tot(blocks, 'addlThis') + tot(blocks, 'addlBal'); dt.addlAllowed = addlAllowed;
+  return { rows, sched, blocks, dt, issues };
+}
+
+// ================================================================ MAT / AMT (s.206, Income-tax Act 2025)
+function computeMAT(co, R) {
+  const m = co.mat, s = co.settings, isCo = m.entity === 'Company', isInd = m.entity === 'Individual';
+  const concessional = s.regime === 'Concessional', gross = rate => rate * (1 + (+m.surcharge || 0)) * (1 + (+m.cess || 0));
+  const totalIncome = Math.max(0, (+m.pbt || 0) + R.dt.bookDep - R.dt.itDep + (+m.otherDisallow || 0) - (+m.otherDeduct || 0) - (+m.bfSetoff || 0));
+  const normalTax = totalIncome * gross(+m.normalRate || 0);
+  const base = isCo ? Math.max(0, (+m.pbt || 0) + (+m.addBook || 0) - (+m.lessBook || 0)) : totalIncome + (+m.chapAdd || 0);
+  const minRate = isCo ? +m.matRate || 0 : +m.amtRate || 0, minTax = base * gross(minRate);
+  const thresholdOk = !isInd || base > 2000000;
+  const applies = !concessional && thresholdOk;
+  const o = { isCo, isInd, concessional, totalIncome, normalTax, base, minRate, minTax, applies, thresholdOk,
+    label: isCo ? 'MAT' : 'AMT', baseLabel: isCo ? 'Book profit' : 'Adjusted total income' };
+  o.minHigher = applies && minTax > normalTax;
+  o.beforeCredit = o.minHigher ? minTax : normalTax;
+  o.setoff = 0; o.created = 0; o.credBf = isCo ? +m.matCreditBf || 0 : +m.amtCreditBf || 0;
+  if (isCo) {
+    if (concessional) o.setoff = Math.min(o.credBf, 0.25 * normalTax);      // old MAT credit: concessional regime only, 25% cap
+  } else if (applies) {
+    if (o.minHigher) o.created = minTax - normalTax;                          // AMT credit, carried forward 15 years
+    else o.setoff = Math.min(o.credBf, normalTax - minTax);
+  }
+  o.payable = o.beforeCredit - o.setoff;
+  o.credCf = o.credBf - o.setoff + o.created;
+  return o;
+}
+
+// ================================================================ formatting
+const nf = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const fmt = n => { if (!n || Math.abs(n) < 0.5) return '–'; const s = nf.format(Math.round(Math.abs(n))); return n < 0 ? `(${s})` : s; };
+const lakh = n => { const a = Math.abs(n); const s = a >= 1e7 ? (a / 1e7).toFixed(2) + ' Cr' : a >= 1e5 ? (a / 1e5).toFixed(1) + ' L' : nf.format(Math.round(a)); return (n < 0 ? '−' : '') + '₹' + s; };
+const pct = n => (n * 100).toFixed(Math.abs(n * 100 % 1) > 0.001 ? 1 : 0) + '%';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fdate = s => s ? `${s.slice(8, 10)}-${MON[+s.slice(5, 7) - 1]}-${s.slice(0, 4)}` : '';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const $ = id => document.getElementById(id);
+
+// ================================================================ state and storage
+let companies = [], cur = null, tab = 'register', editing = null, pendingImport = null;
+let col = null, mode = 'example', writeChain = Promise.resolve(), saveTimer = null;
+const locked = () => !!(cur && cur.finalised);
+
+function setSaveState(kind, text) { $('save-state').innerHTML = `<span class="dot ${kind}"></span><span>${esc(text)}</span>`; }
+function persist() {
+  if (!cur || cur.sample) return;
+  clearTimeout(saveTimer); setSaveState('warn', 'Saving…');
+  saveTimer = setTimeout(() => {
+    const snapshot = clone(cur);
+    if (mode === 'account' && col) {
+      writeChain = writeChain.then(() => col.doc(snapshot.id).set(snapshot))
+        .then(() => setSaveState('ok', 'Saved to your account'))
+        .catch(e => setSaveState('warn', e && e.code === 'quota_exceeded' ? 'Storage full — delete an old company' : 'Not saved — check your connection'));
+    } else {
+      try { const all = JSON.parse(localStorage.getItem('depwb-v1') || '{}'); all[snapshot.id] = snapshot; localStorage.setItem('depwb-v1', JSON.stringify(all)); setSaveState('ok', 'Saved in this browser'); }
+      catch { setSaveState('warn', 'Not saved — storage unavailable here'); }
+    }
+  }, 700);
+}
+function materialise() {
+  if (cur && cur.sample) {
+    cur.sample = false; cur.id = blankCompany().id; cur.settings.name = cur.settings.name.replace(' (example)', '');
+    companies = companies.filter(c => c.id !== 'sample'); companies.push(cur);
+  }
+}
+function changed() { materialise(); persist(); render(); }
+
+async function boot() {
+  render();
+  const has = !!(window.claude && window.claude.use);
+  let db = null, user = null, uid = null;
+  if (has) { try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch {} }
+  if (user) { try { uid = await user.id(); } catch {} }
+  if (db && uid) {
+    try { col = db.collection('data/users/' + uid); const snap = await col.get(); companies = snap.docs.map(d => clone(d.data())).filter(Boolean); mode = 'account'; }
+    catch { col = null; }
+  }
+  if (!col) { try { companies = Object.values(JSON.parse(localStorage.getItem('depwb-v1') || '{}')); mode = 'browser'; } catch { companies = []; mode = 'example'; } }
+  companies = companies.map(migrate);
+  if (!companies.length) companies = [sampleCompany()];
+  cur = companies[0];
+  setSaveState(cur.sample ? '' : 'ok', cur.sample ? 'Example — saves once you edit' : mode === 'account' ? 'Saved to your account' : mode === 'browser' ? 'Saved in this browser' : 'Not saved in this view');
+  window.__downloads = has ? await window.claude.use('downloads') : null;
+  render();
+}
+
+// ================================================================ render
+function render() {
+  if (!cur) { cur = sampleCompany(); companies = [cur]; }
+  const R = compute(cur), s = cur.settings, L = locked();
+  $('company').innerHTML = companies.map(c => `<option value="${esc(c.id)}"${c === cur ? ' selected' : ''}>${esc(c.settings.name)}${c.finalised ? ' — final' : ''}</option>`).join('');
+  $('sample-banner').hidden = !cur.sample;
+  $('final-banner').hidden = !L; $('final-when').textContent = cur.finalisedAt ? 'on ' + fdate(cur.finalisedAt) : '';
+  $('reopen').hidden = false; $('reopen-confirm').hidden = true;
+  if (document.activeElement !== $('s-name')) $('s-name').value = s.name;
+  $('s-fys').value = s.fyStart; $('s-fye').value = s.fyEnd;
+  if (document.activeElement !== $('s-res')) $('s-res').value = +(s.residual * 100).toFixed(3);
+  if (document.activeElement !== $('s-tax')) $('s-tax').value = +(s.taxRate * 100).toFixed(3);
+  $('m-slm').setAttribute('aria-pressed', s.method === 'SLM'); $('m-wdv').setAttribute('aria-pressed', s.method === 'WDV');
+  $('s-mfg').value = s.mfg; $('s-reg').value = s.regime;
+  ['s-name', 's-fys', 's-fye', 's-res', 's-tax', 's-mfg', 's-reg', 'm-slm', 'm-wdv', 'add-asset', 'upload-btn'].forEach(id => { $(id).disabled = L; });
+  $('finalise').hidden = L; $('finalise').disabled = R.issues.length > 0 || !cur.assets.length;
+  $('finalise').title = R.issues.length ? 'Fix the issues first' : '';
+
+  const d = R.dt;
+  $('totals').innerHTML = `
+    <div class="tot lead"><span class="k">Depreciation — Companies Act</span><span class="v">₹${fmt(d.bookDep)}</span><span class="n">${s.method}, residual ${pct(s.residual)}</span></div>
+    <div class="tot lead"><span class="k">Depreciation — Income tax</span><span class="v">₹${fmt(d.itDep)}</span><span class="n">${d.addl > 0.5 ? 'Includes additional ₹' + fmt(d.addl) : d.addlAllowed ? 'Block WDV, ' + s.halfDays + '-day half-rate rule' : 'Additional depreciation not allowed'}</span></div>
+    <div class="tot"><span class="k">Book less tax depreciation</span><span class="v">₹${fmt(d.adjust)}</span><span class="n">${d.adjust >= 0 ? 'Add back' : 'Deduct'} in tax computation</span></div>
+    <div class="tot"><span class="k">Deferred tax ${d.dtl >= 0 ? 'liability' : 'asset'}</span><span class="v">₹${fmt(Math.abs(d.dtl))}</span><span class="n">At ${pct(d.rate)} on ₹${fmt(Math.abs(d.diff))} difference</span></div>`;
+  $('check-pill').innerHTML = R.issues.length
+    ? `<span class="pill bad" title="${esc(R.issues.join('\n'))}">${R.issues.length} issue${R.issues.length > 1 ? 's' : ''} to fix</span>`
+    : `<span class="pill ok">All checks OK</span>`;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+  $('hero-co').textContent = s.name || 'Untitled company';
+  $('hero-eyebrow').textContent = `Depreciation · ${fdate(s.fyStart)} to ${fdate(s.fyEnd)}${L ? ' · Final' : ''}`;
+  $('nav-badge').textContent = R.issues.length ? R.issues.length : '';
+  $('view').innerHTML = ({ register: viewRegister, schedule: viewSchedule, it: viewIT, dt: viewDT, mat: viewMAT, analysis: viewAnalysis, rates: viewRates })[tab](R);
+  bindView();
+}
+const dis = () => locked() ? ' disabled' : '';
+
+function viewRegister(R) {
+  const issues = R.issues.length ? `<ul class="issues">${R.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
+  const cc = cur.customCols;
+  const extrasBar = `<div class="extras"><span class="small muted">Your extra columns:</span>
+    ${cc.length ? cc.map((c, i) => `<span class="chip">${esc(c)}${locked() ? '' : `<button type="button" data-rmcol="${i}" aria-label="Remove column ${esc(c)}">×</button>`}</span>`).join('') : '<span class="small muted">none yet</span>'}
+    ${locked() ? '' : `<input id="newcol" placeholder="e.g. Tag number" aria-label="New column name"><button type="button" id="addcol">Add column</button>`}
+    <span id="rmcol-confirm"></span></div>`;
+  if (!R.rows.length) return `<section class="panel"><div class="empty"><h2>No assets yet</h2>
+    <span>Upload your whole FAR from the template, or add assets one by one.</span>
+    <span class="actions"><button type="button" class="primary" data-act="upload"${dis()}>Bulk upload FAR</button><button type="button" data-act="add"${dis()}>Add asset</button></span></div>${extrasBar}</section>`;
+  const t = k => R.rows.reduce((s, r) => s + (r[k] || 0), 0);
+  return `<section class="panel">
+    <div class="panel-head"><h2>Asset register — ${fdate(cur.settings.fyStart)} to ${fdate(cur.settings.fyEnd)}</h2><span class="small muted">${locked() ? 'Select a row to view it' : 'Select a row to edit it'}</span></div>
+    ${issues}${extrasBar}
+    <div class="scroll"><table>
+      <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Put to use</th><th>Status</th><th class="num">Cost</th><th class="num">Opening acc. dep.</th>
+        <th class="num">Life (yrs)</th><th class="num">Days used</th><th class="num">Depreciation (book)</th><th class="num">Closing net block</th><th class="num">Profit / (loss) on sale</th><th>Tax block</th>
+        ${cc.map(c => `<th class="extra">${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${R.rows.map((r, i) => `<tr tabindex="0" data-row="${i}">
+        <td>${esc(r.a.id)}</td><td>${esc(r.a.desc)}</td><td>${esc(r.a.cat)}</td><td>${fdate(r.a.put)}</td>
+        <td>${r.deleted ? '<span class="chip sold">Sold</span>' : r.addition ? '<span class="chip add">Addition</span>' : '<span class="chip">Existing</span>'}${r.half ? ' <span class="chip half">Half rate</span>' : ''}${r.overridden ? ' <span class="chip ov">Override</span>' : ''}${r.addlThis + r.addlBal > 0 ? ' <span class="chip add">Addl dep ' + (r.addlBal ? 'balance' : r.half ? 'half' : pct(cur.settings.addlRate)) + '</span>' : ''}${r.fully ? ' <span class="chip">Fully depreciated</span>' : ''}</td>
+        <td class="num">${fmt(r.cost)}</td><td class="num">${fmt(r.oacc)}</td><td class="num">${r.life || '–'}</td><td class="num">${r.days}</td><td class="num">${fmt(r.dep)}</td>
+        <td class="num">${fmt(r.nbv)}</td><td class="num">${fmt(r.pl)}</td><td class="small">${esc(r.block)}</td>
+        ${cc.map(c => `<td class="small">${esc(r.a.extra?.[c])}</td>`).join('')}</tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="5">Total (${R.rows.length} assets)</td><td class="num">${fmt(t('cost'))}</td><td class="num">${fmt(t('oacc'))}</td><td></td><td></td>
+        <td class="num">${fmt(t('dep'))}</td><td class="num">${fmt(t('nbv'))}</td><td class="num">${fmt(t('pl'))}</td><td></td>${cc.map(() => '<td></td>').join('')}</tr></tfoot>
+    </table></div></section>`;
+}
+function viewSchedule(R) {
+  const rows = R.sched.filter(x => x.openGross || x.adds || x.dels || x.openAcc);
+  const T = k => R.sched.reduce((s, x) => s + x[k], 0);
+  const cols = [['openGross', 'Opening gross block'], ['adds', 'Additions'], ['dels', 'Deletions'], ['closeGross', 'Closing gross block'],
+    ['openAcc', 'Opening acc. depreciation'], ['dep', 'Charge for the year'], ['onDel', 'On deletions'], ['closeAcc', 'Closing acc. depreciation'], ['nbv', 'Closing net block'], ['openNbv', 'Opening net block']];
+  return `<section class="panel"><div class="panel-head"><h2>Property, plant and equipment — movement</h2><span class="small muted">Schedule III style note, Companies Act basis</span></div>
+    <div class="scroll"><table><thead><tr><th>Category</th>${cols.map(c => `<th class="num">${c[1]}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(x => `<tr><td>${esc(x.cat)}</td>${cols.map(c => `<td class="num">${fmt(x[c[0]])}</td>`).join('')}</tr>`).join('')}</tbody>
+    <tfoot><tr><td>Total</td>${cols.map(c => `<td class="num">${fmt(T(c[0]))}</td>`).join('')}</tr></tfoot></table></div></section>`;
+}
+function viewIT(R) {
+  const T = k => R.blocks.reduce((s, x) => s + x[k], 0);
+  return `<section class="panel"><div class="panel-head"><h2>Income-tax depreciation — block of assets</h2><span class="small muted">Enter each block's opening WDV from last year's tax computation</span></div>
+    <div class="scroll"><table><thead><tr><th>Block</th><th class="num">Rate</th><th class="num">Opening WDV</th><th class="num">Additions, ${cur.settings.halfDays}+ days</th>
+      <th class="num">Additions, under ${cur.settings.halfDays} days</th><th class="num">Sale proceeds</th><th class="num">Normal depreciation</th>
+      <th class="num">Additional, this year's additions</th><th class="num">Additional, balance from last year</th>
+      <th class="num">Total depreciation</th><th class="num">Closing WDV</th><th class="num">Short-term capital gain</th></tr></thead>
+    <tbody>${R.blocks.map((x, i) => `<tr><td>${esc(x.b)}</td><td class="num">${pct(x.rate)}</td>
+      <td class="num"><input class="num" type="number" min="0" step="1" id="wdv-${i}" data-block="${esc(x.b)}" value="${Math.round(x.open)}" aria-label="Opening WDV, ${esc(x.b)}"${dis()}></td>
+      <td class="num">${fmt(x.full)}</td><td class="num">${fmt(x.halfAdd)}</td><td class="num">${fmt(x.sales)}</td><td class="num">${fmt(x.normal)}</td>
+      <td class="num">${fmt(x.addlThis)}</td><td class="num">${fmt(x.addlBal)}</td><td class="num"><strong>${fmt(x.dep)}</strong></td><td class="num">${fmt(x.close)}</td><td class="num">${fmt(x.stcg)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="num">${fmt(T('open'))}</td><td class="num">${fmt(T('full'))}</td><td class="num">${fmt(T('halfAdd'))}</td><td class="num">${fmt(T('sales'))}</td>
+      <td class="num">${fmt(T('normal'))}</td><td class="num">${fmt(T('addlThis'))}</td><td class="num">${fmt(T('addlBal'))}</td><td class="num">${fmt(T('dep'))}</td><td class="num">${fmt(T('close'))}</td><td class="num">${fmt(T('stcg'))}</td></tr></tfoot></table></div>
+    <p class="note"><strong>Additional depreciation</strong> (s.33(8)–(9), Income-tax Act 2025; old s.32(1)(iia)): ${cur.settings.mfg !== 'Yes' ? 'off — the business is not marked as manufacturing or power.' : cur.settings.regime !== 'Normal' ? 'off — not allowed under the concessional regime (s.205(1)(a), s.202(2)(a)(vi)).' : pct(cur.settings.addlRate) + ' of cost on new plant marked Yes; half if used under ' + cur.settings.halfDays + ' days, with the other half claimed next year (picked up automatically for last year\'s additions still in the register). It reduces the closing WDV.'}</p>
+    <p class="note">Not yet covered: a block that ceases to exist, assets with part personal use, and the 35% backward-area rate (expired for assets installed after 31 March 2020). Rates are editable under Lives and rates; confirm them against the Income-tax Rules, 2026.</p></section>`;
+}
+function viewDT(R) {
+  const d = R.dt, nat = v => v >= 0 ? 'Liability' : 'Asset';
+  const je = d.charge >= 0
+    ? `Deferred tax expense (P&L) Dr ₹${fmt(d.charge)} &nbsp;→&nbsp; Deferred tax ${d.dtl >= 0 ? 'liability' : 'asset'} Cr ₹${fmt(d.charge)}`
+    : `Deferred tax ${d.dtl >= 0 ? 'liability' : 'asset'} Dr ₹${fmt(-d.charge)} &nbsp;→&nbsp; Deferred tax income (P&L) Cr ₹${fmt(-d.charge)}`;
+  return `<section class="panel"><div class="panel-head"><h2>Deferred tax on depreciation</h2><span class="small muted">(Book net block − tax WDV) × ${pct(d.rate)}; non-depreciable assets (land) excluded</span></div>
+    <div class="scroll"><table><thead><tr><th>Tax block</th><th class="num">Book net block</th><th class="num">Tax WDV</th><th class="num">Timing difference</th><th class="num">Deferred tax at ${pct(d.rate)}</th><th>Nature</th></tr></thead>
+    <tbody>${d.byBlock.map(x => `<tr><td>${esc(x.b)}</td><td class="num">${fmt(x.book)}</td><td class="num">${fmt(x.tax)}</td><td class="num">${fmt(x.diff)}</td><td class="num">${fmt(Math.abs(x.dt))}</td><td>${Math.abs(x.dt) < 0.5 ? '–' : nat(x.dt)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Net</td><td class="num">${fmt(d.bookNbvExLand)}</td><td class="num">${fmt(d.itClose)}</td><td class="num">${fmt(d.diff)}</td><td class="num">${fmt(Math.abs(d.dtl))}</td><td>${nat(d.dtl)}</td></tr></tfoot></table></div></section>
+  <section class="panel"><div class="panel-head"><h2>Movement and accounting entry</h2><span class="small muted">Ind AS 12 / AS 22</span></div>
+    <div class="dt">
+      <div class="strong">Closing deferred tax ${d.dtl >= 0 ? 'liability' : 'asset'}</div><div class="num strong">${fmt(Math.abs(d.dtl))}</div>
+      <div><label for="dt-open" style="display:block">Opening deferred tax liability / (asset) from last year's balance sheet<span class="small muted" style="display:block;font-weight:400">Enter an asset as a negative number</span></label></div>
+      <div class="num"><input id="dt-open" class="num" type="number" step="1" value="${Math.round(d.open)}"${dis()} style="width:150px"></div>
+      <div class="strong">${d.charge >= 0 ? 'Deferred tax charge' : 'Deferred tax credit'} to the profit and loss for the year</div><div class="num strong">${fmt(Math.abs(d.charge))}</div>
+      <div>Depreciation as per books</div><div class="num">${fmt(d.bookDep)}</div>
+      <div>Depreciation as per income tax${d.addl > 0.5 ? ' (incl. additional ₹' + fmt(d.addl) + ')' : ''}</div><div class="num">${fmt(d.itDep)}</div>
+      <div class="strong">${d.adjust >= 0 ? 'Add back' : 'Deduct'} in the tax computation</div><div class="num strong">${fmt(Math.abs(d.adjust))}</div>
+    </div>
+    ${Math.abs(d.charge) >= 0.5 ? `<p class="note"><strong>Entry:</strong> ${je}</p>` : ''}
+    <p class="note">Covers depreciation only. Other timing differences (provisions, 43B-type items, carried-forward losses) are not included. Recognise a net deferred tax asset only when future taxable profit is probable (reasonable certainty under AS 22). If the tax rate changes, the whole balance is restated at the new rate and the effect is in this year's charge.</p></section>`;
+}
+
+function viewMAT(R) {
+  const m = cur.mat, o = computeMAT(cur, R), s = cur.settings, L = dis();
+  const inp = (key, label, opts = {}) => `<label for="mat-${key}">${label}<input id="mat-${key}" data-mat="${key}" type="number" step="${opts.pct ? '0.01' : '1'}" ${opts.pct ? 'min="0" max="100" data-pct="1"' : ''} value="${opts.pct ? +((+m[key] || 0) * 100).toFixed(3) : Math.round(+m[key] || 0)}"${L}></label>`;
+  const row = (l, v, cls = '') => `<tr class="${cls}"><td class="${cls === 'ind' ? 'ind' : ''}">${l}</td><td class="num">${v}</td></tr>`;
+  const verdict = !o.applies
+    ? `<span class="small muted">${o.concessional ? `${o.label} does not apply under the concessional regime (s.${o.isCo ? '200/201' : '202'})` : `AMT does not apply: adjusted total income is ₹20 lakh or less`}</span><span class="big">₹${fmt(o.payable)}</span><span class="small">Tax payable${o.setoff > 0.5 ? ' after MAT credit set-off' : ''}</span>`
+    : o.minHigher
+      ? `<span class="small muted">${o.label} is higher than normal tax by ₹${fmt(o.minTax - o.normalTax)}</span><span class="big">₹${fmt(o.payable)}</span><span class="small">${o.isCo ? 'MAT payable — a final tax from tax year 2026-27, no credit arises' : 'AMT payable — the excess becomes AMT credit for 15 years'}</span>`
+      : `<span class="small muted">Normal tax is higher than ${o.label} (₹${fmt(o.minTax)})</span><span class="big">₹${fmt(o.payable)}</span><span class="small">Tax payable under normal provisions${o.setoff > 0.5 ? ' after credit set-off' : ''}</span>`;
+  return `<div class="mat-grid">
+  <section class="panel"><div class="panel-head"><h2>Inputs</h2><span class="small muted">Depreciation comes from this workbench</span></div>
+    <div class="mat-form">
+      <label for="mat-entity">Assessee<select id="mat-entity"${L}>
+        <option value="Company"${m.entity === 'Company' ? ' selected' : ''}>Company (MAT)</option>
+        <option value="LLP"${m.entity === 'LLP' ? ' selected' : ''}>LLP or firm (AMT)</option>
+        <option value="Individual"${m.entity === 'Individual' ? ' selected' : ''}>Individual, HUF, AOP, BOI (AMT)</option></select></label>
+      <p class="subhead" style="margin:4px 0 0">Profit and normal computation</p>
+      <div class="grid2">${inp('pbt', 'Net profit before tax as per P&L (₹)')}${inp('otherDisallow', 'Other disallowances added back (₹)')}${inp('otherDeduct', 'Other deductions and exempt income (₹)')}${inp('bfSetoff', 'Brought-forward losses set off (₹)')}</div>
+      ${o.isCo ? `<p class="subhead" style="margin:4px 0 0">Book profit adjustments for MAT</p>
+      <div class="grid2">${inp('addBook', 'Additions to net profit (₹)')}${inp('lessBook', 'Reductions from net profit (₹)')}</div>
+      <p class="small muted" style="margin:0">Additions: provisions for unascertained liabilities, transfers to reserves, provision for diminution. Reductions: lower of brought-forward loss or unabsorbed depreciation (nil if either is nil), exempt income. Income tax and deferred tax are already outside profit before tax.</p>`
+      : `<p class="subhead" style="margin:4px 0 0">Adjusted total income for AMT</p>
+      <div class="grid2">${inp('chapAdd', 'Deductions claimed to add back (₹)')}</div>
+      <p class="small muted" style="margin:0">Profit-linked deductions claimed in the return (old Chapter VI-A Part C, 10AA, 35AD).</p>`}
+      <p class="subhead" style="margin:4px 0 0">Rates</p>
+      <div class="grid2">${inp('normalRate', 'Normal tax rate %', { pct: 1 })}${inp('surcharge', 'Surcharge %', { pct: 1 })}${inp('cess', 'Health and education cess %', { pct: 1 })}${o.isCo ? inp('matRate', 'MAT rate % (s.206)', { pct: 1 }) : inp('amtRate', 'AMT rate % (s.206)', { pct: 1 })}</div>
+      ${o.concessional && o.isCo && !L ? '<div><button type="button" id="mat-s200">Use s.200 rates (22% + 10% surcharge)</button></div>' : ''}
+      <p class="subhead" style="margin:4px 0 0">Credit brought forward</p>
+      <div class="grid2">${o.isCo ? inp('matCreditBf', 'MAT credit up to 31-Mar-2026 (s.115JAA) (₹)') : inp('amtCreditBf', 'AMT credit brought forward (₹)')}</div>
+      <p class="small muted" style="margin:0">Regime and the deferred tax rate are on the settings bar above.</p>
+    </div></section>
+  <section class="panel"><div class="panel-head"><h2>Computation</h2><span class="small muted">${o.isCo ? 'Minimum Alternate Tax' : 'Alternate Minimum Tax'}, tax year ${s.fyStart.slice(0, 4)}-${s.fyEnd.slice(2, 4)}</span></div>
+    <div class="verdict">${verdict}</div>
+    <table class="stmt"><tbody>
+      ${row('Net profit before tax', fmt(+m.pbt))}
+      ${row('Add: depreciation as per books', fmt(R.dt.bookDep), 'ind')}
+      ${row('Less: depreciation as per income tax', '(' + fmt(R.dt.itDep) + ')', 'ind')}
+      ${row('Add: other disallowances', fmt(+m.otherDisallow), 'ind')}
+      ${row('Less: other deductions and exempt income', '(' + fmt(+m.otherDeduct) + ')', 'ind')}
+      ${row('Less: brought-forward losses set off', '(' + fmt(+m.bfSetoff) + ')', 'ind')}
+      ${row('Total income', fmt(o.totalIncome), 'sum')}
+      ${row(`Tax under normal provisions at ${pct(+m.normalRate)} + surcharge + cess`, fmt(o.normalTax), 'sum')}
+      ${o.isCo ? row('Book profit (net profit + additions − reductions)', fmt(o.base)) : row('Adjusted total income (total income + deductions added back)', fmt(o.base))}
+      ${row(`${o.label} at ${pct(o.minRate)} + surcharge + cess`, fmt(o.minTax), 'sum')}
+      ${row('Tax before credit (higher of the two)', fmt(o.beforeCredit))}
+      ${row(`Less: ${o.isCo ? 'MAT' : 'AMT'} credit set off`, '(' + fmt(o.setoff) + ')', 'ind')}
+      ${row('Tax payable', fmt(o.payable), 'sum')}
+      ${row(`${o.label} credit carried forward`, fmt(o.credCf))}
+    </tbody></table>
+    <p class="note">${o.isCo
+      ? 'From tax year 2026-27 MAT is 14% of book profit and a final tax: no new credit arises (s.206, Income-tax Act 2025, as amended by the Finance Act, 2026). Credit built up to 31 March 2026 can be set off only by a domestic company that opts for the concessional regime (s.200(5)/201(2)), up to 25% of the tax payable each year, within 15 years of the year it arose. Companies under the concessional regime do not pay MAT. A CA report in Form 66 certifies book profit.'
+      : 'AMT is 18.5% of adjusted total income (s.206(2)). It applies to individuals, HUFs, AOPs and BOIs only above ₹20 lakh of adjusted total income, and not under the concessional regime. Excess AMT becomes credit for 15 years, set off when normal tax exceeds AMT, up to the difference. A CA report in Form 67 is required.'}
+      Surcharge depends on income slab: check it against the Finance Act. Figures are for planning; confirm before filing.</p></section></div>`;
+}
+
+// ---------------------------------------------------------------- analysis
+function hbars(rows, color, opts = {}) {
+  const max = Math.max(1, ...rows.map(r => Math.abs(r.v)));
+  return `<div class="hb">${rows.map(r => `<div class="hb-row" data-tip="${esc(r.tip || r.l + ': ₹' + fmt(r.v))}">
+    <span class="hb-label">${esc(r.l)}</span><span class="hb-track"><span class="hb-bar" style="left:0;width:${Math.abs(r.v) / max * 100}%;background:${color}"></span></span>
+    <span class="hb-val">${opts.money === false ? esc(r.v) : lakh(r.v)}${r.sub ? `<span class="sub">${esc(r.sub)}</span>` : ''}</span></div>`).join('')}</div>`;
+}
+function viewAnalysis(R) {
+  const rows = R.rows, live = rows.filter(r => !r.deleted), dep = rows.filter(r => r.life > 0);
+  const S = k => R.sched.reduce((t, x) => t + x[k], 0);
+  const grossDepr = live.filter(r => r.life > 0).reduce((t, r) => t + r.cost, 0);
+  const accDepr = live.filter(r => r.life > 0).reduce((t, r) => t + r.closeAcc, 0);
+  const wAge = grossDepr ? live.filter(r => r.life > 0).reduce((t, r) => t + r.age * r.cost, 0) / grossDepr : 0;
+  const fully = live.filter(r => r.fully);
+  const openGross = S('openGross');
+  const depPct = openGross ? S('dep') / openGross : 0;
+
+  // 1 net block bridge
+  const openNbv = S('openNbv'), adds = S('adds'), delNbv = S('dels') - S('onDel'), depY = S('dep'), closeNbv = S('nbv');
+  const steps = [
+    { l: 'Opening net block', from: 0, to: openNbv, kind: 'total' },
+    { l: 'Add: additions', from: openNbv, to: openNbv + adds, kind: 'up' },
+    { l: 'Less: assets sold (net)', from: openNbv + adds, to: openNbv + adds - delNbv, kind: 'down' },
+    { l: 'Less: depreciation', from: openNbv + adds - delNbv, to: closeNbv, kind: 'down' },
+    { l: 'Closing net block', from: 0, to: closeNbv, kind: 'total' }];
+  const wmax = Math.max(1, ...steps.map(s => Math.max(s.from, s.to)));
+  const colorOf = k => k === 'total' ? 'var(--s1)' : k === 'up' ? 'var(--s3)' : 'var(--s2)';
+  const bridge = `<div class="hb">${steps.map(s => { const lo = Math.min(s.from, s.to), hi = Math.max(s.from, s.to);
+    return `<div class="hb-row" data-tip="${esc(s.l)}: ₹${fmt(s.to - s.from)}"><span class="hb-label">${esc(s.l)}</span>
+    <span class="hb-track"><span class="hb-bar ${s.kind === 'total' ? '' : 'float'}" style="left:${lo / wmax * 100}%;width:${Math.max(0.4, (hi - lo) / wmax * 100)}%;background:${colorOf(s.kind)}"></span></span>
+    <span class="hb-val">${s.kind === 'down' ? '−' : s.kind === 'up' ? '+' : ''}${lakh(Math.abs(s.to - s.from))}</span></div>`; }).join('')}</div>`;
+
+  // 2 book vs tax by block
+  const bmax = Math.max(1, ...R.blocks.flatMap(b => [b.bookDep, b.dep]));
+  const bvt = `<div class="hb">${R.blocks.map(b => `<div class="hb-row" data-tip="${esc(b.b)} — book ₹${fmt(b.bookDep)}, tax ₹${fmt(b.dep)}">
+    <span class="hb-label">${esc(b.b)}</span><span class="hb-track two"><span class="hb-bar" style="left:0;width:${b.bookDep / bmax * 100}%;background:var(--s1)"></span>
+    <span class="hb-bar b2" style="left:0;width:${b.dep / bmax * 100}%;background:var(--s2)"></span></span>
+    <span class="hb-val">${lakh(b.bookDep)}<span class="sub">${lakh(b.dep)}</span></span></div>`).join('')}</div>`;
+
+  // 3 depreciation by category
+  const byCat = R.sched.filter(x => x.dep > 0.5).sort((a, b) => b.dep - a.dep).map(x => ({ l: x.cat, v: x.dep, sub: pct(x.dep / Math.max(1, depY)) + ' of total' }));
+
+  // 4 remaining life profile
+  const buckets = [['Fully depreciated', r => r.fully], ['Under 1 year', r => !r.fully && r.remLife < 1], ['1 to 3 years', r => !r.fully && r.remLife >= 1 && r.remLife < 3],
+    ['3 to 5 years', r => !r.fully && r.remLife >= 3 && r.remLife < 5], ['5 to 10 years', r => !r.fully && r.remLife >= 5 && r.remLife < 10], ['10 years or more', r => !r.fully && r.remLife >= 10]]
+    .map(([l, f]) => { const g = live.filter(r => r.life > 0 && f(r)); return { l, v: g.reduce((t, r) => t + r.cost, 0), sub: g.length + ' asset' + (g.length === 1 ? '' : 's'), tip: `${l}: ${g.length} assets, cost ₹${fmt(g.reduce((t, r) => t + r.cost, 0))}, net block ₹${fmt(g.reduce((t, r) => t + r.nbv, 0))}` }; });
+
+  // tables
+  const top = [...dep].sort((a, b) => b.dep - a.dep).slice(0, 10);
+  const soon = live.filter(r => r.life > 0 && (r.fully || r.remLife < 1)).sort((a, b) => (a.remLife ?? 0) - (b.remLife ?? 0));
+
+  return `<div class="kpis">
+      <div class="kpi"><span class="k">Average age</span><span class="v">${wAge.toFixed(1)} yrs</span><span class="n">Cost-weighted, depreciable assets</span></div>
+      <div class="kpi"><span class="k">Gross block depreciated</span><span class="v">${pct(grossDepr ? accDepr / grossDepr : 0)}</span><span class="n">Accumulated ÷ cost at year end</span></div>
+      <div class="kpi"><span class="k">Depreciation rate</span><span class="v">${pct(depPct)}</span><span class="n">Charge ÷ opening gross block</span></div>
+      <div class="kpi"><span class="k">Fully depreciated, in use</span><span class="v">${fully.length}</span><span class="n">Cost ₹${fmt(fully.reduce((t, r) => t + r.cost, 0))}</span></div>
+      <div class="kpi"><span class="k">Additional depreciation</span><span class="v">${lakh(R.dt.addl)}</span><span class="n">${R.dt.addlAllowed ? 'Claimed this year, s.33(8)' : 'Not allowed under current settings'}</span></div>
+    </div>
+    <div class="charts">
+      <section class="panel chart"><h3>Net block moved from ${lakh(openNbv)} to ${lakh(closeNbv)}</h3>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Balance</span><span><i style="background:var(--s3)"></i>Increase</span><span><i style="background:var(--s2)"></i>Decrease</span></div>${bridge}</section>
+      <section class="panel chart"><h3>Tax depreciation ${R.dt.itDep >= R.dt.bookDep ? 'exceeds' : 'is below'} book depreciation by ${lakh(Math.abs(R.dt.adjust))}</h3>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Book (Companies Act)</span><span><i style="background:var(--s2)"></i>Income tax</span></div>${bvt}</section>
+      <section class="panel chart"><h3>Depreciation charge by category</h3><p class="lede" style="margin:0">Total ${lakh(depY)} for the year</p>${byCat.length ? hbars(byCat, 'var(--s1)') : '<p class="muted">No depreciation this year.</p>'}</section>
+      <section class="panel chart"><h3>Remaining useful life, by cost</h3><p class="lede" style="margin:0">Assets in use; plan replacements for the top two rows</p>${hbars(buckets, 'var(--s1)')}</section>
+    </div>
+    <section class="panel" style="margin-top:18px"><div class="panel-head"><h2>Top 10 assets by depreciation</h2></div>
+      <div class="scroll"><table><thead><tr><th>ID</th><th>Description</th><th>Category</th><th class="num">Cost</th><th class="num">Depreciation</th><th class="num">Share of total</th><th class="num">Closing net block</th></tr></thead>
+      <tbody>${top.map(r => `<tr><td>${esc(r.a.id)}</td><td>${esc(r.a.desc)}</td><td>${esc(r.a.cat)}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmt(r.dep)}</td><td class="num">${pct(r.dep / Math.max(1, depY))}</td><td class="num">${fmt(r.nbv)}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="panel"><div class="panel-head"><h2>Replacement watchlist</h2><span class="small muted">Fully depreciated or less than a year of life left</span></div>
+      ${soon.length ? `<div class="scroll"><table><thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Put to use</th><th class="num">Life (yrs)</th><th class="num">Life left (yrs)</th><th class="num">Cost</th><th class="num">Net block</th></tr></thead>
+      <tbody>${soon.map(r => `<tr><td>${esc(r.a.id)}</td><td>${esc(r.a.desc)}</td><td>${esc(r.a.cat)}</td><td>${fdate(r.a.put)}</td><td class="num">${r.life}</td><td class="num">${r.fully ? 'Nil' : r.remLife.toFixed(1)}</td><td class="num">${fmt(r.cost)}</td><td class="num">${fmt(r.nbv)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="note">No assets are near the end of their useful life.</p>'}</section>`;
+}
+
+// ---------------------------------------------------------------- lives and rates (editable)
+function viewRates(R) {
+  const use = n => cur.assets.filter(a => a.cat === n).length, buse = n => cur.cats.filter(c => c.block === n).length;
+  const bopts = sel => cur.blocks.map(b => `<option${b.name === sel ? ' selected' : ''}>${esc(b.name)}</option>`).join('');
+  return `<section class="panel"><div class="panel-head"><h2>Categories and useful lives</h2><span class="small muted">Companies Act Schedule II defaults — change any value for this company</span></div>
+    <div class="scroll"><table><thead><tr><th>Category</th><th class="num">Useful life (years)</th><th>Income-tax block</th><th class="num">Assets</th><th></th></tr></thead>
+    <tbody>${cur.cats.map((c, i) => `<tr><td><input id="cat-n-${i}" data-cat="${i}" data-f="name" value="${esc(c.name)}" aria-label="Category name"${dis()}></td>
+      <td class="num"><input id="cat-l-${i}" class="w-life" type="number" min="0" step="0.5" data-cat="${i}" data-f="life" value="${blank(c.life) ? '' : c.life}" aria-label="Useful life, ${esc(c.name)}"${dis()}></td>
+      <td><select id="cat-b-${i}" data-cat="${i}" data-f="block" aria-label="Tax block, ${esc(c.name)}"${dis()}>${bopts(c.block)}</select></td>
+      <td class="num">${use(c.name)}</td><td>${use(c.name) || locked() ? '' : `<button type="button" class="link" data-rmcat="${i}">Remove</button>`}</td></tr>`).join('')}</tbody></table></div>
+    ${locked() ? '' : '<div class="extras"><button type="button" id="add-cat">Add category</button><button type="button" id="reset-rates">Reset to standard lives and rates</button><button type="button" id="reset-confirm" class="danger" hidden>Confirm reset</button></div>'}
+    <p class="note">Renaming a category updates every asset that uses it. Software and other intangibles follow Ind AS 38 / AS 26 estimates, not Schedule II. Continuous-process plant has a 25-year life.</p></section>
+  <section class="panel"><div class="panel-head"><h2>Income-tax blocks and rates</h2></div>
+    <div class="scroll"><table><thead><tr><th>Block</th><th class="num">Rate %</th><th class="num">Categories</th><th></th></tr></thead>
+    <tbody>${cur.blocks.map((b, i) => `<tr><td><input id="blk-n-${i}" data-blk="${i}" data-f="name" value="${esc(b.name)}" aria-label="Block name"${dis()}></td>
+      <td class="num"><input id="blk-r-${i}" class="w-life" type="number" min="0" max="100" step="0.5" data-blk="${i}" data-f="rate" value="${+(b.rate * 100).toFixed(3)}" aria-label="Rate, ${esc(b.name)}"${dis()}></td>
+      <td class="num">${buse(b.name)}</td><td>${buse(b.name) || locked() ? '' : `<button type="button" class="link" data-rmblk="${i}">Remove</button>`}</td></tr>`).join('')}</tbody></table></div>
+    ${locked() ? '' : '<div class="extras"><button type="button" id="add-blk">Add block</button></div>'}
+    <div class="extras"><label for="s-half" style="max-width:260px">Half rate when put to use for fewer than (days)<input id="s-half" type="number" min="1" max="366" value="${cur.settings.halfDays}"${dis()}></label>
+      <label for="s-addl" style="max-width:260px">Additional depreciation rate %<input id="s-addl" type="number" min="0" max="100" step="0.5" value="${+(cur.settings.addlRate * 100).toFixed(3)}"${dis()}></label></div>
+    <p class="note">A block's rate applies to every category in it. Verify rates against the Income-tax Rules, 2026 before relying on them.</p></section>`;
+}
+
+function bindView() {
+  document.querySelectorAll('tr[data-row]').forEach(tr => { const open = () => openForm(+tr.dataset.row);
+    tr.addEventListener('click', open); tr.addEventListener('keydown', e => { if (e.key === 'Enter') open(); }); });
+  document.querySelectorAll('[data-act="add"]').forEach(b => b.addEventListener('click', () => openForm(null)));
+  document.querySelectorAll('[data-act="upload"]').forEach(b => b.addEventListener('click', openUpload));
+  document.querySelectorAll('input[data-block]').forEach(inp => inp.addEventListener('change', () => { cur.openWdv[inp.dataset.block] = Math.max(0, +inp.value || 0); changed(); }));
+  // extra columns
+  const add = $('addcol');
+  if (add) { const go = () => { const v = $('newcol').value.trim(); if (!v) return;
+      if (cur.customCols.some(c => c.toLowerCase() === v.toLowerCase()) || FIXED_BY_NORM[norm(v)]) { toast('That column already exists.'); return; }
+      cur.customCols.push(v); changed(); toast('Column added — fill it in each asset'); };
+    add.addEventListener('click', go); $('newcol').addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); }
+  document.querySelectorAll('[data-rmcol]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.rmcol, name = cur.customCols[i];
+    $('rmcol-confirm').innerHTML = `<button type="button" class="danger" id="rmcol-yes">Remove "${esc(name)}" and its data</button>`;
+    $('rmcol-yes').addEventListener('click', () => { cur.customCols.splice(i, 1); cur.assets.forEach(a => { if (a.extra) delete a.extra[name]; }); changed(); toast('Column removed'); });
+  }));
+  // categories & blocks
+  document.querySelectorAll('[data-cat]').forEach(el => el.addEventListener('change', () => {
+    const c = cur.cats[+el.dataset.cat], f = el.dataset.f;
+    if (f === 'name') { const v = el.value.trim(); if (!v || cur.cats.some(x => x !== c && x.name === v)) { toast('Category names must be unique and not empty.'); render(); return; }
+      cur.assets.forEach(a => { if (a.cat === c.name) a.cat = v; }); c.name = v; }
+    else if (f === 'life') c.life = el.value === '' ? '' : Math.max(0, +el.value);
+    else c.block = el.value;
+    changed(); }));
+  document.querySelectorAll('[data-blk]').forEach(el => el.addEventListener('change', () => {
+    const b = cur.blocks[+el.dataset.blk], f = el.dataset.f;
+    if (f === 'name') { const v = el.value.trim(); if (!v || cur.blocks.some(x => x !== b && x.name === v)) { toast('Block names must be unique and not empty.'); render(); return; }
+      cur.cats.forEach(c => { if (c.block === b.name) c.block = v; }); if (b.name in cur.openWdv) { cur.openWdv[v] = cur.openWdv[b.name]; delete cur.openWdv[b.name]; } b.name = v; }
+    else b.rate = Math.min(1, Math.max(0, (+el.value || 0) / 100));
+    changed(); }));
+  document.querySelectorAll('[data-rmcat]').forEach(b => b.addEventListener('click', () => { cur.cats.splice(+b.dataset.rmcat, 1); changed(); }));
+  document.querySelectorAll('[data-rmblk]').forEach(b => b.addEventListener('click', () => { const n = cur.blocks[+b.dataset.rmblk].name; cur.blocks.splice(+b.dataset.rmblk, 1); delete cur.openWdv[n]; changed(); }));
+  if ($('add-cat')) $('add-cat').addEventListener('click', () => { let n = 'New category', k = 2; while (cur.cats.some(c => c.name === n)) n = 'New category ' + k++;
+    cur.cats.push({ name: n, life: '', block: cur.blocks[1]?.name || cur.blocks[0].name }); changed(); const i = cur.cats.length - 1; $('cat-n-' + i)?.focus(); $('cat-n-' + i)?.select(); });
+  if ($('add-blk')) $('add-blk').addEventListener('click', () => { let n = 'New block', k = 2; while (cur.blocks.some(b => b.name === n)) n = 'New block ' + k++;
+    cur.blocks.push({ name: n, rate: 0.15 }); changed(); const i = cur.blocks.length - 1; $('blk-n-' + i)?.focus(); $('blk-n-' + i)?.select(); });
+  if ($('reset-rates')) { $('reset-rates').addEventListener('click', () => { $('reset-rates').hidden = true; $('reset-confirm').hidden = false; });
+    $('reset-confirm').addEventListener('click', () => {
+      const used = new Set(cur.assets.map(a => a.cat)); const keep = cur.cats.filter(c => used.has(c.name) && !DEFAULT_CATS.some(d => d.name === c.name));
+      cur.cats = clone(DEFAULT_CATS).concat(keep); const bk = new Set(DEFAULT_BLOCKS.map(b => b.name));
+      cur.blocks = clone(DEFAULT_BLOCKS).concat(cur.blocks.filter(b => !bk.has(b.name) && keep.some(c => c.block === b.name)));
+      changed(); toast('Standard lives and rates restored'); }); }
+  if ($('dt-open')) $('dt-open').addEventListener('change', e => { cur.dtOpen = +e.target.value || 0; changed(); });
+  document.querySelectorAll('[data-mat]').forEach(el => el.addEventListener('change', () => {
+    const v = +el.value || 0; cur.mat[el.dataset.mat] = el.dataset.pct ? Math.min(1, Math.max(0, v / 100)) : v; changed(); }));
+  if ($('mat-entity')) $('mat-entity').addEventListener('change', e => { cur.mat.entity = e.target.value; changed(); });
+  if ($('mat-s200')) $('mat-s200').addEventListener('click', () => { cur.mat.normalRate = 0.22; cur.mat.surcharge = 0.10; changed(); toast('Set to 22% + 10% surcharge'); });
+  if ($('s-half')) $('s-half').addEventListener('change', e => { cur.settings.halfDays = Math.min(366, Math.max(1, Math.round(+e.target.value || 180))); changed(); });
+  if ($('s-addl')) $('s-addl').addEventListener('change', e => { cur.settings.addlRate = Math.min(1, Math.max(0, (+e.target.value || 0) / 100)); changed(); });
+}
+
+// ================================================================ asset form
+const F = ['id', 'desc', 'cat', 'loc', 'pur', 'put', 'cost', 'oacc', 'del', 'proc', 'lifeOv', 'resOv', 'addl'];
+function openForm(i) {
+  editing = i; const a = i == null ? { id: nextId(), cat: (cur.cats[3] || cur.cats[0]).name, extra: {} } : cur.assets[i];
+  $('f-cat').innerHTML = cur.cats.map(c => `<option>${esc(c.name)}</option>`).join('') + (a.cat && !cur.cats.some(c => c.name === a.cat) ? `<option>${esc(a.cat)}</option>` : '');
+  F.forEach(k => { $('f-' + k).value = k === 'addl' ? (/^y/i.test(String(a.addl || '')) ? 'Yes' : '') : (a[k] ?? ''); });
+  $('f-extra-wrap').hidden = !cur.customCols.length;
+  $('f-extra').innerHTML = cur.customCols.map((c, j) => `<label for="fx-${j}">${esc(c)}<input id="fx-${j}" data-x="${esc(c)}" value="${esc(a.extra?.[c])}"></label>`).join('');
+  const L = locked();
+  $('f-set').disabled = L; $('save-asset').hidden = L;
+  $('asset-dialog-title').textContent = L ? 'Asset ' + a.id : i == null ? 'Add asset' : 'Edit asset ' + a.id;
+  $('del-asset').hidden = i == null || L; $('del-confirm').hidden = true; $('form-err').textContent = '';
+  $('asset-dialog').showModal(); if (!L) $('f-desc').focus();
+}
+function nextId() { const n = cur.assets.map(a => +(String(a.id).match(/(\d+)$/) || [0, 0])[1]); return 'FA-' + String(Math.max(0, ...n) + 1).padStart(3, '0'); }
+$('asset-form').addEventListener('submit', e => {
+  e.preventDefault(); if (locked()) return;
+  const v = Object.fromEntries(F.map(k => [k, $('f-' + k).value.trim()]));
+  const err = !v.id ? 'Enter an asset ID.' : !v.desc ? 'Enter a description.' : !v.put ? 'Enter the put-to-use date.'
+    : !(+v.cost > 0) ? 'Enter the cost, more than zero.' : (v.pur && v.put < v.pur) ? 'Put-to-use date cannot be before the purchase date.'
+    : (+v.oacc > +v.cost) ? 'Opening accumulated depreciation cannot be more than cost.' : (v.del && v.del < v.put) ? 'Deletion date cannot be before the put-to-use date.'
+    : (v.resOv !== '' && (+v.resOv < 0 || +v.resOv > 100)) ? 'Residual override must be between 0 and 100%.'
+    : cur.assets.some((a, j) => a.id === v.id && j !== editing) ? 'That asset ID is already used.' : '';
+  if (err) { $('form-err').textContent = err; return; }
+  const extra = {}; document.querySelectorAll('#f-extra input[data-x]').forEach(inp => { extra[inp.dataset.x] = inp.value.trim(); });
+  const a = { ...v, cost: +v.cost, oacc: +v.oacc || 0, proc: v.proc === '' ? null : +v.proc, lifeOv: v.lifeOv === '' ? '' : +v.lifeOv, resOv: v.resOv === '' ? '' : +v.resOv, extra };
+  if (editing == null) cur.assets.push(a); else cur.assets[editing] = a;
+  $('asset-dialog').close(); changed(); toast(editing == null ? 'Asset added' : 'Asset updated');
+});
+$('cancel').addEventListener('click', () => $('asset-dialog').close());
+$('del-asset').addEventListener('click', () => { $('del-asset').hidden = true; $('del-confirm').hidden = false; });
+$('del-confirm').addEventListener('click', () => { const id = cur.assets[editing].id; cur.assets.splice(editing, 1); $('asset-dialog').close(); changed(); toast('Deleted ' + id); });
+
+// ================================================================ settings, tabs, companies, finalise
+$('s-name').addEventListener('change', e => { cur.settings.name = e.target.value.trim() || 'Untitled company'; changed(); });
+$('s-fys').addEventListener('change', e => { if (e.target.value) { cur.settings.fyStart = e.target.value; changed(); } });
+$('s-fye').addEventListener('change', e => { if (e.target.value) { cur.settings.fyEnd = e.target.value; changed(); } });
+$('s-res').addEventListener('change', e => { cur.settings.residual = Math.min(1, Math.max(0, (+e.target.value || 0) / 100)); changed(); });
+$('s-tax').addEventListener('change', e => { cur.settings.taxRate = Math.min(1, Math.max(0, (+e.target.value || 0) / 100)); changed(); });
+$('s-mfg').addEventListener('change', e => { cur.settings.mfg = e.target.value; changed(); });
+$('s-reg').addEventListener('change', e => { cur.settings.regime = e.target.value; changed(); });
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { cur.settings.method = b.dataset.m; changed(); }));
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { tab = t.dataset.tab; render(); closeRail(); }));
+// mobile drawer (layout only)
+function openRail() { $('rail').classList.add('open'); $('scrim').classList.add('open'); $('menu-btn').setAttribute('aria-expanded', 'true'); }
+function closeRail() { $('rail').classList.remove('open'); $('scrim').classList.remove('open'); $('menu-btn').setAttribute('aria-expanded', 'false'); }
+$('menu-btn').addEventListener('click', openRail); $('tab-more').addEventListener('click', openRail); $('scrim').addEventListener('click', closeRail);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRail(); });
+$('add-asset').addEventListener('click', () => openForm(null));
+$('company').addEventListener('change', e => { cur = companies.find(c => c.id === e.target.value) || cur; render(); });
+$('new-company').addEventListener('click', () => {
+  const c = blankCompany('New company'); companies = companies.filter(x => !x.sample); companies.push(c); cur = c; persist(); render();
+  $('s-name').focus(); $('s-name').select(); toast('New company created — name it above');
+});
+$('start-own').addEventListener('click', () => $('new-company').click());
+$('finalise').addEventListener('click', () => { materialise(); cur.finalised = true; cur.finalisedAt = new Date().toISOString().slice(0, 10); persist(); tab = 'analysis'; render(); toast('Marked as final — figures locked'); });
+$('reopen').addEventListener('click', () => { $('reopen').hidden = true; $('reopen-confirm').hidden = false; });
+$('reopen-confirm').addEventListener('click', () => { cur.finalised = false; delete cur.finalisedAt; persist(); render(); toast('Reopened for editing'); });
+
+// ================================================================ bulk upload: template + import
+function openUpload() {
+  $('tpl-cols').innerHTML = `<thead><tr><th>Column</th><th>Required</th><th>What to enter</th></tr></thead><tbody>
+    ${FIXED.map(f => `<tr><td><strong>${esc(f[1])}</strong></td><td>${f[2] ? 'Yes' : 'Optional'}</td><td class="small">${esc(f[3])}</td></tr>`).join('')}
+    <tr><td><strong style="color:var(--teal)">Any other column</strong></td><td>Optional</td><td class="small">Your own fields (cost centre, vendor, tag number…). Kept with each asset.</td></tr></tbody>`;
+  $('upload-dialog').showModal();
+}
+$('upload-btn').addEventListener('click', openUpload);
+$('upload-close').addEventListener('click', () => $('upload-dialog').close());
+$('choose-file').addEventListener('click', () => $('import-file').click());
+async function save(filename, data) {
+  const dl = window.__downloads;
+  if (!dl) { toast('Downloading is not available in this view.'); return; }
+  try { await dl.save({ filename, data }); toast('File saved'); } catch (e) { if (e && e.code !== 'declined') toast('The download could not start here.'); }
+}
+function templateRows() {
+  const extras = cur.customCols.length ? cur.customCols : ['Cost centre', 'Vendor'];
+  const head = FIXED.map(f => f[1] + (f[2] ? ' *' : '')).concat(extras);
+  const ex = ['FA-001', 'CNC machine line 1', 'Plant and machinery (general)', 'Sanand plant', '05-08-2021', '01-09-2021', 1850000, 560000, '', '', '', '', 'Yes'].concat(extras.map((c, i) => i === 0 ? 'CC-PROD' : 'Example'));
+  return { head, ex };
+}
+$('tpl-csv').addEventListener('click', () => {
+  const { head, ex } = templateRows(), q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  save('FAR upload template.csv', '﻿' + [head, ex].map(r => r.map(q).join(',')).join('\r\n') + '\r\n');
+});
+$('tpl-xlsx').addEventListener('click', () => {
+  if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return; }
+  const { head, ex } = templateRows(), wb = XLSX.utils.book_new();
+  const reg = XLSX.utils.aoa_to_sheet([head, ex]); reg['!cols'] = head.map(h => ({ wch: Math.max(14, h.length + 2) }));
+  XLSX.utils.book_append_sheet(wb, reg, 'Register');
+  const ins = [['How to fill the FAR upload template'], [], ['1. One row per asset on the Register sheet. Delete the example row.'], ['2. Columns marked * are required. Dates as DD-MM-YYYY. Amounts in rupees, no ₹ sign needed.'],
+    ['3. Category must match the Categories sheet. New names are added for you; set their useful life in the tool.'], ['4. Add any extra columns after the fixed ones (tag no., invoice no., cost centre). They are kept as-is.'],
+    ['5. Re-uploading with the same Asset ID updates that asset.'], [], ['Column', 'Required', 'What to enter']].concat(FIXED.map(f => [f[1], f[2] ? 'Yes' : 'Optional', f[3]]));
+  const isn = XLSX.utils.aoa_to_sheet(ins); isn['!cols'] = [{ wch: 34 }, { wch: 10 }, { wch: 80 }];
+  XLSX.utils.book_append_sheet(wb, isn, 'Instructions');
+  const cats = XLSX.utils.aoa_to_sheet([['Category', 'Useful life (years)', 'Income-tax block', 'Rate']].concat(cur.cats.map(c => [c.name, c.life, c.block, (cur.blocks.find(b => b.name === c.block) || {}).rate ?? ''])));
+  cats['!cols'] = [{ wch: 34 }, { wch: 18 }, { wch: 26 }, { wch: 8 }];
+  XLSX.utils.book_append_sheet(wb, cats, 'Categories');
+  save('FAR upload template.xlsx', new Uint8Array(XLSX.write(wb, { bookType: 'xlsx', type: 'array' })));
+});
+
+const numv = v => typeof v === 'number' ? v : (String(v ?? '').trim() === '' ? NaN : +String(v).replace(/[,₹\s]/g, ''));
+function iso(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (v instanceof Date && !isNaN(v)) return new Date(v.getTime() - v.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  if (typeof v === 'number') return new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5).toISOString().slice(0, 10);
+  const s = String(v).trim(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+  if ((m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/))) return (+m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : 'BAD:' + s;
+  if ((m = s.match(/^(\d{1,2})[-/ ]([A-Za-z]{3})[A-Za-z]*[-/ ](\d{4})$/))) { const k = MON.findIndex(x => x.toLowerCase() === m[2].toLowerCase()); if (k >= 0) return `${m[3]}-${String(k + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+  return 'BAD:' + s;
+}
+$('import-file').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return; }
+  try {
+    const isCsv = /\.csv$/i.test(file.name);
+    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true, raw: isCsv });
+    const ws = wb.Sheets['Register'] || wb.Sheets[wb.SheetNames[0]];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+    const h = aoa.findIndex(r => r.some(c => norm(c) === 'asset id'));
+    if (h < 0) { toast('No "Asset ID" column found. Use the upload template.'); return; }
+    const map = {}, extras = [];
+    aoa[h].forEach((c, j) => { const n = norm(c); if (!n) return;
+      const key = FIXED_BY_NORM[n] || ALIASES[n]; if (key) { if (!(key in map)) map[key] = j; }
+      else if (!COMPUTED.includes(n)) extras.push([String(c).replace(/\*/g, '').trim(), j]); });
+    const missingCols = FIXED.filter(f => f[2] && !(f[0] in map)).map(f => f[1]);
+    if (missingCols.length) { toast('Missing required columns: ' + missingCols.join(', ')); return; }
+    const got = [], problems = [], seen = new Set();
+    aoa.slice(h + 1).forEach((r, k) => {
+      const rowNo = h + 2 + k, g = key => map[key] === undefined ? '' : r[map[key]];
+      if (r.every(c => String(c).trim() === '')) return;
+      const a = { id: String(g('id')).trim(), desc: String(g('desc')).trim(), cat: String(g('cat')).trim(), loc: String(g('loc')).trim(),
+        pur: iso(g('pur')), put: iso(g('put')), cost: numv(g('cost')), oacc: numv(g('oacc')), del: iso(g('del')), proc: numv(g('proc')),
+        lifeOv: numv(g('lifeOv')), resOv: numv(g('resOv')), addl: /^y/i.test(String(g('addl')).trim()) ? 'Yes' : '', extra: Object.fromEntries(extras.map(([n, j]) => [n, String(r[j] ?? '').trim()])) };
+      const bad = [];
+      if (!a.id) bad.push('no Asset ID'); else if (seen.has(a.id)) bad.push('duplicate Asset ID ' + a.id);
+      if (!a.desc) bad.push('no description'); if (!a.cat) bad.push('no category');
+      if (!a.put || a.put.startsWith('BAD:')) bad.push('put-to-use date missing or unreadable');
+      if (!(a.cost > 0)) bad.push('cost missing or zero');
+      ['pur', 'del'].forEach(f => { if (a[f].startsWith('BAD:')) bad.push((f === 'pur' ? 'purchase' : 'deletion') + ' date unreadable'); });
+      if (bad.length) { problems.push(`Row ${rowNo}${a.id ? ' (' + a.id + ')' : ''}: ${bad.join(', ')}`); return; }
+      seen.add(a.id);
+      a.oacc = isNaN(a.oacc) ? 0 : a.oacc; a.proc = isNaN(a.proc) ? null : a.proc;
+      a.lifeOv = isNaN(a.lifeOv) ? '' : a.lifeOv; a.resOv = isNaN(a.resOv) ? '' : a.resOv;
+      got.push(a);
+    });
+    const newCats = [...new Set(got.map(a => a.cat).filter(c => !cur.cats.some(x => x.name === c)))];
+    pendingImport = { got, extras: extras.map(x => x[0]), newCats };
+    const updates = got.filter(a => cur.assets.some(x => x.id === a.id)).length;
+    $('import-body').innerHTML = `
+      <p style="margin:0"><strong>${got.length}</strong> asset${got.length === 1 ? '' : 's'} ready from <span class="muted">${esc(file.name)}</span>, total cost ₹${fmt(got.reduce((t, a) => t + a.cost, 0))}.
+        ${cur.assets.length && !cur.sample ? `${updates} match existing Asset IDs.` : ''}</p>
+      ${problems.length ? `<p class="subhead" style="margin:12px 0 6px;color:var(--bad)">${problems.length} row${problems.length === 1 ? '' : 's'} skipped — fix in the file and upload again</p><ul class="list">${problems.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+      ${newCats.length ? `<p class="subhead" style="margin:12px 0 6px">New categories — set their useful life in Lives and rates</p><p class="small" style="margin:0">${newCats.map(esc).join(', ')}</p>` : ''}
+      ${pendingImport.extras.length ? `<p class="subhead" style="margin:12px 0 6px">Your extra columns kept</p><p class="small" style="margin:0">${pendingImport.extras.map(esc).join(', ')}</p>` : ''}`;
+    $('imp-merge').hidden = !cur.assets.length || cur.sample;
+    $('imp-replace').disabled = $('imp-merge').disabled = !got.length;
+    $('upload-dialog').close(); $('import-dialog').showModal();
+  } catch { toast('That file could not be read. Save it as .xlsx or .csv and try again.'); }
+});
+function applyImport(replace) {
+  const p = pendingImport; if (!p) return;
+  if (cur.sample) { const c = blankCompany(cur.settings.name.replace(' (example)', '') === 'ABC Industries Ltd' ? 'New company' : cur.settings.name); companies = companies.filter(x => !x.sample); companies.push(c); cur = c; replace = true; }
+  p.newCats.forEach(n => cur.cats.push({ name: n, life: '', block: (cur.blocks.find(b => b.rate > 0) || cur.blocks[0]).name }));
+  p.extras.forEach(x => { if (!cur.customCols.includes(x)) cur.customCols.push(x); });
+  if (replace) cur.assets = p.got;
+  else { const ids = new Map(p.got.map(a => [a.id, a])); cur.assets = cur.assets.map(a => ids.get(a.id) || a).concat(p.got.filter(a => !cur.assets.some(x => x.id === a.id))); }
+  pendingImport = null; $('import-dialog').close(); tab = p.newCats.length ? 'rates' : 'register'; changed();
+  toast(`Imported ${p.got.length} assets` + (p.newCats.length ? ' — set lives for new categories' : ''));
+}
+$('imp-replace').addEventListener('click', () => applyImport(true));
+$('imp-merge').addEventListener('click', () => applyImport(false));
+$('imp-cancel').addEventListener('click', () => { pendingImport = null; $('import-dialog').close(); });
+
+// ================================================================ export
+$('export').addEventListener('click', () => {
+  if (!window.XLSX) { toast('The spreadsheet library did not load. Reload and try again.'); return; }
+  const R = compute(cur), s = cur.settings, r0 = n => Math.round(n), cc = cur.customCols, wb = XLSX.utils.book_new();
+  const reg = [[s.name + ' — Fixed Asset Register'], [`FY ${fdate(s.fyStart)} to ${fdate(s.fyEnd)} | Companies Act ${s.method} | Residual ${pct(s.residual)} | ₹${cur.finalised ? ' | FINAL' : ''}`], [],
+    FIXED.map(f => f[1]).concat(cc, ['Status', 'Useful life used (years)', 'Residual used %', 'Days used', 'Depreciation for the year', 'Closing gross block', 'Closing accumulated depreciation', 'Closing net block', 'Profit / (loss) on sale', 'Tax block', 'IT half rate', 'Additional depreciation this year', 'Additional depreciation balance from last year'])]
+    .concat(R.rows.map(r => [r.a.id, r.a.desc, r.a.cat, r.a.loc, r.a.pur, r.a.put, r.cost, r.oacc, r.a.del, r.a.proc ?? '', r.a.lifeOv ?? '', r.a.resOv ?? '', r.a.addl || '']
+      .concat(cc.map(c => r.a.extra?.[c] ?? ''), [r.deleted ? 'Sold' : r.addition ? 'Addition' : 'Existing', r.life, +(r.res * 100).toFixed(3), r.days, r0(r.dep), r0(r.closeGross), r0(r.closeAcc), r0(r.nbv), r0(r.pl), r.block, r.half ? 'Yes' : '', r0(r.addlThis), r0(r.addlBal)])));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(reg), 'Register');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Category', 'Opening gross block', 'Additions', 'Deletions', 'Closing gross block', 'Opening acc. depreciation', 'Charge for the year', 'On deletions', 'Closing acc. depreciation', 'Closing net block', 'Opening net block']]
+    .concat(R.sched.map(x => [x.cat, x.openGross, x.adds, x.dels, x.closeGross, x.openAcc, r0(x.dep), r0(x.onDel), r0(x.closeAcc), r0(x.nbv), x.openNbv]))), 'FA Schedule');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Block', 'Rate', 'Opening WDV', 'Additions full rate', 'Additions half rate', 'Sale proceeds', 'Depreciation full rate', 'Depreciation half rate', 'Normal depreciation', 'Additional - this year', 'Additional - balance from last year', 'Total depreciation', 'Closing WDV', 'Short-term capital gain', 'Book depreciation (same assets)']]
+    .concat(R.blocks.map(x => [x.b, x.rate, x.open, x.full, x.halfAdd, x.sales, r0(x.depFull), r0(x.depHalf), r0(x.normal), r0(x.addlThis), r0(x.addlBal), r0(x.dep), r0(x.close), r0(x.stcg), r0(x.bookDep)]))), 'IT Depreciation');
+  const d = R.dt;
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Tax block', 'Book net block', 'Tax WDV', 'Timing difference', 'Deferred tax liability / (asset)']]
+    .concat(d.byBlock.map(x => [x.b, r0(x.book), r0(x.tax), r0(x.diff), r0(x.dt)]), [['Net', r0(d.bookNbvExLand), r0(d.itClose), r0(d.diff), r0(d.dtl)], [],
+    ['Tax rate', d.rate], ['Closing deferred tax liability / (asset)', r0(d.dtl)], ['Opening deferred tax liability / (asset)', r0(d.open)], ['Charge / (credit) to profit and loss', r0(d.charge)], [],
+    ['Depreciation as per books', r0(d.bookDep)], ['Depreciation as per income tax', r0(d.itDep)], ['Book less tax depreciation', r0(d.adjust)]])), 'Deferred Tax');
+  const o = computeMAT(cur, R), mm = cur.mat;
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[o.isCo ? 'Minimum Alternate Tax (s.206)' : 'Alternate Minimum Tax (s.206(2))', mm.entity], [],
+    ['Net profit before tax', r0(+mm.pbt)], ['Add: depreciation as per books', r0(d.bookDep)], ['Less: depreciation as per income tax', r0(d.itDep)], ['Add: other disallowances', r0(+mm.otherDisallow)],
+    ['Less: other deductions and exempt income', r0(+mm.otherDeduct)], ['Less: brought-forward losses set off', r0(+mm.bfSetoff)], ['Total income', r0(o.totalIncome)],
+    ['Normal tax rate', +mm.normalRate], ['Surcharge', +mm.surcharge], ['Cess', +mm.cess], ['Tax under normal provisions', r0(o.normalTax)], [],
+    [o.baseLabel, r0(o.base)], [o.label + ' rate', o.minRate], [o.label, r0(o.minTax)], [o.label + ' applies', o.applies ? 'Yes' : 'No'], [],
+    ['Tax before credit', r0(o.beforeCredit)], ['Credit brought forward', r0(o.credBf)], ['Credit set off', r0(o.setoff)], ['Credit created', r0(o.created)],
+    ['Tax payable', r0(o.payable)], ['Credit carried forward', r0(o.credCf)]]), 'MAT AMT');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Category', 'Useful life (years)', 'Income-tax block'], ...cur.cats.map(c => [c.name, c.life, c.block]), [], ['Block', 'Rate'], ...cur.blocks.map(b => [b.name, b.rate])]), 'Lives and rates');
+  const name = (s.name.replace(/[^\w\- ]+/g, '').trim() || 'Company') + ' - Depreciation ' + s.fyStart.slice(0, 4) + '-' + s.fyEnd.slice(2, 4) + (cur.finalised ? ' FINAL' : '') + '.xlsx';
+  save(name, new Uint8Array(XLSX.write(wb, { bookType: 'xlsx', type: 'array' })));
+});
+
+// ================================================================ tooltip + toast
+const tip = $('tip');
+document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { tip.hidden = true; return; } tip.textContent = t.dataset.tip; tip.hidden = false;
+  const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8), y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8); tip.style.left = x + 'px'; tip.style.top = y + 'px'; });
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800); }
+
+cur = sampleCompany(); companies = [cur];
+boot();
+</script>
+<script>
+// ===== Look & feel kit (shared by every Finance Model tool) — colour combinations, custom colours, light / dark, spacing, type
+(function () {
+  const CFG = {"key": "depwb", "name": "Depreciation Workbench", "host": "#top-right", "btnClass": "sm", "map": "std", "own": {"accent": "#0F172A", "accent2": "#0284C7", "tint": "#64748B"}, "ownDark": true, "socNative": true, "ownName": "Desk colours", "ownDesc": "Slate ink with sky blue, built in the Society Desk design.", "skin": ""};
+  const PRESETS = [
+    { k: 'society', n: 'Society Desk', d: 'Slate, sky blue and amber, as in your Society Desk app.', accent: '#0284C7', accent2: '#D97706', tint: '#64748B' },
+    { k: 'navy', n: 'Ledger navy', d: 'Navy with a teal highlight.', accent: '#1F3864', accent2: '#0F766E', tint: '#5B6B8C' },
+    { k: 'teal', n: 'Treasury teal', d: 'Teal with an amber highlight.', accent: '#0F5E63', accent2: '#A16207', tint: '#4F7F80' },
+    { k: 'maroon', n: 'Rupee maroon', d: 'Maroon with a green highlight.', accent: '#7A1F3D', accent2: '#1D6B5F', tint: '#8A6170' },
+    { k: 'forest', n: 'Audit green', d: 'Ledger green with brass.', accent: '#23563A', accent2: '#8A5A14', tint: '#5E7A66' },
+    { k: 'indigo', n: 'Indigo slate', d: 'Indigo with cyan.', accent: '#3730A3', accent2: '#0E7490', tint: '#5D6283' },
+    { k: 'saffron', n: 'Saffron ink', d: 'Saffron-brown with navy.', accent: '#8F3F06', accent2: '#1F3864', tint: '#8A7360' },
+    { k: 'graphite', n: 'Graphite', d: 'Neutral grey with blue.', accent: '#2F3542', accent2: '#2563EB', tint: '#6B7280' },
+  ];
+  const FONTS = {
+    jakarta: { n: 'Plus Jakarta Sans (Society Desk)', d: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', b: '"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif', m: '"JetBrains Mono", ui-monospace, Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap' },
+    own: { n: "This tool's own type" },
+    plex: { n: 'IBM Plex', d: '"IBM Plex Serif", Georgia, serif', b: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', m: '"IBM Plex Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap' },
+    source: { n: 'Source Serif + Sans', d: '"Source Serif 4", Georgia, serif', b: '"Source Sans 3", "Segoe UI", Arial, sans-serif', m: '"Source Code Pro", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap' },
+    public: { n: 'Public Sans + Literata', d: '"Literata", Georgia, serif', b: '"Public Sans", "Segoe UI", Arial, sans-serif', m: '"JetBrains Mono", Consolas, monospace', url: 'https://fonts.googleapis.com/css2?family=Literata:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap' },
+  };
+  const KEY = CFG.key + '-look';
+  const DEF = { preset: CFG.colours === false ? 'own' : 'society', custom: { ...CFG.own }, mode: CFG.defMode || 'system', density: 'comfortable', font: 'jakarta', skin: 'society', saved: [], v: 2 };
+  let L = JSON.parse(JSON.stringify(DEF));
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s) { if (!s.v) { if (s.preset === 'own' && CFG.colours !== false) s.preset = 'society'; if (s.font === 'own') s.font = 'jakarta'; s.skin = 'society'; s.v = 2; } L = { ...L, ...s }; } } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch {} };
+
+  // ---- colour maths
+  const hexRgb = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0); };
+  const rgbHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+  function hexHsl(h) { let [r, g, b] = hexRgb(h).map(v => v / 255); const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let hh = 0, ss = 0;
+    if (mx !== mn) { const d = mx - mn; ss = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh *= 60; }
+    return [hh, ss * 100, l * 100]; }
+  function hsl(h, s, l) { s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return rgbHex([f(0) * 255, f(8) * 255, f(4) * 255]); }
+  const lum = h => { const c = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  function fit(hex, bg, min, dir) { let [h, s, l] = hexHsl(hex), out = hex, n = 0; while (contrast(out, bg) < min && n++ < 50) { l = Math.max(0, Math.min(100, l + dir * 2)); out = hsl(h, s, l); } return out; }
+  const mix = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b); return rgbHex(x.map((v, i) => v + (y[i] - v) * t)); };
+  // one base palette, mapped onto each tool's own token names
+  function base(c, dark) {
+    const [ah, as] = hexHsl(c.accent), [bh, bs] = hexHsl(c.accent2), [th, ts0] = hexHsl(c.tint || c.accent), ts = Math.min(ts0, 40);
+    const P = { dark };
+    if (!dark) {
+      Object.assign(P, { bg: hsl(th, ts * .5, 97), surface: '#FFFFFF', sunk: hsl(th, ts * .55, 94), line: hsl(th, ts * .45, 86), line2: hsl(th, ts * .45, 78), fg: hsl(th, Math.min(ts, 35), 13), muted: hsl(th, ts * .4, 38), faint: hsl(th, ts * .3, 55) });
+      P.accent = fit(c.accent, '#FFFFFF', 4.6, -1); P.accentInk = contrast(P.accent, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accentHi = fit(hsl(ah, as, Math.min(hexHsl(P.accent)[2] + 10, 48)), '#FFFFFF', 4.5, -1);
+      P.accent2 = fit(c.accent2, '#FFFFFF', 4.5, -1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 70); P.accent2Ink = contrast(P.accent2, '#FFFFFF') >= 4.5 ? '#FFFFFF' : '#111111';
+      P.accent2Soft = hsl(bh, Math.min(bs, 60), 95); P.accent2Text = fit(hsl(bh, bs, 30), P.accent2Soft, 5, -1);
+      P.band = hsl(ah, Math.min(as, 70), Math.min(hexHsl(c.accent)[2], 20)); P.band2 = hsl(ah, Math.min(as, 65), Math.min(hexHsl(c.accent)[2] + 7, 28));
+      P.focus = hsl(ah, Math.max(as, 70), 48);
+      Object.assign(P, { good: '#15803D', goodBg: '#DCFCE7', warn: '#B45309', warnBg: '#FEF3C7', bad: '#B91C1C', badBg: '#FEE2E2' });
+    } else {
+      Object.assign(P, { bg: hsl(th, ts * .7, 8), surface: hsl(th, ts * .6, 12), sunk: hsl(th, ts * .55, 16), line: hsl(th, ts * .45, 25), line2: hsl(th, ts * .45, 32), fg: hsl(th, ts * .3, 91), muted: hsl(th, ts * .3, 66), faint: hsl(th, ts * .25, 50) });
+      P.accent = fit(hsl(ah, Math.min(as, 70), Math.max(hexHsl(c.accent)[2], 66)), P.surface, 5, 1); P.accentInk = P.bg; P.accentHi = hsl(ah, Math.min(as, 75), 80);
+      P.accent2 = fit(hsl(bh, Math.min(bs, 70), 60), P.surface, 4.5, 1); P.accent2Hi = hsl(bh, Math.min(bs, 75), 74); P.accent2Ink = P.bg;
+      P.accent2Soft = hsl(bh, Math.min(bs, 40), 17); P.accent2Text = hsl(bh, Math.min(bs, 70), 78);
+      P.band = hsl(ah, Math.min(as, 60), 11); P.band2 = hsl(ah, Math.min(as, 55), 18);
+      P.focus = hsl(ah, 90, 72);
+      Object.assign(P, { good: '#4ADE80', goodBg: '#12301F', warn: '#F5B451', warnBg: '#3A2A10', bad: '#F87171', badBg: '#3B1717' });
+    }
+    return P;
+  }
+  const MAPS = {
+    std: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--fg': P.fg, '--muted': P.muted, '--navy': P.accent, '--navy-ink': P.accentInk, '--teal': P.accent2, '--focus': P.focus }),
+    cfo: P => ({ '--bg': P.bg, '--bg2': P.sunk, '--surface': P.surface, '--raise': mix(P.surface, P.sunk, .5), '--line': P.line, '--line2': P.line2, '--fg': P.fg, '--muted': P.muted, '--faint': P.faint,
+      '--navy': P.accent, '--navy2': P.accentHi, '--gold': P.accent2, '--gold2': P.accent2Hi, '--gold-ink': P.accent2Ink, '--gold-soft': P.accent2Soft, '--side': P.surface, '--side-fg': P.accent, '--side-muted': P.muted, '--side-line': P.line,
+      '--focus': P.focus, '--input': P.accent2Soft, '--input-ink': P.accent2Text, '--s1': P.accent, '--s2': P.accent2, '--s3': P.line2,
+      '--good': P.good, '--good-bg': P.goodBg, '--warn': P.warn, '--warn-bg': P.warnBg, '--bad': P.bad, '--bad-bg': P.badBg, '--shadow': P.dark ? '0 1px 2px rgba(0,0,0,.3), 0 10px 28px -18px rgba(0,0,0,.6)' : '' }),
+    cost: P => ({ '--bg': P.bg, '--surface': P.surface, '--sunk': P.sunk, '--line': P.line, '--rule': mix(P.line, P.surface, .45), '--fg': P.fg, '--muted': P.muted,
+      '--ink': P.band, '--ink-2': P.band2, '--sel': P.dark ? hsl(hexHsl(P.accent)[0], 50, 38) : P.band, '--band-fg': hsl(hexHsl(P.accent)[0], 40, 95), '--band-muted': hsl(hexHsl(P.accent)[0], 25, 75),
+      '--brass': P.accent2, '--brass-hi': P.accent2Hi, '--brass-bg': P.accent2Soft, '--focus': P.focus, '--chart-a': P.dark ? P.accentHi : P.band, '--chart-c': P.accent2 }),
+  };
+  const comboOf = () => L.preset === 'custom' ? L.custom : (L.preset === 'own' || (L.preset === 'society' && CFG.socNative)) ? null : (PRESETS.find(p => p.k === L.preset) || null);
+  let ownTheme = false, applied = [];
+  const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+  function apply() {
+    const root = document.documentElement;
+    if (L.mode === 'light' || L.mode === 'dark') { root.setAttribute('data-theme', L.mode); ownTheme = true; }
+    else if (ownTheme) { root.removeAttribute('data-theme'); ownTheme = false; }
+    applied.forEach(k => root.style.removeProperty(k)); applied = [];
+    const dark = isDark() && (L.mode !== 'system' || CFG.followDevice !== false);
+    let combo = comboOf();
+    if (CFG.colours !== false && !combo && dark && !CFG.ownDark) combo = CFG.own;   // a tool without its own dark design gets one built from its colours
+    if (CFG.colours !== false && combo) {
+      const P = base(combo, dark), vars = MAPS[CFG.map](P);
+      Object.entries(vars).forEach(([k, v]) => { if (v) { root.style.setProperty(k, v); applied.push(k); } });
+      root.style.setProperty('color-scheme', dark ? 'dark' : 'light'); applied.push('color-scheme');
+    }
+    const F = FONTS[L.font];
+    if (F && F.url) {
+      if (!document.querySelector(`link[data-lk-font="${L.font}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = F.url; l.dataset.lkFont = L.font; document.head.appendChild(l); }
+      [['--f-display', F.d], ['--f-body', F.b], ['--f-num', F.m]].forEach(([k, v]) => { root.style.setProperty(k, v); applied.push(k); });
+    }
+    root.classList.toggle('lk-compact', L.density === 'compact');
+    root.classList.toggle('lk-soc', L.skin === 'society');
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+  new MutationObserver(() => { if (!ownTheme) apply(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---- panel
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const css = document.createElement('style');
+  css.textContent = `
+.lk-compact table th, .lk-compact table td { padding-top: 3px !important; padding-bottom: 3px !important; }
+dialog.lk { border: 1px solid var(--lk-line); border-radius: 14px; padding: 0; width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); background: var(--lk-bg); color: var(--lk-fg); font: 14px/1.45 "Segoe UI", system-ui, Arial, sans-serif; }
+dialog.lk::backdrop { background: rgb(10 15 25 / .45); }
+.lk-in { padding: 18px; display: grid; gap: 16px; }
+.lk-head { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; }
+.lk h2 { margin: 0; font-size: 1.15rem; font-family: inherit; } .lk h3 { margin: 0 0 8px; font-size: .92rem; font-family: inherit; color: var(--lk-muted); text-transform: uppercase; letter-spacing: .06em; }
+.lk button { font: inherit; cursor: pointer; border-radius: 7px; border: 1px solid var(--lk-line); background: var(--lk-surface); color: var(--lk-fg); padding: 6px 11px; font-size: 13px; }
+.lk button:hover { border-color: var(--lk-accent); }
+.lk button.lk-p { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk button:focus-visible, .lk input:focus-visible, .lk select:focus-visible { outline: 2px solid var(--lk-accent); outline-offset: 2px; }
+.lk-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 8px; }
+.lk-sw button { text-align: left; display: grid; gap: 6px; padding: 10px; }
+.lk-sw button[aria-pressed="true"] { border-color: var(--lk-accent); box-shadow: 0 0 0 2px var(--lk-accent); }
+.lk-bar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; border: 1px solid var(--lk-line); } .lk-bar span { flex: 1; }
+.lk-nm { font-weight: 600; } .lk-ds { font-size: 12px; color: var(--lk-muted); }
+.lk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px; align-items: end; }
+.lk label { display: grid; gap: 4px; font-size: 12px; color: var(--lk-muted); font-weight: 500; }
+.lk input, .lk select { font: inherit; color: var(--lk-fg); background: var(--lk-surface); border: 1px solid var(--lk-line); border-radius: 7px; padding: 6px 8px; width: 100%; min-width: 0; }
+.lk input[type="color"] { height: 36px; padding: 3px; cursor: pointer; }
+.lk-seg { display: flex; flex-wrap: wrap; gap: 6px; } .lk-seg button[aria-pressed="true"] { background: var(--lk-accent); color: var(--lk-ink); border-color: var(--lk-accent); font-weight: 600; }
+.lk-chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; } .lk-chip { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--lk-line); }
+.lk-chip.ok { color: #15803D; border-color: #15803D; } .lk-chip.no { color: #B91C1C; border-color: #B91C1C; }
+.lk-saved { display: flex; flex-wrap: wrap; gap: 6px; } .lk-saved span { display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--lk-line); border-radius: 999px; padding: 2px 3px 2px 9px; font-size: 12px; }
+.lk-saved i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1px solid var(--lk-line); }
+.lk-note { font-size: 12px; color: var(--lk-muted); margin: 0; max-width: 90ch; }
+.lk-sec { border-top: 1px solid var(--lk-line); padding-top: 14px; display: grid; gap: 10px; }
+@media (max-width: 560px) { .lk-in { padding: 14px; } }
+html.lk-soc body { -webkit-font-smoothing: antialiased; }
+html.lk-soc h1 { font-weight: 800; letter-spacing: -.01em; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi, html.lk-soc .card, html.lk-soc .page, html.lk-soc .col, html.lk-soc .verdict, html.lk-soc .answer, html.lk-soc .node { border-radius: 16px; }
+html.lk-soc .panel, html.lk-soc .settings, html.lk-soc .kpi { box-shadow: 0 1px 2px rgb(15 23 42 / .06); }
+html.lk-soc .banner, html.lk-soc .lawbar { border-radius: 16px; }
+html.lk-soc .pill, html.lk-soc .chip { border-radius: 999px; }
+html.lk-soc button:not(.tab):not(.link):not(.sw):not([data-lk]):not([data-pal]) { border-radius: 12px; font-weight: 600; }
+html.lk-soc input:not([type="checkbox"]):not([type="radio"]):not([type="color"]), html.lk-soc select, html.lk-soc textarea { border-radius: 10px; }
+html.lk-soc dialog:not(.lk) { border-radius: 20px; }
+html.lk-soc th { letter-spacing: .06em; }
+${CFG.skin || ''}`;
+  document.head.appendChild(css);
+  const dlg = document.createElement('dialog'); dlg.className = 'lk'; dlg.setAttribute('aria-label', 'Look and feel'); document.body.appendChild(dlg);
+  function dlgVars() {
+    const P = base(comboOf() || CFG.own, isDark());
+    Object.entries({ bg: P.surface, surface: P.dark ? P.sunk : P.bg, fg: P.fg, muted: P.muted, line: P.line, accent: P.accent, ink: P.accentInk }).forEach(([k, v]) => dlg.style.setProperty('--lk-' + k, v));
+  }
+  const code = () => btoa(unescape(encodeURIComponent(JSON.stringify({ p: L.preset === 'own' ? 'own' : L.preset, c: L.custom, m: L.mode, d: L.density, f: L.font, s: L.skin }))));
+  function draw() {
+    dlgVars();
+    const card = (k, n, d, c) => { const cc = c || CFG.own, a = base(cc, false), b = base(cc, true), bar = [a.accent, a.accent2, a.sunk, b.accent, b.surface];
+      return `<button type="button" data-lk="preset" data-v="${k}" aria-pressed="${L.preset === k}"><span class="lk-bar">${bar.map(x => `<span style="background:${x}"></span>`).join('')}</span><span class="lk-nm">${esc(n)}</span><span class="lk-ds">${esc(d)}</span></button>`; };
+    const seg = (key, opts) => `<div class="lk-seg">${opts.map(([v, l]) => `<button type="button" data-lk="set" data-k="${key}" data-v="${v}" aria-pressed="${L[key] === v}">${esc(l)}</button>`).join('')}</div>`;
+    const c = comboOf() || CFG.own, A = base(c, false), B = base(c, true);
+    const ck = (x, y, lbl) => { const r = contrast(x, y); return `<span class="lk-chip ${r >= 4.5 ? 'ok' : 'no'}">${esc(lbl)} ${r.toFixed(1)}:1</span>`; };
+    dlg.innerHTML = `<div class="lk-in">
+      <div class="lk-head"><h2>Look &amp; feel · ${esc(CFG.name)}</h2><div class="lk-seg"><button type="button" data-lk="reset">Back to the tool's own look</button><button type="button" class="lk-p" data-lk="close">Done</button></div></div>
+      ${CFG.colours === false ? `<p class="lk-note">${esc(CFG.colourNote || '')}</p>` : `<div class="lk-sec" style="border:0;padding:0"><h3>Colour combination</h3>
+        <div class="lk-sw">${card('own', CFG.ownName, CFG.ownDesc, null)}${PRESETS.map(p => card(p.k, p.n, p.d, p)).join('')}${card('custom', 'My colours', 'Your own three colours, set below.', L.custom)}</div></div>
+      <div class="lk-sec"><h3>Custom combination</h3>
+        <div class="lk-row"><label>Main colour (buttons, headings, tabs)<input type="color" data-lkc="accent" value="${L.custom.accent.toLowerCase()}"></label>
+          <label>Highlight colour (chips, labels)<input type="color" data-lkc="accent2" value="${L.custom.accent2.toLowerCase()}"></label>
+          <label>Page tint (backgrounds, lines)<input type="color" data-lkc="tint" value="${L.custom.tint.toLowerCase()}"></label></div>
+        <div class="lk-chips">${ck(A.accent, A.surface, 'Main on light')}${ck(A.accentInk, A.accent, 'Button text')}${ck(B.accent, B.surface, 'Main on dark')}${ck(A.accent2, A.surface, 'Highlight on light')}</div>
+        <div class="lk-row"><label>Name this combination<input type="text" id="lk-name" maxlength="30" placeholder="e.g. Firm colours"></label><button type="button" class="lk-p" data-lk="savec">Save combination</button></div>
+        ${L.saved.length ? `<div class="lk-saved">${L.saved.map((x, i) => `<span><i style="background:${x.accent}"></i><i style="background:${x.accent2}"></i><button type="button" data-lk="use" data-v="${i}" style="border:0;padding:2px 4px;text-decoration:underline">${esc(x.name)}</button><button type="button" data-lk="del" data-v="${i}" aria-label="Remove ${esc(x.name)}" style="padding:1px 6px">✕</button></span>`).join('')}</div>` : ''}
+        <p class="lk-note">Any colours work: they are darkened or lightened just enough to stay readable, and a matching dark version is built. Status colours (green, amber, red) never change.</p></div>`}
+      <div class="lk-sec"><h3>Display</h3><div class="lk-row">
+        <label>Light or dark${seg('mode', [['system', 'Follow device'], ['light', 'Light'], ['dark', 'Dark']])}</label>
+        <label>Shapes${seg('skin', [['society', 'Society Desk style'], ['own', "Tool's own style"]])}</label>
+        <label>Table spacing${seg('density', [['comfortable', 'Comfortable'], ['compact', 'Compact']])}</label>
+        <label>Type<select data-lkf="1">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${L.font === k ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label></div></div>
+      <div class="lk-sec"><h3>Use the same look in your other tools</h3>
+        <div class="lk-row"><label>Look code of this tool<input type="text" readonly id="lk-code" value="${esc(code())}"></label><button type="button" data-lk="copy">Copy look code</button></div>
+        <div class="lk-row"><label>Paste a look code from another tool<input type="text" id="lk-paste" placeholder="Paste here"></label><button type="button" data-lk="paste">Apply code</button></div>
+        <p class="lk-note">Each tool remembers its look in this browser. Copy the code here and paste it in the Look &amp; feel panel of any other Finance Model tool to match them.</p></div></div>`;
+  }
+  let tmr;
+  dlg.addEventListener('click', e => { const b = e.target.closest('[data-lk]'); if (!b) { if (e.target === dlg) dlg.close(); return; } const a = b.dataset.lk;
+    if (a === 'close') { dlg.close(); return; }
+    if (a === 'preset') L.preset = b.dataset.v;
+    if (a === 'set') L[b.dataset.k] = b.dataset.v;
+    if (a === 'reset') { const keep = L.saved; L = { ...JSON.parse(JSON.stringify(DEF)), saved: keep }; }
+    if (a === 'savec') { const nm = (dlg.querySelector('#lk-name').value || '').trim(); if (!nm) { dlg.querySelector('#lk-name').focus(); return; } L.saved = [...L.saved.filter(x => x.name !== nm), { name: nm, ...L.custom }].slice(-8); }
+    if (a === 'use') { const x = L.saved[+b.dataset.v]; L.custom = { accent: x.accent, accent2: x.accent2, tint: x.tint }; L.preset = 'custom'; }
+    if (a === 'del') L.saved.splice(+b.dataset.v, 1);
+    if (a === 'copy') { const el = dlg.querySelector('#lk-code'); try { navigator.clipboard.writeText(el.value).then(() => { b.textContent = 'Copied'; }, () => { el.select(); b.textContent = 'Press Ctrl+C'; }); } catch { el.select(); } return; }
+    if (a === 'paste') { try { const v = JSON.parse(decodeURIComponent(escape(atob(dlg.querySelector('#lk-paste').value.trim())))); L = { ...L, preset: v.p === 'own' ? 'own' : v.p, custom: v.c || L.custom, mode: v.m || L.mode, density: v.d || L.density, font: v.f || L.font, skin: v.s || L.skin }; }
+      catch { dlg.querySelector('#lk-paste').value = ''; dlg.querySelector('#lk-paste').placeholder = 'That is not a look code — copy it again'; return; } }
+    save(); apply(); draw(); });
+  dlg.addEventListener('input', e => { const k = e.target.dataset.lkc; if (!k) return; L.custom[k] = e.target.value.toUpperCase(); L.preset = 'custom'; apply(); clearTimeout(tmr); tmr = setTimeout(save, 300); });
+  dlg.addEventListener('change', e => { if (e.target.dataset.lkc) { save(); draw(); } if (e.target.dataset.lkf) { L.font = e.target.value; save(); apply(); draw(); } });
+  function open() { draw(); if (!dlg.open) dlg.showModal(); }
+  function addButton() {
+    if (document.getElementById('lk-open')) return;
+    const host = document.querySelector(CFG.host);
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'lk-open'; b.textContent = 'Look & feel'; if (CFG.btnClass) b.className = CFG.btnClass;
+    b.addEventListener('click', open);
+    if (host) host.appendChild(b); else { b.style.cssText = 'position:fixed;left:max(12px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:20'; document.body.appendChild(b); }
+  }
+  apply(); addButton();
+  window.lookFeel = { open, apply };
+})();
+</script>
+
+</body></html>
