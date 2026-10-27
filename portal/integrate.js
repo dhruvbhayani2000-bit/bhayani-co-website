@@ -201,15 +201,18 @@
     try { await ctx.db.doc(`_pstatus/${pid}`).set({ ...data, at: new Date().toISOString(), by: ctx.email }); } catch {}
   }
   function watchStatus() {
-    let t = null;
+    let t = null, first = 0;
     const run = () => {
       clearTimeout(t);
+      if (!first) first = Date.now();
+      const wait = Math.max(0, Math.min(2500, 6000 - (Date.now() - first)));   // settle for 2.5 s, but never wait more than 6 s on a busy page
       t = setTimeout(() => {
+        first = 0;
         if (ctx.tool === 'internal-audit') return iaStatus();
         const co = currentLinked(); if (!co) return;
         const tiles = scrape(); if (tiles.length) putStatus(co.portalId, { name: ad.name(co), tiles });
         flows(co);
-      }, 2500);
+      }, wait);
     };
     new MutationObserver(run).observe(document.body, { subtree: true, childList: true, characterData: true });
     run();
