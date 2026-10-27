@@ -19,22 +19,24 @@
 const P = window.Portal, sb = P.sb, esc = P.esc, $ = P.$, CFG = window.PORTAL;
 const fmtDT = s => s ? new Date(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 const LOGIN_URL = location.origin + '/login/';
-let accUser = '', me = null, view = 'dash', users = [], access = [], clients = [], mail = {}, firm = {};
+let accUser = '', me = null, view = 'dash', users = [], access = [], clients = [], profiles = {}, mail = {}, firm = {};
 
 
 async function loadAll() {
-  const [u, a, c, m, f] = await Promise.all([
+  const [u, a, c, m, f, pr] = await Promise.all([
     sb.from('profiles').select('*').order('created_at'),
     sb.from('access').select('*'),
     sb.from('clients').select('*').order('name'),
     sb.from('settings').select('value').eq('key', 'mail').maybeSingle(),
     sb.from('settings').select('value').eq('key', 'public.firm').maybeSingle(),
+    sb.from('docs').select('doc_id,data').eq('tool', 'portal').eq('parent', 'profiles'),
   ]);
+  profiles = Object.fromEntries(((pr && pr.data) || []).map(r => [r.doc_id, r.data]));
   users = u.data || []; access = a.data || []; clients = c.data || []; mail = (m.data && m.data.value) || {}; firm = (f.data && f.data.value) || { name: 'Bhayani & Co.' };
 }
 const isSuper = () => me.role === 'superadmin';
 const userName = id => { const u = users.find(x => x.id === id); return u ? (u.name || u.email) : 'Unknown'; };
-const NAV = [['Overview', [['dash', 'Dashboard']]], ['People', [['users', 'Users'], ['access', 'Tool access']]], ['Masters', [['clients', 'Clients master'], ['tools', 'Tools']]], ['Settings', [['mail', 'Mail configuration'], ['firm', 'Firm & my account'], ['log', 'Activity log']]]];
+const NAV = [['Overview', [['dash', 'Dashboard']]], ['People', [['users', 'Users'], ['access', 'Tool access']]], ['Masters', [['clients', 'Clients master'], ['tools', 'Tools']]], ['Work', [['cdash', 'Client dashboard ↗']]], ['Settings', [['mail', 'Mail configuration'], ['firm', 'Firm & my account'], ['log', 'Activity log']]]];
 
 function shell() {
   $('#app').innerHTML = `
@@ -48,7 +50,7 @@ function shell() {
 }
 function render() {
   $('#side').innerHTML = NAV.map(([g, items]) => `<div class="lab">${esc(g)}</div>${items.map(([k, l]) => `<button type="button" data-nav="${k}"${view === k ? ' aria-current="page"' : ''}>${esc(l)}</button>`).join('')}`).join('');
-  $('#side').querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { view = b.dataset.nav; render(); window.scrollTo(0, 0); });
+  $('#side').querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { if (b.dataset.nav === 'cdash') { window.open('/clients/', '_blank', 'noopener'); return; } view = b.dataset.nav; render(); window.scrollTo(0, 0); });
   ({ dash, users: usersView, access: accessView, clients: clientsView, tools: toolsView, mail: mailView, firm: firmView, log: logView })[view]();
 }
 const head = (t, sub, actions = '') => `<div class="p-head"><div><h1>${esc(t)}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="p-row">${actions}</div></div>`;
@@ -216,44 +218,97 @@ function accessView() {
 }
 
 /* ---------------------------------------------------------------- clients master */
+const toolName = slug => (CFG.tools.find(t => t.slug === slug) || {}).name || slug;
+const shortTool = slug => ({ gst: 'GST', tds: 'TDS', depreciation: 'Depreciation', costing: 'Costing', 'financial-analysis': 'Fin. analysis', cfo: 'CFO', 'internal-audit': 'Internal audit', remittance: 'Remittance' })[slug] || slug;
 function clientsView() {
-  $('#view').innerHTML = head('Clients master', 'One list of the firm\'s clients with PAN, GSTIN and contacts. Assign staff so they can see the client here; the tools keep their own detailed client files.', '<button class="p-btn primary" id="add">Add client</button>') +
+  $('#view').innerHTML = head('Clients master', 'Set each client up once. Tick the tools the client uses and the client appears inside each of those tools with its PAN, TAN and GSTINs filled in. Changes to name, PAN or TAN flow to the tools the next time they are opened.', '<a class="p-btn" href="/clients/" target="_blank" rel="noopener">Client dashboard ↗</a><button class="p-btn primary" id="add">Add client</button>') +
     `<section class="p-panel"><div class="p-panel-h"><input type="search" id="q" placeholder="Search name, PAN, GSTIN" style="max-width:340px"><span class="muted small">${clients.length} clients</span></div>
-    ${clients.length ? `<div class="p-scroll"><table class="p-table"><thead><tr><th>Client</th><th>PAN</th><th>GSTIN</th><th>Contact</th><th>Assigned</th><th></th></tr></thead><tbody id="ct"></tbody></table></div>` : '<div class="p-empty">No clients yet.</div>'}</section>`;
+    ${clients.length ? `<div class="p-scroll"><table class="p-table"><thead><tr><th>Client</th><th>PAN · TAN</th><th>GSTINs</th><th>Tools</th><th>Staff</th><th></th></tr></thead><tbody id="ct"></tbody></table></div>` : '<div class="p-empty">No clients yet. Add one and tick the tools it uses.</div>'}</section>`;
   const draw = () => {
     const q = ($('#q').value || '').toLowerCase();
-    const L = clients.filter(c => !q || [c.name, c.pan, c.gstin, c.email].some(v => (v || '').toLowerCase().includes(q)));
-    if ($('#ct')) $('#ct').innerHTML = L.map(c => `<tr><td><b>${esc(c.name)}</b><div class="muted small">${esc(c.address || '')}</div></td><td class="mono">${esc(c.pan || '')}</td><td class="mono">${esc(c.gstin || '')}</td><td>${esc(c.contact || '')}<div class="muted small">${esc([c.email, c.phone].filter(Boolean).join(' · '))}</div></td><td class="small">${(c.assigned || []).map(userName).map(esc).join(', ') || '<span class="muted">—</span>'}</td><td class="act"><button class="p-btn sm" data-edit="${c.id}">Edit</button></td></tr>`).join('');
+    const L = clients.filter(c => !q || [c.name, c.pan, c.gstin, c.email, c.tan].some(v => (v || '').toLowerCase().includes(q)));
+    if ($('#ct')) $('#ct').innerHTML = L.map(c => { const pr = profiles[c.id] || {}; const g = pr.gstins || (c.gstin ? [{ gstin: c.gstin }] : []);
+      return `<tr><td><b>${esc(c.name)}</b><div class="muted small">${esc([pr.constitution, pr.industry && CFG.industries[pr.industry]].filter(Boolean).join(' · '))}</div></td><td class="mono small">${esc(c.pan || '—')}<div>${esc(c.tan || '')}</div></td><td class="mono small">${g.map(x => esc(x.gstin)).join('<br>') || '—'}</td>
+      <td>${(pr.tools || []).map(t => `<span class="p-chip" style="margin:0 4px 4px 0">${esc(shortTool(t))}</span>`).join('') || '<span class="muted small">none</span>'}</td><td class="small">${(c.assigned || []).map(userName).map(esc).join(', ') || '<span class="muted">—</span>'}</td><td class="act"><button class="p-btn sm" data-edit="${c.id}">Edit</button></td></tr>`; }).join('');
     $('#view').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => clientDialog(clients.find(c => c.id === b.dataset.edit)));
   };
   $('#q').oninput = draw; draw();
   $('#add').onclick = () => clientDialog();
 }
+async function pushProfile(pr) {
+  const now = new Date().toISOString();
+  const { error } = await sb.from('docs').upsert({ tool: 'portal', path: 'profiles/' + pr.id, parent: 'profiles', doc_id: pr.id, data: pr, updated_at: now, updated_by: me.id }, { onConflict: 'tool,path' });
+  if (error) throw error;
+  const on = CFG.clientTools.filter(t => (pr.tools || []).includes(t)), off = CFG.clientTools.filter(t => !on.includes(t));
+  if (on.length) { const { error: e2 } = await sb.from('docs').upsert(on.map(t => ({ tool: t, path: '_pclients/' + pr.id, parent: '_pclients', doc_id: pr.id, data: pr, updated_at: now, updated_by: me.id })), { onConflict: 'tool,path' }); if (e2) throw e2; }
+  if (off.length) await sb.from('docs').delete().eq('path', '_pclients/' + pr.id).in('tool', off);
+}
 function clientDialog(c) {
   const isNew = !c; c = c || { assigned: [] };
-  const F = [['name', 'Client name'], ['pan', 'PAN'], ['gstin', 'GSTIN'], ['tan', 'TAN'], ['contact', 'Contact person'], ['email', 'Email'], ['phone', 'Phone'], ['address', 'Address']];
-  const d = dialog(`<form class="p-form" novalidate><h2>${isNew ? 'Add client' : 'Edit client'}</h2><div class="p-grid2">
-    ${F.map(([k, l]) => `<label class="${k === 'address' ? 'full' : ''}">${l}<input name="${k}" type="text" value="${esc(c[k] || '')}"></label>`).join('')}
-    <label class="full">Notes<textarea name="notes">${esc(c.notes || '')}</textarea></label></div>
-    <fieldset style="border:1px solid var(--line);border-radius:12px;padding:10px 12px"><legend class="small muted">Staff assigned</legend><div class="p-secs">${users.filter(u => u.role === 'user').map(u => `<label><input type="checkbox" value="${u.id}" ${(c.assigned || []).includes(u.id) ? 'checked' : ''}> ${esc(u.name || u.email)}</label>`).join('') || '<span class="muted small">No staff users yet</span>'}</div></fieldset>
-    <div class="p-err"></div>
-    <div class="p-row end">${isNew ? '' : '<button type="button" class="p-btn danger" id="del" style="margin-right:auto">Delete</button>'}<button type="button" class="p-btn ghost" id="cancel">Cancel</button><button type="submit" class="p-btn primary">Save</button></div></form>`);
-  const f = $('form', d); $('#cancel', d).onclick = () => d.close();
+  const pr = (c.id && profiles[c.id]) || {};
+  let gstins = (pr.gstins || (c.gstin ? [{ gstin: c.gstin, trade: '', freq: 'M' }] : [])).map(g => ({ ...g }));
+  const Y = new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+  const opt = (list, v) => list.map(([k, l]) => `<option value="${esc(k)}"${String(v) === String(k) ? ' selected' : ''}>${esc(l)}</option>`).join('');
+  const d = dialog(`<form class="p-form" novalidate><h2>${isNew ? 'Add client' : 'Edit client'}</h2>
+    <div class="p-grid2">
+      <label class="full">Legal name<input name="name" type="text" value="${esc(c.name || '')}" required></label>
+      <label>Constitution<select name="constitution">${opt(CFG.constitutions.map(x => [x, x]), pr.constitution || 'Private limited company')}</select></label>
+      <label>Industry<select name="industry"><option value="">Not set</option>${opt(Object.entries(CFG.industries), pr.industry || '')}</select></label>
+      <label>PAN<input name="pan" type="text" maxlength="10" value="${esc(c.pan || '')}" placeholder="ABCDE1234F"></label>
+      <label>TAN<input name="tan" type="text" maxlength="10" value="${esc(c.tan || '')}" placeholder="AHMA12345B"></label>
+      <label>Turnover last year (₹ crore)<input name="aato" type="number" min="0" step="0.01" value="${esc(pr.aato ?? '')}"></label>
+      <label>Financial year<select name="fy">${opt([Y - 1, Y, Y + 1].map(y => [y, `FY ${y}-${String(y + 1).slice(2)}`]), pr.fy || Y)}</select></label>
+      <label>Contact person<input name="contact" type="text" value="${esc(c.contact || '')}"></label>
+      <label>Email<input name="email" type="text" value="${esc(c.email || '')}"></label>
+      <label>Phone<input name="phone" type="text" value="${esc(c.phone || '')}"></label>
+      <label class="full">Address<input name="address" type="text" value="${esc(c.address || '')}"></label>
+    </div>
+    <fieldset style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:8px"><legend class="small muted">GST registrations</legend><div id="gl"></div><div><button type="button" class="p-btn sm" id="gadd">Add GSTIN</button></div></fieldset>
+    <fieldset style="border:1px solid var(--line);border-radius:12px;padding:10px 12px"><legend class="small muted">Tools this client uses</legend><div class="p-secs">${CFG.clientTools.map(t => `<label><input type="checkbox" name="tool" value="${t}" ${(pr.tools || []).includes(t) ? 'checked' : ''}> ${esc(toolName(t))}</label>`).join('')}</div>
+      <p class="muted small" style="margin:8px 0 0">Ticked tools get this client automatically. Unticking stops the link; the client's work already in that tool stays there.</p></fieldset>
+    <fieldset style="border:1px solid var(--line);border-radius:12px;padding:10px 12px"><legend class="small muted">Staff assigned (they see this client on their dashboard)</legend><div class="p-secs">${users.filter(u => u.role === 'user').map(u => `<label><input type="checkbox" name="staff" value="${u.id}" ${(c.assigned || []).includes(u.id) ? 'checked' : ''}> ${esc(u.name || u.email)}</label>`).join('') || '<span class="muted small">No staff users yet</span>'}</div></fieldset>
+    <label>Notes<textarea name="notes">${esc(c.notes || '')}</textarea></label>
+    <div class="p-err" role="alert"></div>
+    <div class="p-row end">${isNew ? '' : '<button type="button" class="p-btn danger" id="del" style="margin-right:auto">Delete</button>'}<button type="button" class="p-btn ghost" id="cancel">Cancel</button><button type="submit" class="p-btn primary">Save client</button></div></form>`);
+  d.style.width = 'min(760px, calc(100vw - 24px))';
+  const f = $('form', d), err = $('.p-err', d);
+  const drawG = () => {
+    $('#gl', d).innerHTML = gstins.length ? gstins.map((g, i) => `<div class="p-row" style="flex-wrap:nowrap"><input data-g="${i}" data-k="gstin" type="text" maxlength="15" value="${esc(g.gstin || '')}" placeholder="24ABCDE1234F1Z5" style="flex:1 1 170px" class="mono"><input data-g="${i}" data-k="trade" type="text" value="${esc(g.trade || '')}" placeholder="Branch / trade name" style="flex:1 1 160px"><select data-g="${i}" data-k="freq" style="width:auto"><option value="M"${g.freq !== 'Q' ? ' selected' : ''}>Monthly</option><option value="Q"${g.freq === 'Q' ? ' selected' : ''}>Quarterly</option></select><button type="button" class="p-btn sm ghost" data-gdel="${i}" aria-label="Remove GSTIN">✕</button></div>`).join('') : '<span class="muted small">No GSTIN yet.</span>';
+    $('#gl', d).querySelectorAll('[data-g]').forEach(el => el.oninput = el.onchange = () => { gstins[+el.dataset.g][el.dataset.k] = el.value; });
+    $('#gl', d).querySelectorAll('[data-gdel]').forEach(b => b.onclick = () => { gstins.splice(+b.dataset.gdel, 1); drawG(); });
+  };
+  drawG(); $('#gadd', d).onclick = () => { gstins.push({ gstin: '', trade: '', freq: 'M' }); drawG(); };
+  $('#cancel', d).onclick = () => d.close();
   if ($('#del', d)) $('#del', d).onclick = async () => {
-    if ($('#del', d).dataset.sure !== '1') { $('#del', d).dataset.sure = '1'; $('#del', d).textContent = 'Click again to delete'; return; }
-    await sb.from('clients').delete().eq('id', c.id); log('clients.update', 'deleted ' + c.name); d.close(); await loadAll(); clientsView();
+    if ($('#del', d).dataset.sure !== '1') { $('#del', d).dataset.sure = '1'; $('#del', d).textContent = 'Click again — the tools keep their copies'; return; }
+    await sb.from('clients').delete().eq('id', c.id);
+    await sb.from('docs').delete().eq('path', '_pclients/' + c.id).in('tool', CFG.clientTools);
+    await sb.from('docs').delete().eq('tool', 'portal').eq('path', 'profiles/' + c.id);
+    log('clients.update', 'deleted ' + c.name); d.close(); await loadAll(); clientsView();
   };
   f.onsubmit = async ev => {
-    ev.preventDefault();
-    const row = Object.fromEntries(F.map(([k]) => [k, f[k].value.trim()])); row.notes = f.notes.value.trim();
-    row.pan = row.pan.toUpperCase(); row.gstin = row.gstin.toUpperCase(); row.tan = row.tan.toUpperCase();
-    if (!row.name) { $('.p-err', d).textContent = 'Enter the client name.'; return; }
-    if (row.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(row.pan)) { $('.p-err', d).textContent = 'PAN should look like ABCDE1234F.'; return; }
-    if (row.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(row.gstin)) { $('.p-err', d).textContent = 'GSTIN format is not right (15 characters).'; return; }
-    row.assigned = [...d.querySelectorAll('fieldset input:checked')].map(i => i.value);
-    const { error } = isNew ? await sb.from('clients').insert(row) : await sb.from('clients').update(row).eq('id', c.id);
-    if (error) { $('.p-err', d).textContent = P.errText(error); return; }
-    log('clients.update', (isNew ? 'added ' : 'changed ') + row.name); d.close(); await loadAll(); clientsView(); P.toast('Client saved');
+    ev.preventDefault(); err.textContent = '';
+    const v = k => (f[k] ? String(f[k].value || '').trim() : '');
+    const name = v('name'), pan = v('pan').toUpperCase(), tan = v('tan').toUpperCase();
+    if (!name) { err.textContent = 'Enter the client name.'; return; }
+    if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) { err.textContent = 'PAN should look like ABCDE1234F.'; return; }
+    if (tan && !/^[A-Z]{4}[0-9]{5}[A-Z]$/.test(tan)) { err.textContent = 'TAN should look like AHMA12345B.'; return; }
+    const G = gstins.map(g => ({ gstin: String(g.gstin || '').trim().toUpperCase(), trade: String(g.trade || '').trim(), freq: g.freq === 'Q' ? 'Q' : 'M' })).filter(g => g.gstin);
+    for (const g of G) {
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(g.gstin)) { err.textContent = `GSTIN ${g.gstin} is not in the right format (15 characters).`; return; }
+      if (pan && g.gstin.slice(2, 12) !== pan) { err.textContent = `GSTIN ${g.gstin} carries PAN ${g.gstin.slice(2, 12)}, not ${pan}.`; return; }
+    }
+    if (new Set(G.map(g => g.gstin)).size !== G.length) { err.textContent = 'The same GSTIN is listed twice.'; return; }
+    const id = c.id || crypto.randomUUID();
+    const row = { id, name, pan: pan || (G[0] ? G[0].gstin.slice(2, 12) : ''), tan, gstin: G[0] ? G[0].gstin : '', contact: v('contact'), email: v('email'), phone: v('phone'), address: v('address'), notes: v('notes'),
+      assigned: [...d.querySelectorAll('input[name=staff]:checked')].map(i => i.value) };
+    const profile = { id, name, pan: row.pan, tan, gstins: G, constitution: v('constitution'), industry: v('industry'), aato: v('aato') === '' ? '' : +v('aato'), fy: +v('fy'),
+      contact: row.contact, email: row.email, phone: row.phone, address: row.address, tools: [...d.querySelectorAll('input[name=tool]:checked')].map(i => i.value), updatedAt: new Date().toISOString() };
+    const { error } = isNew ? await sb.from('clients').insert(row) : await sb.from('clients').update(row).eq('id', id);
+    if (error) { err.textContent = P.errText(error); return; }
+    try { await pushProfile(profile); } catch (e) { err.textContent = 'Saved the client, but linking to the tools failed: ' + P.errText(e); return; }
+    log('clients.update', `${isNew ? 'added' : 'changed'} ${name}${profile.tools.length ? ' · tools: ' + profile.tools.map(shortTool).join(', ') : ''}`);
+    d.close(); await loadAll(); clientsView(); P.toast(profile.tools.length ? `Saved — ${name} will appear in ${profile.tools.length} tool${profile.tools.length > 1 ? 's' : ''}` : 'Client saved');
   };
 }
 

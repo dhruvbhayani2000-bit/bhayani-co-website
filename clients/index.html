@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Client dashboard · Bhayani &amp; Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/portal/portal.css">
+<style>
+  .c-list { display: grid; gap: 16px; }
+  .c-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+  .c-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+  .c-head h2 { font-size: 1.12rem; }
+  .c-ids { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .c-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; padding: 14px 18px 16px; }
+  .c-tool { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px; align-content: start; background: var(--bg); }
+  .c-tool-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .c-tool-h b { font-size: .92rem; }
+  .c-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .c-t { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+  .c-t .k { font-size: .62rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .c-t .v { font-family: var(--mono); font-weight: 600; font-size: .98rem; overflow-wrap: anywhere; }
+  .c-t .n { font-size: .74rem; color: var(--muted); }
+  .c-t.bad .v { color: var(--bad); } .c-t.warn .v { color: var(--warn); } .c-t.good .v { color: var(--good); }
+  .c-foot { padding: 10px 18px 14px; border-top: 1px dashed var(--line); display: grid; gap: 6px; }
+  .c-up { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: .84rem; }
+  .flowmap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .82rem; color: var(--muted); }
+  .flowmap b { color: var(--fg); }
+</style>
+<script src="/portal/supabase.js"></script>
+<script src="/portal/config.js"></script>
+<script src="/portal/core.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(async () => {
+const P = window.Portal, sb = P.sb, esc = P.esc, $ = P.$, CFG = window.PORTAL;
+const toolName = s => (CFG.tools.find(t => t.slug === s) || {}).name || s;
+const fmtD = s => s ? new Date(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+let me = null, firm = {}, clients = [], linked = {}, status = {}, uploads = {}, level = {}, q = '';
+
+async function load() {
+  const [c, l, s, u] = await Promise.all([
+    sb.from('clients').select('*').order('name'),
+    sb.from('docs').select('tool,doc_id,data').eq('parent', '_pclients'),
+    sb.from('docs').select('tool,doc_id,data').eq('parent', '_pstatus'),
+    sb.from('docs').select('tool,doc_id,data').eq('parent', '_puploads'),
+  ]);
+  clients = c.data || []; linked = {}; status = {}; uploads = {};
+  (l.data || []).forEach(r => { (linked[r.doc_id] = linked[r.doc_id] || {})[r.tool] = r.data; });
+  (s.data || []).forEach(r => { (status[r.doc_id] = status[r.doc_id] || {})[r.tool] = r.data; });
+  (u.data || []).forEach(r => { const d = r.data; (uploads[d.clientId] = uploads[d.clientId] || []).push({ ...d, tool: r.tool }); });
+}
+
+await P.gate($('#app'), 'user', async (profile) => {
+  me = profile; firm = await P.firm();
+  if (P.isAdmin(me)) CFG.tools.forEach(t => { level[t.slug] = 'admin'; });
+  else (await P.myAccess(me.id)).forEach(a => { level[a.tool] = a.level; });
+  await load(); render();
+});
+
+function render() {
+  const cards = clients.filter(c => !q || [c.name, c.pan, c.gstin, c.tan].some(v => (v || '').toLowerCase().includes(q))).map(card).join('');
+  $('#app').innerHTML = `
+  <header class="p-top">
+    <div class="p-brand"><div class="p-mark" aria-hidden="true">${esc((firm.name || 'B')[0])}</div><div style="min-width:0"><div class="p-brand-name">${esc(firm.name || 'Bhayani & Co.')}</div><div class="p-brand-sub">Client dashboard</div></div></div>
+    <div class="p-who"><a class="p-btn sm" href="/login/">My tools</a>${P.isAdmin(me) ? '<a class="p-btn sm dark" href="/admin/">Admin portal</a>' : ''}<button class="p-btn sm" id="out">Sign out</button></div>
+  </header>
+  <main class="p-main" style="margin:0 auto">
+    <section class="p-hero"><div><div class="eyebrow">One place per client</div><h1>Client dashboard</h1><p>Every client with the latest position from each tool it uses. Upload a register once and every tool that needs it is offered the file. Figures from Depreciation flow to Financial Analysis and the CFO Desk.</p></div>
+      <div class="flowmap" style="color:#cbd5e1"><b style="color:#fff">Depreciation</b> → <b style="color:#fff">Financial Analysis</b> → <b style="color:#fff">CFO Desk</b></div></section>
+    <div class="p-row" style="justify-content:space-between"><input type="search" id="q" placeholder="Search client, PAN, GSTIN" value="${esc(q)}" style="max-width:360px"><span class="muted small">${clients.length} client${clients.length === 1 ? '' : 's'}${P.isAdmin(me) ? ' · add or link clients in Admin → Clients master' : ' assigned to you'}</span></div>
+    <div class="c-list">${cards || `<div class="p-panel"><div class="p-empty">${clients.length ? 'No client matches.' : P.isAdmin(me) ? 'No clients yet. Add them in Admin portal → Clients master and tick the tools each uses.' : 'No clients are assigned to you yet.'}</div></div>`}</div>
+  </main>`;
+  $('#out').onclick = async () => { await P.signOut(); location.href = '/login/'; };
+  const qi = $('#q'); qi.oninput = () => { q = qi.value.toLowerCase(); const pos = qi.selectionStart; render(); const n = $('#q'); n.focus(); n.setSelectionRange(pos, pos); };
+  document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => uploadDialog(clients.find(c => c.id === b.dataset.up)));
+  document.querySelectorAll('[data-refresh]').forEach(b => b.onclick = async () => { b.disabled = true; await load(); render(); });
+}
+function card(c) {
+  const tools = CFG.clientTools.filter(t => linked[c.id] && linked[c.id][t] && level[t]);
+  const st = status[c.id] || {}, ups = (uploads[c.id] || []).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const pr = Object.values(linked[c.id] || {})[0] || {};
+  const tileHtml = t => {
+    const s = st[t];
+    if (!s) return `<p class="muted small" style="margin:0">Not opened yet. Open the tool once to set this client up there.</p>`;
+    return `<div class="c-tiles">${(s.tiles || []).slice(0, 4).map(x => `<div class="c-t ${esc(x.tone)}"><div class="k">${esc(x.k)}</div><div class="v">${esc(x.v)}</div>${x.n ? `<div class="n">${esc(x.n.slice(0, 70))}</div>` : ''}</div>`).join('')}</div><span class="muted small">As of ${esc(fmtD(s.at))}${s.by ? ' · ' + esc(s.by) : ''}</span>`;
+  };
+  const byFile = {}; ups.forEach(u => { const k = u.uploadId || u.name + u.at; (byFile[k] = byFile[k] || { ...u, tools: [] }).tools.push(u); });
+  const files = Object.values(byFile).slice(0, 4);
+  const canUpload = tools.some(t => level[t] !== 'view' && Object.values(CFG.uploads).some(k => k.to[t]));
+  return `<article class="c-card">
+    <div class="c-head"><div><h2>${esc(c.name)}</h2><div class="c-ids">${c.pan ? `<span class="p-chip idle mono">PAN ${esc(c.pan)}</span>` : ''}${c.tan ? `<span class="p-chip idle mono">TAN ${esc(c.tan)}</span>` : ''}${(pr.gstins || (c.gstin ? [{ gstin: c.gstin }] : [])).map(g => `<span class="p-chip idle mono">${esc(g.gstin)}</span>`).join('')}${pr.fy ? `<span class="p-chip">FY ${pr.fy}-${String(pr.fy + 1).slice(2)}</span>` : ''}</div></div>
+      <div class="p-row">${canUpload ? `<button class="p-btn primary sm" data-up="${c.id}">Upload once</button>` : ''}<button class="p-btn sm" data-refresh>Refresh</button></div></div>
+    ${tools.length ? `<div class="c-tools">${tools.map(t => `<section class="c-tool"><div class="c-tool-h"><b>${esc(toolName(t))}</b><a class="p-btn sm" href="/${t}/?client=${encodeURIComponent(c.id)}" target="_blank" rel="noopener">Open ↗</a></div>${tileHtml(t)}</section>`).join('')}</div>`
+      : `<div class="p-empty">${P.isAdmin(me) ? 'No tools linked yet — edit this client in Admin → Clients master and tick its tools.' : 'No linked tools you can open.'}</div>`}
+    ${files.length ? `<div class="c-foot"><span class="muted small" style="font-weight:700;text-transform:uppercase;letter-spacing:.07em">Shared uploads</span>${files.map(f => `<div class="c-up"><b>${esc(f.kindName)}</b><span class="mono small">${esc(f.name)}</span><span class="muted small">${esc(fmtD(f.at))}</span>${f.tools.map(u => `<span class="p-chip ${u.doneAt ? 'good' : 'warn'}">${esc(toolName(u.tool))}: ${u.doneAt ? 'imported' : 'waiting'}</span>`).join('')}</div>`).join('')}</div>` : ''}
+  </article>`;
+}
+function uploadDialog(c) {
+  const tools = CFG.clientTools.filter(t => linked[c.id] && linked[c.id][t] && level[t] && level[t] !== 'view');
+  const kinds = Object.entries(CFG.uploads).map(([k, d]) => [k, d, Object.keys(d.to).filter(t => tools.includes(t))]).filter(x => x[2].length);
+  const d = document.createElement('dialog'); d.className = 'p-dialog';
+  d.innerHTML = `<form class="p-form" novalidate><h2>Upload once — ${esc(c.name)}</h2><p class="p-sub">The file is offered to each linked tool that can read it. In each tool, a "Portal" card asks you to import it, and the tool's own import screen opens so you can check the columns.</p>
+    <label>What is the file?<select id="u-kind">${kinds.map(([k, dd, ts]) => `<option value="${k}">${esc(dd.name)} → ${esc(ts.map(toolName).join(', '))}</option>`).join('')}</select></label>
+    <p class="muted small" id="u-hint" style="margin:-4px 0 0"></p>
+    <label>File (Excel or CSV)<input id="u-file" type="file" accept=".xlsx,.xls,.csv"></label>
+    <div class="p-err" role="alert"></div>
+    <div class="p-row end"><button type="button" class="p-btn ghost" id="u-cancel">Cancel</button><button type="submit" class="p-btn primary">Upload and send</button></div></form>`;
+  document.body.appendChild(d); d.showModal(); d.addEventListener('close', () => d.remove());
+  const hint = () => { const k = CFG.uploads[$('#u-kind', d).value]; $('#u-hint', d).textContent = k ? k.hint : ''; }; hint(); $('#u-kind', d).onchange = hint;
+  $('#u-cancel', d).onclick = () => d.close();
+  $('form', d).onsubmit = async ev => {
+    ev.preventDefault();
+    const err = $('.p-err', d), file = $('#u-file', d).files[0], kind = $('#u-kind', d).value, K = CFG.uploads[kind];
+    if (!file) { err.textContent = 'Choose the file.'; return; }
+    if (file.size > 20 * 1024 * 1024) { err.textContent = 'The file is larger than 20 MB. Split it by month and upload each part.'; return; }
+    const btn = $('button[type=submit]', d); btn.disabled = true; btn.textContent = 'Uploading…';
+    const uploadId = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+    const key = `uploads/${c.id}/${uploadId}-${file.name.replace(/[^\w.\-]+/g, '_').slice(-80)}`;
+    const { error } = await sb.storage.from('files').upload(key, file, { contentType: file.type || 'application/octet-stream' });
+    if (error) { err.textContent = P.errText(error); btn.disabled = false; btn.textContent = 'Upload and send'; return; }
+    const url = sb.storage.from('files').getPublicUrl(key).data.publicUrl, at = new Date().toISOString();
+    const targets = Object.keys(K.to).filter(t => tools.includes(t));
+    const rows = targets.map(t => ({ tool: t, path: `_puploads/${uploadId}`, parent: '_puploads', doc_id: uploadId, updated_by: me.id,
+      data: { uploadId, clientId: c.id, kind, kindName: K.name, name: file.name, url, type: file.type, size: file.size, target: K.to[t], at, by: me.email, doneAt: '' } }));
+    const { error: e2 } = await sb.from('docs').upsert(rows, { onConflict: 'tool,path' });
+    if (e2) { err.textContent = P.errText(e2); btn.disabled = false; btn.textContent = 'Upload and send'; return; }
+    sb.from('activity').insert({ user_id: me.id, email: me.email, action: 'upload.shared', detail: `${c.name}: ${K.name} (${file.name}) → ${targets.map(toolName).join(', ')}` }).then(() => {});
+    d.close(); P.toast(`Sent to ${targets.map(toolName).join(', ')} — open each tool on this client to import`);
+    await load(); render();
+  };
+}
+})();
+</script>
+</body>
+</html>

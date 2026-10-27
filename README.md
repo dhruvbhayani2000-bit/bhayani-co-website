@@ -14,6 +14,12 @@ Static website (single `index.html`). Hosted on Render as a Static Site.
 
 Login and data live in Supabase (project `bhayani-portal`). Every tool saves to the shared `docs` table; row-level security allows only signed-in people with access to that tool.
 
+## Client integration
+
+- **Clients master** (Admin) — set a client up once with PAN, TAN, GSTINs and the tools it uses; the client is created inside each ticked tool (`portal/integrate.js` uses each tool's own constructor and storage format).
+- **Client dashboard** (`/clients/`) — each client's headline figures from every linked tool, Open buttons that go straight to the client, and **Upload once** (one file offered to every tool that reads it, imported through that tool's own importer).
+- **Figures flow** — Depreciation → Financial Analysis and CFO Desk; Financial Analysis → CFO Desk (applied with one click in the receiving tool).
+
 ## Tools (each at `<site>/<folder>/`, sign-in required)
 
 | Folder | Tool |

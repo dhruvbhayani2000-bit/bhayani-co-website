@@ -35,4 +35,21 @@ window.PORTAL = {
       notices: 'Notices', gate: 'Gate, visitors & vehicles', reports: 'Annual finance', data: 'Import & export', team: 'Committee & roles', setup: 'Society setup' } },
   ],
   levels: { view: 'View only', use: 'Use (enter & edit data)', admin: 'Full control' },
+  // tools a client can be linked to (Society Desk is a single society, not per client)
+  clientTools: ['gst', 'tds', 'depreciation', 'costing', 'financial-analysis', 'cfo', 'internal-audit', 'remittance'],
+  constitutions: ['Private limited company', 'Public limited company', 'One person company', 'LLP', 'Partnership firm', 'Proprietorship', 'Trust / society', 'Government body', 'Other'],
+  industries: { mfg: 'Manufacturing', trade: 'Trading & distribution', svc: 'Services & IT', cons: 'Construction & real estate', retail: 'Retail & FMCG', health: 'Healthcare & hospitals', hosp: 'Hotels & restaurants', nbfc: 'NBFC & financial services' },
+  // "upload once": what each kind of file feeds, and how each tool should read it
+  uploads: {
+    pur: { name: 'Purchase register', hint: 'Every purchase invoice with GSTIN, taxable value and GST', to: { gst: 'pr', 'internal-audit': 'pur' } },
+    sal: { name: 'Sales register', hint: 'Every sales invoice and credit note', to: { gst: 'sl', 'internal-audit': 'sal' } },
+    ven: { name: 'Vendor / party master', hint: 'Code, name, PAN, GSTIN, email', to: { gst: 'ven', tds: 'file', 'internal-audit': 'vend' } },
+    exp: { name: 'Expense ledger (for TDS)', hint: 'Date, ledger, party, amount — the TDS Desk template', to: { tds: 'file' } },
+    tb: { name: 'Trial balance', hint: 'Ledger-wise closing balances', to: { 'internal-audit': 'tb' } },
+    pay: { name: 'Payroll register', hint: 'Month-wise salary register', to: { 'internal-audit': 'pay' } },
+    bank: { name: 'Bank statement', hint: 'Bank book or statement rows', to: { 'internal-audit': 'bank' } },
+    far: { name: 'Fixed asset register', hint: 'The Depreciation Workbench FAR template', to: { depreciation: 'file' } },
+    fin: { name: 'Financial statements', hint: 'The Financial Analysis upload template', to: { 'financial-analysis': 'file' } },
+    rem: { name: 'Foreign remittances / payees', hint: 'The Foreign Remittance Desk template', to: { remittance: 'file' } },
+  },
 };

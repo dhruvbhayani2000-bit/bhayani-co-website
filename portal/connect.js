@@ -32,7 +32,8 @@
 
   const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'bhayani-portal-auth' } });
   const S = { uid: null, profile: null, level: null, sections: null, rank: 0, admin: false, warnedRO: false };
-  let readyResolve; const ready = new Promise(r => { readyResolve = r; });
+  let readyResolve; const ready = new Promise(r => { readyResolve = r; });          // the desk may start (after set-up)
+  let authResolve; const authed = new Promise(r => { authResolve = r; });          // signed in and allowed: storage calls may run
   const go = url => { location.replace(url); return new Promise(() => {}); };
   const clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
   const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), b => b.toString(36).padStart(2, '0')).join('').slice(0, 20);
@@ -59,7 +60,12 @@
     badge();
     sb.from('activity').insert({ user_id: S.uid, email: profile.email, action: 'tool.open', detail: META.name }).then(() => {}, () => {});
     if (TOOL === 'society' && S.admin) { try { await seedSociety(); } catch (e) { console.warn('society seed', e); } }
+    authResolve(true);
+    if (document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));   // every page script (desk + integration) has run
+    const I = window.PortalIntegrate, ictx = { tool: TOOL, db, sb, level: S.level, uid: S.uid, email: profile.email, admin: S.admin };
+    if (I) { try { await I.before(ictx); } catch (e) { console.warn('portal integrate', e); } }
     readyResolve(true);
+    if (I) I.after(ictx).catch(e => console.warn('portal integrate', e));
   }
   // Society Desk carries the firm's own society records (Rajshree Heights). The first time an admin opens it
   // and no society is set up online yet, those records become the online starting point.
@@ -340,7 +346,7 @@
       where: (f, op, v) => makeQuery(path, [...filters, [f, op, v]], order, lim),
       orderBy: (f, dir = 'asc') => makeQuery(path, filters, [f, dir], lim),
       limit: n => makeQuery(path, filters, order, n),
-      async get() { await ready; return qsnap(apply(await fetchCol(path))); },
+      async get() { await authed; return qsnap(apply(await fetchCol(path))); },
       onSnapshot(next, onErr) {
         let last = null, lastKey = '', dead = false;
         const w = { kind: 'col', path, refresh: async () => {
@@ -348,7 +354,7 @@
           try { const docs = apply(await fetchCol(path)); const key = JSON.stringify(docs); if (key === lastKey) return; lastKey = key; const s = qsnap(docs, last); last = docs; next(s); }
           catch (e) { if (e.code === 'revoked' || e.code === 'invalid_argument') { dead = true; watchers.delete(w); onErr ? onErr(e) : console.error(e); } }
         } };
-        ready.then(() => { if (dead) return; watchers.add(w); startPoll(); w.refresh(); });
+        authed.then(() => { if (dead) return; watchers.add(w); startPoll(); w.refresh(); });
         return () => { dead = true; watchers.delete(w); };
       },
     };
@@ -358,19 +364,19 @@
     path = checkDoc(path);
     return {
       id: lastOf(path), path,
-      async get() { await ready; if (!canRead(path)) return snapDoc(path, undefined); return snapDoc(path, await fetchDoc(path)); },
-      async set(data) { await ready; if (!isObj(data)) throw err('invalid_argument', 'Document body must be an object'); if (!canWrite(path)) return denyWrite(); return writeDoc(path, clone(data)); },
+      async get() { await authed; if (!canRead(path)) return snapDoc(path, undefined); return snapDoc(path, await fetchDoc(path)); },
+      async set(data) { await authed; if (!isObj(data)) throw err('invalid_argument', 'Document body must be an object'); if (!canWrite(path)) return denyWrite(); return writeDoc(path, clone(data)); },
       async update(data) {
-        await ready; if (!canWrite(path)) return denyWrite();
+        await authed; if (!canWrite(path)) return denyWrite();
         const cur = await fetchDoc(path); if (cur === undefined) throw err('invalid_argument', 'Document does not exist');
         return writeDoc(path, merge(cur, data));
       },
       async delete() {
-        await ready; if (!canWrite(path)) return denyWrite();
+        await authed; if (!canWrite(path)) return denyWrite();
         const { error } = await sb.from('docs').delete().eq('tool', TOOL).eq('path', path);
         if (error) throw dbErr(error); touched([path]);
       },
-      async acquire(opts) { await ready; return { acquired: true, version: Date.now(), expiresAt: new Date(Date.now() + ((opts && opts.ttlMs) || 30000)).toISOString(), holder: opts && opts.holder }; },
+      async acquire(opts) { await authed; return { acquired: true, version: Date.now(), expiresAt: new Date(Date.now() + ((opts && opts.ttlMs) || 30000)).toISOString(), holder: opts && opts.holder }; },
       onSnapshot(next, onErr) {
         let lastKey = null, dead = false;
         const w = { kind: 'doc', path, refresh: async () => {
@@ -378,7 +384,7 @@
           try { const d = canRead(path) ? await fetchDoc(path) : undefined; const key = JSON.stringify(d === undefined ? null : d); if (key === lastKey) return; lastKey = key; next(snapDoc(path, d)); }
           catch (e) { if (e.code === 'revoked') { dead = true; watchers.delete(w); onErr ? onErr(e) : console.error(e); } }
         } };
-        ready.then(() => { if (dead) return; watchers.add(w); startPoll(); w.refresh(); });
+        authed.then(() => { if (dead) return; watchers.add(w); startPoll(); w.refresh(); });
         return () => { dead = true; watchers.delete(w); };
       },
       collection: sub => colRef(path + '/' + sub),
@@ -398,7 +404,7 @@
   // ---------------------------------------------------------------- file uploads
   const assets = Object.freeze({
     async upload(blob) {
-      await ready; if (S.level === 'view') return denyWrite();
+      await authed; if (S.level === 'view') return denyWrite();
       const name = (blob && blob.name ? blob.name : 'file').replace(/[^\w.\-]+/g, '_').slice(-80);
       const key = `${TOOL}/${rid()}${rid()}-${name}`;
       const { error } = await sb.storage.from('files').upload(key, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
@@ -406,8 +412,8 @@
       const { data } = sb.storage.from('files').getPublicUrl(key);
       return { id: key, url: data.publicUrl, sizeBytes: blob.size || 0, contentType: blob.type || '' };
     },
-    async list() { await ready; const { data } = await sb.storage.from('files').list(TOOL, { limit: 1000 }); return { assets: (data || []).map(f => ({ id: `${TOOL}/${f.name}`, url: sb.storage.from('files').getPublicUrl(`${TOOL}/${f.name}`).data.publicUrl, sizeBytes: (f.metadata || {}).size || 0, contentType: (f.metadata || {}).mimetype || '' })), usage: {} }; },
-    async delete(id) { await ready; const { error } = await sb.storage.from('files').remove([id]); if (error) throw dbErr(error); },
+    async list() { await authed; const { data } = await sb.storage.from('files').list(TOOL, { limit: 1000 }); return { assets: (data || []).map(f => ({ id: `${TOOL}/${f.name}`, url: sb.storage.from('files').getPublicUrl(`${TOOL}/${f.name}`).data.publicUrl, sizeBytes: (f.metadata || {}).size || 0, contentType: (f.metadata || {}).mimetype || '' })), usage: {} }; },
+    async delete(id) { await authed; const { error } = await sb.storage.from('files').remove([id]); if (error) throw dbErr(error); },
   });
 
   // ---------------------------------------------------------------- what the desks call
