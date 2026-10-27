@@ -145,12 +145,17 @@
     wb.SheetNames.unshift(name); wb.Sheets[name] = ws;
   }
 
-  function houseStyle(wb) {
+  function houseStyle(wb, fileName) {
     if (!wb || !wb.SheetNames || wb.__housed) return wb;
     wb.__housed = true;
     const info = wb.SheetNames.map(n => ({ name: n, ...styleSheet(wb.Sheets[n], n) }));
     const dataRows = info.reduce((t, s) => t + s.rows, 0);
-    const looksLikeTemplate = info.every(s => s.rows <= 3) || wb.SheetNames.every(n => /templat|read ?me|instruction|example/i.test(n) || (info.find(i => i.name === n) || {}).rows <= 3);
+    // a template is a blank input sheet (header and perhaps an example row) with notes or lists beside it — no summary page, so it uploads back unchanged
+    const INSTR = /templat|read ?me|instruction|how to|guide|example|notes?$|lists?$|categor|codes?$|master/i;
+    const first = info[0] || { rows: 0 };
+    const looksLikeTemplate = /templat/i.test(fileName || '') || info.every(s => s.rows <= 3) || first.rows <= 3 ||
+      (info.some(s => INSTR.test(s.name)) && info.filter(s => !INSTR.test(s.name)).every(s => s.rows <= 5)) ||
+      wb.SheetNames.every(n => INSTR.test(n) || (info.find(i => i.name === n) || {}).rows <= 3);
     const hasSummary = /summary|dashboard|overview|cover/i.test(wb.SheetNames[0] || '');
     if (!looksLikeTemplate && dataRows > 0 && !hasSummary) { try { addSummary(wb, info); } catch (e) { console.warn('summary sheet', e); } }
     wb.Props = Object.assign({ Title: (document.title || 'Report'), Author: 'Bhayani & Co.', Company: 'Bhayani & Co., Chartered Accountants' }, wb.Props || {});
@@ -158,6 +163,6 @@
   }
   const W = X.write, WF = X.writeFile;
   X.write = function (wb, opts) { const o = opts || {}; if (!o.bookType || /^xls[xmb]?$/.test(o.bookType)) houseStyle(wb); return W.call(this, wb, { ...o, cellStyles: true }); };
-  X.writeFile = function (wb, name, opts) { const o = opts || {}; if (!/\.csv$/i.test(name || '') && (!o.bookType || /^xls[xmb]?$/.test(o.bookType))) houseStyle(wb); return WF.call(this, wb, name, { ...o, cellStyles: true }); };
+  X.writeFile = function (wb, name, opts) { const o = opts || {}; if (!/\.csv$/i.test(name || '') && (!o.bookType || /^xls[xmb]?$/.test(o.bookType))) houseStyle(wb, name); return WF.call(this, wb, name, { ...o, cellStyles: true }); };
   X.__houseStyleApply = houseStyle;
 })();
