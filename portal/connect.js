@@ -417,7 +417,19 @@
   });
 
   // ---------------------------------------------------------------- what the desks call
-  const caps = { db, user: Object.freeze(userCap), assets };
+  // ---------------------------------------------------------------- file downloads (the desks hand over a name and the bytes)
+  const MIME = { xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xls: 'application/vnd.ms-excel', csv: 'text/csv', json: 'application/json', pdf: 'application/pdf', zip: 'application/zip', txt: 'text/plain', html: 'text/html', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+  const downloads = Object.freeze({
+    async save({ filename, data }) {
+      const ext = String(filename || '').split('.').pop().toLowerCase();
+      const blob = data instanceof Blob ? data : new Blob([data instanceof ArrayBuffer || ArrayBuffer.isView(data) ? data : String(data ?? '')], { type: MIME[ext] || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = filename || 'download'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      sb.from('activity').insert({ user_id: S.uid, email: S.profile.email, action: 'file.download', detail: `${META.name}: ${filename}` }).then(() => {}, () => {});
+    },
+  });
+  const caps = { db, user: Object.freeze(userCap), assets, downloads };
   window.claude = Object.freeze({ use: name => ready.then(() => caps[name] || null) });
   window.__portal = { tool: TOOL, state: S };
   init();
