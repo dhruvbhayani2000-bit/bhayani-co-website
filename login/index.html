@@ -31,7 +31,7 @@
     const groups = [...new Set(P.tools.map(t => t.group))];
     const tile = (t) => {
       const a = allowed.get(t.slug), n = a.sections ? a.sections.length : Object.keys(t.sections).length;
-      return `<a class="p-tool" href="/${t.slug}/"><span class="ic" aria-hidden="true">${esc(t.name.trim()[0])}</span>
+      return `<a class="p-tool" href="/${t.slug}/" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">${esc(t.name.trim()[0])}</span>
         <span class="t">${esc(t.name)}</span><span class="d">${esc(t.blurb)}</span>
         <span class="m"><span class="p-chip ${a.level === 'view' ? 'idle' : ''}">${esc(window.PORTAL.levels[a.level])}</span><span class="p-chip idle">${n} of ${Object.keys(t.sections).length} sections</span></span></a>`;
     };

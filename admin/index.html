@@ -262,7 +262,7 @@ function toolsView() {
   $('#view').innerHTML = head('Tools', 'Every tool on the portal. As an admin you open each one with full control — use this to manage the masters inside each tool (vendor, customer, HSN, rate masters and so on).') +
     `<section class="p-panel"><div class="p-scroll"><table class="p-table"><thead><tr><th>Tool</th><th>Project</th><th>Sections</th><th>Users with access</th><th></th></tr></thead><tbody>${CFG.tools.map(t => {
       const n = access.filter(a => a.tool === t.slug).length;
-      return `<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.blurb)}</div></td><td>${esc(t.group)}</td><td>${Object.keys(t.sections).length}</td><td>${n}</td><td class="act"><a class="p-btn sm primary" href="/${t.slug}/">Open</a></td></tr>`;
+      return `<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.blurb)}</div></td><td>${esc(t.group)}</td><td>${Object.keys(t.sections).length}</td><td>${n}</td><td class="act"><a class="p-btn sm primary" href="/${t.slug}/" target="_blank" rel="noopener">Open ↗</a></td></tr>`;
     }).join('')}</tbody></table></div></section>`;
 }
 
