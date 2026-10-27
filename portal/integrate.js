@@ -32,6 +32,7 @@
   const accountReady = () => G('mode') === 'account' && Array.isArray(G('companies'));
   const A = {
     gst: {
+      home: () => G('view') === 'dash',   // headline tiles live on the home view; other views are not reported
       ready: () => G('mode') === 'account' && Array.isArray(G('clients')),
       list: () => G('clients') || [],
       name: co => co.name,
@@ -60,6 +61,7 @@
       open(co) { const f = G('openClient'); if (f) f(co.id); },
     },
     tds: {
+      home: () => G('tab') === 'desk',   // headline tiles live on the home view; other views are not reported
       ready: accountReady, list: () => G('companies') || [], name: co => co.settings.name,
       existing: db => firmDocs(db, v => v.kind === 'meta' && v.settings),
       make(p) { const n = G('blankCompany')(p.name); const Y = +p.fy || curFY(); Object.assign(n.settings, { pan: p.pan || '', tan: p.tan || '', fyStart: `${Y}-04-01`, constitution: p.constitution || n.settings.constitution, over10cr: p.aato === '' || p.aato == null ? n.settings.over10cr : +p.aato > 10 }); return n; },
@@ -78,6 +80,7 @@
       open: co => selectCompany(co.id),
     },
     costing: {
+      home: () => G('tab') === 'desk',   // headline tiles live on the home view; other views are not reported
       ready: accountReady, list: () => G('companies') || [], name: co => co.settings.name,
       existing: db => firmDocs(db, v => v.settings && v.cfg),
       make(p) { const n = G('blankCompany')(p.name); Object.assign(n.settings, { industry: CFG.industries[p.industry] || '', turnover: p.aato === '' || p.aato == null ? '' : +p.aato }); return n; },
@@ -87,6 +90,7 @@
       open: co => selectCompany(co.id),
     },
     'financial-analysis': {
+      home: () => G('tab') === 'overview',   // headline tiles live on the home view; other views are not reported
       ready: accountReady, list: () => G('companies') || [], name: co => co.name,
       existing: db => firmDocs(db, v => Array.isArray(v.years)),
       make(p) { const n = G('blankCompany')(p.name); n.industry = CFG.industries[p.industry] || ''; return n; },
@@ -96,6 +100,7 @@
       open: co => selectCompany(co.id),
     },
     cfo: {
+      home: () => G('tab') === 'desk',   // headline tiles live on the home view; other views are not reported
       ready: accountReady, list: () => G('companies') || [], name: co => co.settings.name,
       existing: db => firmDocs(db, v => v.kind === 'meta' && v.settings),
       make(p) { return G('blankCompany')(p.name); },
@@ -105,6 +110,7 @@
       open: co => selectCompany(co.id),
     },
     remittance: {
+      home: () => G('tab') === 'desk',   // headline tiles live on the home view; other views are not reported
       ready: accountReady, list: () => G('companies') || [], name: co => co.settings.name,
       existing: db => firmDocs(db, v => v.kind === 'co' && v.settings),
       make(p) { const n = G('blankCo')(p.name); Object.assign(n.settings, { pan: p.pan || '', tan: p.tan || '', constitution: p.constitution || n.settings.constitution, address: p.address || '', email: p.email || '' }); return n; },
@@ -210,7 +216,8 @@
         first = 0;
         if (ctx.tool === 'internal-audit') return iaStatus();
         const co = currentLinked(); if (!co) return;
-        const tiles = scrape(); if (tiles.length) putStatus(co.portalId, { name: ad.name(co), tiles });
+        let home = true; try { home = !ad.home || ad.home(); } catch {}
+        const tiles = home ? scrape() : []; if (tiles.length) putStatus(co.portalId, { name: ad.name(co), tiles });
         flows(co);
       }, wait);
     };
