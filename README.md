@@ -1,6 +1,8 @@
 # Bhayani & Co. Chartered Accountants — Website
 
-Static website (single `index.html`). Hosted on Render as a Static Site.
+Static website: `index.html` (V11) with images in `assets/brand`, `assets/services` and `assets/industries`. Hosted on Render as a Static Site.
+
+Previous home page is kept on branch `backup/pre-v11`.
 
 - Publish directory: `.`
 - Build command: none
